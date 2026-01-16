@@ -48,15 +48,20 @@ const handleChangePassword = async () => {
     // TODO: 调用修改密码API
     await new Promise(resolve => setTimeout(resolve, 1000))
     
-    ElMessage.success('密码修改成功')
+    ElMessage.success('密码修改成功，请重新登录')
     
     // 清空表单
     passwordForm.oldPassword = ''
     passwordForm.newPassword = ''
     passwordForm.confirmPassword = ''
     
-    // 可以选择跳转到登录页或其他页面
-    // router.push('/login')
+    // 退出登录
+    authStore.logout()
+    
+    // 延迟1秒后跳转到登录页
+    setTimeout(() => {
+      router.push('/login')
+    }, 1000)
   } catch (error) {
     ElMessage.error('密码修改失败')
   } finally {
