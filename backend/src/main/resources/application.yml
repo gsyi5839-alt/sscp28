@@ -1,0 +1,49 @@
+# Server Configuration
+server:
+  port: 8080
+
+# Spring Configuration
+spring:
+  application:
+    name: bcbbs-backend
+  
+  # Database Configuration
+  datasource:
+    url: jdbc:mysql://localhost:3306/xie080886?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai&createDatabaseIfNotExist=true
+    username: xie080886
+    password: xie080886
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      idle-timeout: 30000
+      connection-timeout: 30000
+  
+  # JPA Configuration
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.MySQLDialect
+
+# JWT Configuration
+jwt:
+  secret: YmNiYnMzLWJhY2tlbmQtand0LXNlY3JldC1rZXktMjAyNi1wcm9kdWN0aW9uLXNlY3VyZS10b2tlbg==
+  expiration: 86400000  # 24 hours in milliseconds
+
+# CORS Configuration - Allow frontend domain
+cors:
+  allowed-origins: http://localhost:5173,https://www.bcbbs3.cn,http://www.bcbbs3.cn
+  allowed-methods: GET,POST,PUT,DELETE,OPTIONS
+  allowed-headers: "*"
+  allow-credentials: true
+
+# Logging Configuration
+logging:
+  level:
+    root: INFO
+    com.bcbbs.backend: DEBUG
+    org.hibernate.SQL: DEBUG

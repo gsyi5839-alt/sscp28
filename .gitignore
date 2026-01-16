@@ -1,0 +1,52 @@
+# Node modules
+node_modules/
+**/node_modules/
+
+# Build outputs
+dist/
+build/
+target/
+*.class
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Environment variables
+.env.local
+.env.*.local
+
+# Database
+*.db
+*.sqlite
+
+# Maven
+.mvn/
+mvnw
+mvnw.cmd
+
+# Compiled files
+*.jar
+*.war
+*.ear
+
+# Package files
+*.zip
+*.tar.gz
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
