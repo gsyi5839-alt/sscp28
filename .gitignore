@@ -32,6 +32,9 @@ npm-debug.log*
 *.db
 *.sqlite
 
+# Database backups are tracked
+# database_backups/ is included in version control
+
 # Maven
 .mvn/
 mvnw
