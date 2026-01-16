@@ -72,8 +72,8 @@ const handleLogin = async () => {
     await new Promise(resolve => setTimeout(resolve, 1000))
     
     ElMessage.success('登录成功')
-    // Navigate to member dashboard or home
-    router.push('/member')
+    // Navigate to change password page
+    router.push('/change-password')
   } catch (error) {
     ElMessage.error('登录失败，请重试')
   } finally {
