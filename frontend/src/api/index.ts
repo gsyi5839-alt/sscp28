@@ -60,3 +60,9 @@ export const healthApi = {
   check: () => api.get('/public/health')
 }
 
+// Change Password API
+export const passwordApi = {
+  changePassword: (data: { oldPassword: string; newPassword: string }) => 
+    api.post('/auth/change-password', data)
+}
+

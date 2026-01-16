@@ -3,6 +3,7 @@ import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { useAuthStore } from '../stores/auth'
+import { passwordApi } from '../api'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -45,25 +46,33 @@ const handleChangePassword = async () => {
   loading.value = true
 
   try {
-    // TODO: 调用修改密码API
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    // 调用修改密码API
+    const response: any = await passwordApi.changePassword({
+      oldPassword: passwordForm.oldPassword,
+      newPassword: passwordForm.newPassword
+    })
     
-    ElMessage.success('密码修改成功，请重新登录')
-    
-    // 清空表单
-    passwordForm.oldPassword = ''
-    passwordForm.newPassword = ''
-    passwordForm.confirmPassword = ''
-    
-    // 退出登录
-    authStore.logout()
-    
-    // 延迟1秒后跳转到登录页
-    setTimeout(() => {
-      router.push('/login')
-    }, 1000)
-  } catch (error) {
-    ElMessage.error('密码修改失败')
+    if (response.code === 200) {
+      ElMessage.success('密码修改成功，请重新登录')
+      
+      // 清空表单
+      passwordForm.oldPassword = ''
+      passwordForm.newPassword = ''
+      passwordForm.confirmPassword = ''
+      
+      // 退出登录
+      authStore.logout()
+      
+      // 延迟1秒后跳转到登录页
+      setTimeout(() => {
+        router.push('/login')
+      }, 1000)
+    } else {
+      ElMessage.error(response.message || '密码修改失败')
+    }
+  } catch (error: any) {
+    const message = error.response?.data?.message || '密码修改失败'
+    ElMessage.error(message)
   } finally {
     loading.value = false
   }

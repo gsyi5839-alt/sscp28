@@ -91,5 +91,22 @@ public class AuthController {
         
         return ResponseEntity.ok(ApiResponse.success(authResponse));
     }
+    
+    @PostMapping("/change-password")
+    public ResponseEntity<ApiResponse<String>> changePassword(
+            @Valid @RequestBody ChangePasswordRequest request,
+            Authentication authentication) {
+        try {
+            User user = (User) authentication.getPrincipal();
+            userService.changePassword(user, request.getOldPassword(), request.getNewPassword());
+            return ResponseEntity.ok(ApiResponse.success("密码修改成功", null));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error(400, e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(500)
+                    .body(ApiResponse.error(500, "密码修改失败"));
+        }
+    }
 }
 
