@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { linesApi } from '../api'
+import { ElMessage } from 'element-plus'
 
 const router = useRouter()
 const activeTab = ref('member') // 'member' or 'agent'
@@ -15,21 +17,9 @@ onMounted(() => {
   }
 })
 
-// Member lines data with ping times
-const memberLines = ref([
-  { id: 1, name: '会员1', ping: 44, url: '#' },
-  { id: 2, name: '会员2', ping: 26, url: '#' },
-  { id: 3, name: '会员3', ping: 22, url: '#' },
-  { id: 4, name: '会员4', ping: 30, url: '#' }
-])
-
-// Agent lines data
-const agentLines = ref([
-  { id: 1, name: '代理1', ping: 35, url: '#' },
-  { id: 2, name: '代理2', ping: 28, url: '#' },
-  { id: 3, name: '代理3', ping: 31, url: '#' },
-  { id: 4, name: '代理4', ping: 25, url: '#' }
-])
+const memberLines = ref<any[]>([])
+const agentLines = ref<any[]>([])
+const loading = ref(false)
 
 /**
  * Switch between member and agent tabs
@@ -39,16 +29,10 @@ const switchTab = (tab: string) => {
 }
 
 /**
- * Test connection speed - refresh ping times with random values
+ * Refresh lines data from the backend.
  */
-const testSpeed = () => {
-  // Generate new random ping times (20-50ms range)
-  memberLines.value.forEach(line => {
-    line.ping = Math.floor(Math.random() * 30) + 20
-  })
-  agentLines.value.forEach(line => {
-    line.ping = Math.floor(Math.random() * 30) + 20
-  })
+const testSpeed = async () => {
+  await loadLines()
 }
 
 /**
@@ -74,6 +58,34 @@ const selectLine = () => {
 const currentLines = () => {
   return activeTab.value === 'member' ? memberLines.value : agentLines.value
 }
+
+/**
+ * Load member and agent lines from API.
+ */
+const loadLines = async () => {
+  loading.value = true
+  try {
+    const [memberResponse, agentResponse]: any = await Promise.all([
+      linesApi.getLines('MEMBER'),
+      linesApi.getLines('AGENT')
+    ])
+    if (memberResponse.code === 200) {
+      memberLines.value = memberResponse.data || []
+    }
+    if (agentResponse.code === 200) {
+      agentLines.value = agentResponse.data || []
+    }
+  } catch {
+    ElMessage.error('线路加载失败')
+  } finally {
+    loading.value = false
+  }
+}
+
+// Load lines on mount
+onMounted(() => {
+  loadLines()
+})
 </script>
 
 <template>
@@ -122,7 +134,7 @@ const currentLines = () => {
           @click="selectLine"
         >
           <span class="line-name">{{ line.name }}</span>
-          <span class="line-ping">({{ line.ping }}ms)</span>
+          <span class="line-ping">({{ line.pingMs ?? 'N/A' }}ms)</span>
         </div>
       </div>
     </div>

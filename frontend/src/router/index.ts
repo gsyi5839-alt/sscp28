@@ -23,12 +23,6 @@ const router = createRouter({
       meta: { requiresAuth: false }
     },
     {
-      path: '/login',
-      name: 'login',
-      component: () => import('../views/Login.vue'),
-      meta: { requiresAuth: false }
-    },
-    {
       path: '/register',
       name: 'register',
       component: () => import('../views/Register.vue'),
@@ -62,6 +56,24 @@ const router = createRouter({
       path: '/change-password',
       name: 'changePassword',
       component: () => import('../views/ChangePassword.vue'),
+      meta: { requiresAuth: false }  // 登录后立即跳转，组件内自行验证
+    },
+    {
+      path: '/force-change-password',
+      name: 'forceChangePassword',
+      component: () => import('../views/ForceChangePassword.vue'),
+      meta: { requiresAuth: false }
+    },
+    {
+      path: '/user-agreement',
+      name: 'userAgreement',
+      component: () => import('../views/UserAgreement.vue'),
+      meta: { requiresAuth: false }  // 登录后显示，组件内自行验证
+    },
+    {
+      path: '/game',
+      name: 'gameHome',
+      component: () => import('../views/GameHome.vue'),
       meta: { requiresAuth: false }
     }
   ]
@@ -71,7 +83,8 @@ router.beforeEach((to, _from, next) => {
   const authStore = useAuthStore()
   
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
-    next({ name: 'login' })
+    // 未登录时跳转到会员登录页面
+    next({ name: 'memberLogin' })
   } else {
     next()
   }

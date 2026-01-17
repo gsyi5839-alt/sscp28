@@ -2,10 +2,13 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { captchaApi } from '../api'
+import { useAuthStore } from '../stores/auth'
 import leftImage from '@/assets/代理登录/1.png'
 import rightBgImage from '@/assets/代理登录/2.png'
 
 const router = useRouter()
+const authStore = useAuthStore()
 
 // Form data
 const loginForm = ref({
@@ -14,23 +17,29 @@ const loginForm = ref({
   captcha: ''
 })
 
-// Captcha code - randomly generated
+// Captcha code from backend
 const captchaCode = ref('')
 const captchaColors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD']
+const captchaToken = ref('')
 
 // Loading state
 const loading = ref(false)
 
 /**
- * Generate random captcha code (4 digits)
+ * Load captcha code from backend
  */
-const generateCaptcha = () => {
-  const chars = '0123456789'
-  let code = ''
-  for (let i = 0; i < 4; i++) {
-    code += chars.charAt(Math.floor(Math.random() * chars.length))
+const generateCaptcha = async () => {
+  try {
+    const response: any = await captchaApi.getCaptcha()
+    if (response.code === 200) {
+      captchaCode.value = response.data.code
+      captchaToken.value = response.data.token
+    }
+  } catch {
+    captchaCode.value = ''
+    captchaToken.value = ''
+    ElMessage.error('验证码加载失败')
   }
-  captchaCode.value = code
 }
 
 /**
@@ -57,23 +66,38 @@ const handleLogin = async () => {
     ElMessage.warning('请输入验证码')
     return
   }
-  if (loginForm.value.captcha !== captchaCode.value) {
-    ElMessage.error('验证码错误')
-    generateCaptcha() // Refresh captcha on error
-    loginForm.value.captcha = ''
-    return
-  }
-
   loading.value = true
 
   try {
-    // TODO: Implement actual login API call
-    // For now, simulate login success
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
-    ElMessage.success('登录成功')
-    // Navigate to change password page
-    router.push('/change-password')
+    if (!captchaToken.value) {
+      ElMessage.warning('验证码未加载，请刷新')
+      return
+    }
+    const result = await authStore.loginWithRole(
+      loginForm.value.account,
+      loginForm.value.password,
+      'AGENT',
+      captchaToken.value,
+      loginForm.value.captcha
+    )
+    if (result.success) {
+      // 如果需要修改密码，强制跳转到修改密码页面
+      if (result.needPasswordChange) {
+        // 强制跳转到修改密码页面
+        router.push('/change-password')
+        return
+      }
+      // 代理已修改过密码：直接进入游戏首页
+      router.push('/game')
+    } else {
+      // 账号被停用（历史逻辑导致）时，引导到“强制修改密码”解锁页
+      if (result.status === 403 && result.errorMessage && result.errorMessage.includes('账户已停用')) {
+        router.push({ path: '/force-change-password', query: { role: 'AGENT', username: loginForm.value.account } })
+        return
+      }
+      generateCaptcha()
+      loginForm.value.captcha = ''
+    }
   } catch (error) {
     ElMessage.error('登录失败，请重试')
   } finally {

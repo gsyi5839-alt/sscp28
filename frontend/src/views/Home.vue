@@ -5,7 +5,7 @@ import { useRouter } from 'vue-router'
 const authStore = useAuthStore()
 const router = useRouter()
 
-const goToLogin = () => router.push('/login')
+const goToLogin = () => router.push('/member/login')
 const goToRegister = () => router.push('/register')
 const goToDashboard = () => router.push('/dashboard')
 </script>

@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc -b && vite build",
+    "deploy": "node scripts/deploy-to-site-root.mjs",
+    "build:site": "npm run build && npm run deploy",
     "preview": "vite preview"
   },
   "dependencies": {

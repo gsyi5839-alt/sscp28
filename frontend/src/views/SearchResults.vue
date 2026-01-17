@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { searchApi } from '../api'
 
 const route = useRoute()
 const router = useRouter()
@@ -19,12 +20,10 @@ const fetchResults = async (keyword: string) => {
   results.value = []
   
   try {
-    // TODO: Replace with actual API call
-    // const response = await searchApi.search(keyword)
-    // results.value = response.data
-    
-    // Placeholder for API integration
-    console.log('Searching for:', keyword)
+    const response: any = await searchApi.search(keyword)
+    if (response.code === 200) {
+      results.value = response.data || []
+    }
   } catch (error) {
     console.error('Search error:', error)
   } finally {

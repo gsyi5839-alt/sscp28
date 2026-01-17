@@ -34,7 +34,7 @@ api.interceptors.response.use(
     
     if (error.response?.status === 401) {
       localStorage.removeItem('token')
-      window.location.href = '/login'
+      window.location.href = '/member/login'
     }
     
     return Promise.reject(error)
@@ -50,6 +50,12 @@ export const authApi = {
   
   register: (data: { username: string; email: string; password: string; nickname?: string }) => 
     api.post('/auth/register', data),
+
+  roleLogin: (data: { username: string; password: string; role: string; captchaToken: string; captchaCode: string }) =>
+    api.post('/auth/role-login', data),
+
+  forceChangePassword: (data: { username: string; role: string; oldPassword: string; newPassword: string; captchaToken: string; captchaCode: string }) =>
+    api.post('/auth/force-change-password', data),
   
   getCurrentUser: () => 
     api.get('/auth/me')
@@ -58,6 +64,21 @@ export const authApi = {
 // Health API
 export const healthApi = {
   check: () => api.get('/public/health')
+}
+
+// Search API
+export const searchApi = {
+  search: (keyword: string) => api.get('/public/search', { params: { q: keyword } })
+}
+
+// Lines API
+export const linesApi = {
+  getLines: (type: 'MEMBER' | 'AGENT') => api.get('/public/lines', { params: { type } })
+}
+
+// Captcha API
+export const captchaApi = {
+  getCaptcha: () => api.get('/public/captcha')
 }
 
 // Change Password API

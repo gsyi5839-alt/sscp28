@@ -13,35 +13,27 @@ onMounted(() => {
     favicon.href = 'data:,'  // Empty favicon
   }
 })
-const securityCode = ref('')
+const searchKeyword = ref('')
 const loading = ref(false)
 
-// Security code for access verification
-const VALID_CODE = '138888'
-
 /**
- * Handle security code verification
- * Correct code: navigate to member panel page
- * Wrong code: redirect to Baidu search
+ * Handle search submission
  */
-const handleVerify = async () => {
-  const code = securityCode.value.trim()
+const handleSearch = async () => {
+  const keyword = searchKeyword.value.trim()
   
-  if (!code) {
-    ElMessage.warning('请输入安全码')
+  if (!keyword) {
+    ElMessage.warning('请输入关键词')
     return
   }
   
   loading.value = true
   
   try {
-    if (code === VALID_CODE) {
-      // Correct code - navigate to member panel
-      router.push('/member')
-    } else {
-      // Wrong code - redirect to Baidu search
-      window.location.href = 'https://www.baidu.com/s?wd=' + encodeURIComponent(code)
-    }
+    router.push({
+      path: '/search/results',
+      query: { q: keyword }
+    })
   } finally {
     loading.value = false
   }
@@ -52,7 +44,7 @@ const handleVerify = async () => {
  */
 const handleKeyPress = (event: KeyboardEvent) => {
   if (event.key === 'Enter') {
-    handleVerify()
+    handleSearch()
   }
 }
 </script>
@@ -65,11 +57,11 @@ const handleKeyPress = (event: KeyboardEvent) => {
         <img :src="logoImage" alt="BW Search" class="logo-img" />
       </div>
       
-      <!-- Security Code Input Section -->
+      <!-- Search Input Section -->
       <div class="search-box">
         <input
-          v-model="securityCode"
-          type="password"
+          v-model="searchKeyword"
+          type="text"
           class="search-input"
           placeholder=""
           @keydown="handleKeyPress"
@@ -77,7 +69,7 @@ const handleKeyPress = (event: KeyboardEvent) => {
         <button
           class="search-btn"
           :disabled="loading"
-          @click="handleVerify"
+          @click="handleSearch"
         >
           {{ loading ? '...' : '搜索' }}
         </button>

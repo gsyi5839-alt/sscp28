@@ -47,6 +47,14 @@ public class User implements UserDetails {
     @Column(nullable = false)
     private Boolean enabled = true;
     
+    // 是否已修改过初始密码
+    @Column(name = "password_changed")
+    private Boolean passwordChanged = false;
+    
+    // 未修改密码的登录次数（超过2次将停用）
+    @Column(name = "login_count_without_change")
+    private Integer loginCountWithoutChange = 0;
+    
     @Column(name = "created_at")
     private LocalDateTime createdAt;
     
@@ -90,7 +98,7 @@ public class User implements UserDetails {
     }
     
     public enum Role {
-        USER, ADMIN
+        USER, ADMIN, MEMBER, AGENT
     }
 }
 

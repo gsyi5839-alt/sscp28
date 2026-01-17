@@ -47,3 +47,21 @@ logging:
     root: INFO
     com.bcbbs.backend: DEBUG
     org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    org.springframework.web: DEBUG
+    org.springframework.security: INFO
+  file:
+    name: ./logs/app.log
+  logback:
+    rollingpolicy:
+      max-file-size: 50MB
+      max-history: 30
+      total-size-cap: 2GB
+
+# 启用404异常抛出，便于全局异常处理器捕获
+spring.mvc:
+  throw-exception-if-no-handler-found: true
+
+spring.web:
+  resources:
+    add-mappings: false

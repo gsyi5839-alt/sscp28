@@ -146,7 +146,7 @@ const handleRegister = async () => {
       
       <div class="register-footer">
         <span>Already have an account?</span>
-        <router-link to="/login">Sign in</router-link>
+        <router-link to="/member/login">Sign in</router-link>
       </div>
       
       <div class="back-home">

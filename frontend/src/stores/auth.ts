@@ -8,6 +8,8 @@ interface User {
   email: string
   nickname: string
   role: string
+  needPasswordChange?: boolean
+  loginCountWithoutChange?: number
 }
 
 export const useAuthStore = defineStore('auth', () => {
@@ -27,6 +29,18 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem('token')
   }
 
+  const setSession = (data: any) => {
+    if (data?.token) setToken(data.token)
+    user.value = {
+      username: data.username,
+      email: data.email,
+      nickname: data.nickname,
+      role: data.role,
+      needPasswordChange: data.needPasswordChange,
+      loginCountWithoutChange: data.loginCountWithoutChange
+    }
+  }
+
   const login = async (username: string, password: string) => {
     try {
       const response: any = await authApi.login({ username, password })
@@ -44,6 +58,41 @@ export const useAuthStore = defineStore('auth', () => {
       return false
     } catch {
       return false
+    }
+  }
+
+  const loginWithRole = async (
+    username: string,
+    password: string,
+    role: string,
+    captchaToken: string,
+    captchaCode: string
+  ): Promise<{ success: boolean; needPasswordChange?: boolean; loginCount?: number; status?: number; errorMessage?: string }> => {
+    // Login with role and captcha for member/agent access
+    try {
+      const response: any = await authApi.roleLogin({
+        username,
+        password,
+        role,
+        captchaToken,
+        captchaCode
+      })
+      if (response.code === 200) {
+        setSession(response.data)
+        ElMessage.success('Login successful!')
+        return {
+          success: true,
+          needPasswordChange: response.data.needPasswordChange,
+          loginCount: response.data.loginCountWithoutChange
+        }
+      }
+      return { success: false, status: response.code, errorMessage: response.message }
+    } catch (err: any) {
+      return {
+        success: false,
+        status: err?.response?.status,
+        errorMessage: err?.response?.data?.message
+      }
     }
   }
 
@@ -88,7 +137,9 @@ export const useAuthStore = defineStore('auth', () => {
     token,
     user,
     isAuthenticated,
+    setSession,
     login,
+    loginWithRole,
     register,
     logout,
     fetchUser

@@ -1,14 +1,28 @@
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, reactive, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { useAuthStore } from '../stores/auth'
 import { passwordApi } from '../api'
 
+const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
 
-// 表单数据
+// 验证用户是否已登录
+onMounted(() => {
+  // 仅用于样式预览（避免未登录被重定向，便于你直接在浏览器看 UI）
+  // 示例：/change-password?preview=1
+  if (route.query.preview === '1') {
+    return
+  }
+
+  if (!authStore.isAuthenticated) {
+    ElMessage.warning('请先登录')
+    router.push('/member/login')
+  }
+})
+
 const passwordForm = reactive({
   oldPassword: '',
   newPassword: '',
@@ -17,11 +31,7 @@ const passwordForm = reactive({
 
 const loading = ref(false)
 
-/**
- * 修改密码
- */
 const handleChangePassword = async () => {
-  // 验证表单
   if (!passwordForm.oldPassword) {
     ElMessage.warning('请输入原始密码')
     return
@@ -46,7 +56,6 @@ const handleChangePassword = async () => {
   loading.value = true
 
   try {
-    // 调用修改密码API
     const response: any = await passwordApi.changePassword({
       oldPassword: passwordForm.oldPassword,
       newPassword: passwordForm.newPassword
@@ -54,18 +63,22 @@ const handleChangePassword = async () => {
     
     if (response.code === 200) {
       ElMessage.success('密码修改成功，请重新登录')
-      
-      // 清空表单
       passwordForm.oldPassword = ''
       passwordForm.newPassword = ''
       passwordForm.confirmPassword = ''
       
-      // 退出登录
+      // 根据用户角色跳转到对应的登录页面
+      const userRole = authStore.user?.role
       authStore.logout()
       
-      // 延迟1秒后跳转到登录页
       setTimeout(() => {
-        router.push('/login')
+        if (userRole === 'AGENT') {
+          router.push('/agent/login')
+        } else if (userRole === 'MEMBER') {
+          router.push('/member/login')
+        } else {
+          router.push('/member/login')
+        }
       }, 1000)
     } else {
       ElMessage.error(response.message || '密码修改失败')
@@ -77,189 +90,188 @@ const handleChangePassword = async () => {
     loading.value = false
   }
 }
-
-/**
- * 返回
- */
-const goBack = () => {
-  router.back()
-}
 </script>
 
 <template>
-  <div class="change-password-page">
-    <div class="password-container">
+  <div class="page">
+    <div class="box">
       <!-- 标题 -->
-      <div class="title-bar">修改密码</div>
+      <div class="header" align="center">
+        <span class="title-text"> 修改密码 </span>
+      </div>
       
-      <!-- 表单区域 -->
-      <div class="form-area">
-        <!-- 原始密码 -->
-        <div class="form-row">
-          <label class="form-label"><span class="required">*</span>原始密码:</label>
-          <input
-            v-model="passwordForm.oldPassword"
-            type="password"
-            class="form-input"
-            placeholder=""
+      <!-- 原始密码 -->
+      <div class="row">
+        <div class="label">
+          <span class="red">*</span><span class="label-text">原始密码:</span>
+        </div>
+        <div class="field">
+          <input 
+            v-model="passwordForm.oldPassword" 
+            type="password" 
+            class="input"
+            @keyup.enter="handleChangePassword"
           />
         </div>
-
-        <!-- 新密码 -->
-        <div class="form-row">
-          <label class="form-label"><span class="required">*</span>新密码:</label>
-          <input
-            v-model="passwordForm.newPassword"
-            type="password"
-            class="form-input"
-            placeholder=""
+      </div>
+      
+      <!-- 新设密码 -->
+      <div class="row">
+        <div class="label">
+          <span class="red">*</span><span class="label-text">新设密码:</span>
+        </div>
+        <div class="field">
+          <input 
+            v-model="passwordForm.newPassword" 
+            type="password" 
+            class="input"
+            @keyup.enter="handleChangePassword"
           />
         </div>
-
-        <!-- 确认密码 -->
-        <div class="form-row">
-          <label class="form-label"><span class="required">*</span>确认密码:</label>
-          <input
-            v-model="passwordForm.confirmPassword"
-            type="password"
-            class="form-input"
-            placeholder=""
+      </div>
+      
+      <!-- 确认密码 -->
+      <div class="row row-last">
+        <div class="label">
+          <span class="red">*</span><span class="label-text">确认密码:</span>
+        </div>
+        <div class="field">
+          <input 
+            v-model="passwordForm.confirmPassword" 
+            type="password" 
+            class="input"
+            @keyup.enter="handleChangePassword"
           />
         </div>
-
-        <!-- 提交按钮 -->
-        <div class="form-row button-row">
-          <button
-            class="submit-btn"
-            :disabled="loading"
-            @click="handleChangePassword"
-          >
-            {{ loading ? '...' : '修改密码' }}
-          </button>
-        </div>
+      </div>
+      
+      <!-- 按钮 -->
+      <div class="btn-row">
+        <button class="btn btn1" :disabled="loading" @click="handleChangePassword">修改密码</button>
       </div>
     </div>
   </div>
 </template>
 
 <style scoped>
-/* 页面容器 */
-.change-password-page {
+.page {
   min-height: 100vh;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: #f5f5f5;
+  background: #ffffff;
   padding: 20px;
 }
 
-/* 密码修改容器 - 460x150 */
-.password-container {
+.box {
   width: 460px;
-  background: #ffffff;
-  border: 1px solid #dddddd;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
+  height: 152px;
+  background: #fff;
+  border: 1px solid #efba84;
+  box-sizing: border-box;
 }
 
-/* 标题栏 - 橙色背景 */
-.title-bar {
-  background: linear-gradient(to bottom, #ffd89a 0%, #ffb84d 100%);
-  color: #333333;
+.header {
+  height: 30px;
+  line-height: 30px;
+  width: 458px;
+  margin: 0 auto;
+  /* 标题背景需要与“原始密码:”行背景一致 */
+  background: linear-gradient(180deg, #fef8f0 0%, #fef0e0 100%);
+  border-bottom: 1px solid #efba84;
+}
+
+.title-text {
+  color: #333;
   font-size: 14px;
-  font-weight: 500;
-  padding: 8px 15px;
-  border-bottom: 1px solid #dddddd;
-  text-align: center;
 }
 
-/* 表单区域 */
-.form-area {
-  padding: 15px 20px;
+.row {
+  display: flex;
+  height: 30px;
+  width: 458px;
+  margin: 0 auto;
+  border-bottom: 1px solid #efba84;
+  box-sizing: border-box;
+  /* 截图：每一行背景是浅色渐变（整行统一，不允许左右出现断层） */
+  background: linear-gradient(180deg, #fef8f0 0%, #fef0e0 100%);
 }
 
-/* 表单行 */
-.form-row {
+.row-last {
+  border-bottom: 1px solid #efba84;
+}
+
+.label {
+  width: 153px;
+  height: 30px;
+  line-height: 30px;
+  text-align: right;
+  padding-right: 8px;
+  font-size: 13px;
+  color: #333;
+  box-sizing: border-box;
+  /* 关键：使用整行的背景（避免左右颜色不一致） */
+  background: inherit !important;
+}
+
+.label-text {
+  display: inline-block;
+  margin-right: 5px;
+  width: 64px;
+}
+
+.red {
+  color: #f00;
+}
+
+.field {
+  flex: 1;
   display: flex;
   align-items: center;
-  margin-bottom: 10px;
+  padding-left: 10px;
+  border-left: 1px solid #efba84;
+  box-sizing: border-box;
+  /* 关键：右侧必须同样有底色（你标注的“没有颜色的”区域就在这里） */
+  background: inherit !important;
 }
 
-/* 标签 */
-.form-label {
-  width: 80px;
-  text-align: right;
-  font-size: 13px;
-  color: #333333;
-  flex-shrink: 0;
-  padding-right: 10px;
-}
-
-/* 必填星号 */
-.required {
-  color: #ff0000;
-  margin-right: 2px;
-}
-
-/* 输入框 */
-.form-input {
-  flex: 1;
-  height: 26px;
-  padding: 0 8px;
-  border: 1px solid #cccccc;
-  font-size: 13px;
-  color: #333333;
-  outline: none;
-  transition: border-color 0.3s;
-}
-
-.form-input:focus {
-  border-color: #ff9900;
-}
-
-.form-input::placeholder {
-  color: #999999;
-}
-
-/* 按钮行 */
-.button-row {
-  justify-content: center;
-  margin-top: 15px;
-  margin-bottom: 5px;
-}
-
-/* 提交按钮 */
-.submit-btn {
+.input {
   width: 100px;
-  height: 28px;
-  background: linear-gradient(to bottom, #ff9900 0%, #ff7700 100%);
-  color: #ffffff;
-  border: 1px solid #dd7700;
-  border-radius: 3px;
+  height: 24px;
+  padding: 0 6px;
+  border: 1px solid #efba84;
   font-size: 13px;
-  font-weight: 500;
+  color: #333;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.input:focus {
+  border-color: #e87c18;
+}
+
+.btn-row {
+  height: 32px;
+  width: 458px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn.btn1 {
+  width: 72px;
+  height: 20px;
+  background: #e87c18;
+  border: none;
+  color: #fff;
+  font-size: 12px;
   cursor: pointer;
-  transition: opacity 0.3s;
 }
 
-.submit-btn:hover {
-  opacity: 0.9;
-}
-
-.submit-btn:active {
-  opacity: 0.8;
-}
-
-.submit-btn:disabled {
+.btn.btn1:disabled {
   opacity: 0.6;
   cursor: not-allowed;
-}
-
-/* 响应式 */
-@media screen and (max-width: 500px) {
-  .password-container {
-    width: 100%;
-    max-width: 460px;
-  }
 }
 </style>

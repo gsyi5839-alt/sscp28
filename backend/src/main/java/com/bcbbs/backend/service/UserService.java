@@ -45,9 +45,18 @@ public class UserService implements UserDetailsService {
             throw new IllegalArgumentException("旧密码不正确");
         }
         
+        // 重新从数据库获取用户（确保获取最新数据）
+        User dbUser = userRepository.findById(user.getId())
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        
         // Set new password
-        user.setPassword(passwordEncoder.encode(newPassword));
-        userRepository.save(user);
+        dbUser.setPassword(passwordEncoder.encode(newPassword));
+        
+        // 标记密码已修改，重置登录计数
+        dbUser.setPasswordChanged(true);
+        dbUser.setLoginCountWithoutChange(0);
+        
+        userRepository.save(dbUser);
     }
 }
 
