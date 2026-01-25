@@ -36,18 +36,18 @@ const generateCaptcha = async () => {
   } catch {
     captchaCode.value = ''
     captchaToken.value = ''
-    ElMessage.error('验证码加载失败')
+    ElMessage.error('Failed to load captcha')
   }
 }
 
 const submit = async () => {
-  if (!username.value.trim()) return ElMessage.warning('请输入账号')
-  if (!oldPassword.value.trim()) return ElMessage.warning('请输入原始密码')
-  if (!newPassword.value.trim()) return ElMessage.warning('请输入新密码')
-  if (newPassword.value.length < 6) return ElMessage.warning('新密码至少6位')
-  if (newPassword.value !== confirmPassword.value) return ElMessage.error('两次输入的密码不一致')
-  if (!inputCaptcha.value.trim()) return ElMessage.warning('请输入验证码')
-  if (!captchaToken.value) return ElMessage.warning('验证码未加载，请刷新')
+  if (!username.value.trim()) return ElMessage.warning('Please enter account')
+  if (!oldPassword.value.trim()) return ElMessage.warning('Please enter old password')
+  if (!newPassword.value.trim()) return ElMessage.warning('Please enter new password')
+  if (newPassword.value.length < 6) return ElMessage.warning('New password must be at least 6 characters')
+  if (newPassword.value !== confirmPassword.value) return ElMessage.error('Passwords do not match')
+  if (!inputCaptcha.value.trim()) return ElMessage.warning('Please enter captcha')
+  if (!captchaToken.value) return ElMessage.warning('Captcha not loaded, please refresh')
 
   loading.value = true
   try {
@@ -61,10 +61,10 @@ const submit = async () => {
     })
 
     if (response.code === 200) {
-      ElMessage.success('密码修改成功，账号已解锁')
+      ElMessage.success('Password changed successfully, account unlocked')
       authStore.setSession(response.data)
 
-      // 根据角色跳转
+      // Redirect based on role
       if (role.value === 'AGENT') {
         router.push('/game')
       } else {
@@ -73,7 +73,7 @@ const submit = async () => {
       }
     }
   } catch {
-    // 错误信息由 axios 拦截器统一提示
+    // Error message unified by axios interceptor
     generateCaptcha()
   } finally {
     loading.value = false
@@ -91,50 +91,50 @@ onMounted(() => {
 <template>
   <div class="page">
     <div class="box">
-      <div class="header">强制修改密码（解锁账号）</div>
+      <div class="header">Force Change Password (Unlock Account)</div>
 
       <div class="row">
-        <div class="label"><span class="red">*</span>账号:</div>
+        <div class="label"><span class="red">*</span>Account:</div>
         <div class="field">
-          <input v-model="username" class="input" placeholder="请输入账号" />
+          <input v-model="username" class="input" placeholder="Enter account" />
         </div>
       </div>
 
       <div class="row">
-        <div class="label"><span class="red">*</span>角色:</div>
+        <div class="label"><span class="red">*</span>Role:</div>
         <div class="field">
           <select v-model="role" class="input">
-            <option value="MEMBER">会员</option>
-            <option value="AGENT">代理</option>
+            <option value="MEMBER">Member</option>
+            <option value="AGENT">Agent</option>
           </select>
         </div>
       </div>
 
       <div class="row">
-        <div class="label"><span class="red">*</span>原始密码:</div>
+        <div class="label"><span class="red">*</span>Old Password:</div>
         <div class="field">
-          <input v-model="oldPassword" type="password" class="input" placeholder="请输入原始密码" />
+          <input v-model="oldPassword" type="password" class="input" placeholder="Enter old password" />
         </div>
       </div>
 
       <div class="row">
-        <div class="label"><span class="red">*</span>新设密码:</div>
+        <div class="label"><span class="red">*</span>New Password:</div>
         <div class="field">
-          <input v-model="newPassword" type="password" class="input" placeholder="至少6位" />
+          <input v-model="newPassword" type="password" class="input" placeholder="At least 6 characters" />
         </div>
       </div>
 
       <div class="row">
-        <div class="label"><span class="red">*</span>确认密码:</div>
+        <div class="label"><span class="red">*</span>Confirm Password:</div>
         <div class="field">
-          <input v-model="confirmPassword" type="password" class="input" placeholder="再次输入新密码" />
+          <input v-model="confirmPassword" type="password" class="input" placeholder="Re-enter new password" />
         </div>
       </div>
 
       <div class="row row-last">
-        <div class="label"><span class="red">*</span>验证码:</div>
+        <div class="label"><span class="red">*</span>Captcha:</div>
         <div class="field captcha-field">
-          <input v-model="inputCaptcha" class="input captcha-input" placeholder="验证码" maxlength="4" />
+          <input v-model="inputCaptcha" class="input captcha-input" placeholder="Captcha" maxlength="4" />
           <div class="captcha-display" @click="generateCaptcha">
             <span
               v-for="(char, index) in captchaCode"
@@ -150,7 +150,7 @@ onMounted(() => {
 
       <div class="btn-row">
         <button class="btn" :disabled="loading" @click="submit">
-          {{ loading ? '处理中...' : '修改并解锁' }}
+          {{ loading ? 'Processing...' : 'Change & Unlock' }}
         </button>
       </div>
     </div>

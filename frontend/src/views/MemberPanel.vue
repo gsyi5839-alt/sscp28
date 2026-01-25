@@ -17,8 +17,54 @@ onMounted(() => {
   }
 })
 
-const memberLines = ref<any[]>([])
-const agentLines = ref<any[]>([])
+type LineItem = {
+  id: number | string
+  name: string
+  pingMs?: number | null
+  url?: string
+  type?: string
+}
+
+const STORAGE_KEY_MEMBER = 'cachedMemberLines'
+const STORAGE_KEY_AGENT = 'cachedAgentLines'
+
+const DEFAULT_MEMBER_LINES: LineItem[] = [
+  { id: 'm1', name: 'Member Line 1', pingMs: 35, url: '/member/login', type: 'MEMBER' },
+  { id: 'm2', name: 'Member Line 2', pingMs: 42, url: '/member/login', type: 'MEMBER' },
+  { id: 'm3', name: 'Member Line 3', pingMs: 55, url: '/member/login', type: 'MEMBER' },
+  { id: 'm4', name: 'Member Line 4', pingMs: 68, url: '/member/login', type: 'MEMBER' }
+]
+
+const DEFAULT_AGENT_LINES: LineItem[] = [
+  { id: 'a1', name: 'Agent Line 1', pingMs: 40, url: '/agent/login', type: 'AGENT' },
+  { id: 'a2', name: 'Agent Line 2', pingMs: 48, url: '/agent/login', type: 'AGENT' },
+  { id: 'a3', name: 'Agent Line 3', pingMs: 60, url: '/agent/login', type: 'AGENT' },
+  { id: 'a4', name: 'Agent Line 4', pingMs: 75, url: '/agent/login', type: 'AGENT' }
+]
+
+function readCachedLines(key: string, fallback: LineItem[]) {
+  try {
+    const raw = localStorage.getItem(key)
+    if (!raw) return fallback
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed) && parsed.length > 0 ? parsed : fallback
+  } catch {
+    return fallback
+  }
+}
+
+function writeCachedLines(key: string, value: any[]) {
+  try {
+    if (Array.isArray(value) && value.length > 0) {
+      localStorage.setItem(key, JSON.stringify(value))
+    }
+  } catch {
+    // ignore
+  }
+}
+
+const memberLines = ref<LineItem[]>([])
+const agentLines = ref<LineItem[]>([])
 const loading = ref(false)
 
 /**
@@ -65,18 +111,40 @@ const currentLines = () => {
 const loadLines = async () => {
   loading.value = true
   try {
-    const [memberResponse, agentResponse]: any = await Promise.all([
+    const [memberRes, agentRes] = await Promise.allSettled([
       linesApi.getLines('MEMBER'),
       linesApi.getLines('AGENT')
     ])
-    if (memberResponse.code === 200) {
-      memberLines.value = memberResponse.data || []
+
+    const memberResponse: any = memberRes.status === 'fulfilled' ? memberRes.value : null
+    const agentResponse: any = agentRes.status === 'fulfilled' ? agentRes.value : null
+
+    if (memberResponse?.code === 200 && Array.isArray(memberResponse.data) && memberResponse.data.length > 0) {
+      memberLines.value = memberResponse.data
+      writeCachedLines(STORAGE_KEY_MEMBER, memberResponse.data)
+    } else {
+      // Fallback: when API fails/returns empty, use local cache or default lines to avoid blank page
+      memberLines.value = readCachedLines(STORAGE_KEY_MEMBER, DEFAULT_MEMBER_LINES)
     }
-    if (agentResponse.code === 200) {
-      agentLines.value = agentResponse.data || []
+
+    if (agentResponse?.code === 200 && Array.isArray(agentResponse.data) && agentResponse.data.length > 0) {
+      agentLines.value = agentResponse.data
+      writeCachedLines(STORAGE_KEY_AGENT, agentResponse.data)
+    } else {
+      agentLines.value = readCachedLines(STORAGE_KEY_AGENT, DEFAULT_AGENT_LINES)
+    }
+
+    if (
+      (memberRes.status === 'rejected' || agentRes.status === 'rejected') &&
+      (memberLines.value.length > 0 || agentLines.value.length > 0)
+    ) {
+      ElMessage.warning('Line API occasionally blocked, using local fallback lines')
     }
   } catch {
-    ElMessage.error('线路加载失败')
+    // Final fallback
+    memberLines.value = readCachedLines(STORAGE_KEY_MEMBER, DEFAULT_MEMBER_LINES)
+    agentLines.value = readCachedLines(STORAGE_KEY_AGENT, DEFAULT_AGENT_LINES)
+    ElMessage.error('Failed to load lines, using local fallback lines')
   } finally {
     loading.value = false
   }
@@ -96,37 +164,41 @@ onMounted(() => {
       <div class="header">
         <!-- Left Buttons -->
         <div class="header-left">
-          <button 
-            class="btn-member" 
+          <button
+            class="btn-member"
             :class="{ active: activeTab === 'member' }"
             @click="switchTab('member')"
           >
-            会员线路
+            Member Lines
           </button>
-          <button 
+          <button
             class="btn-agent"
             :class="{ active: activeTab === 'agent' }"
             @click="switchTab('agent')"
           >
-            代理线路
+            Agent Lines
           </button>
         </div>
-        
+
         <!-- Center Title -->
         <h1 class="title">
-          <span class="welcome">欢迎光临</span>
-          <span class="brand">冠军</span>
+          <span class="welcome">Welcome</span>
+          <span class="brand">Champion</span>
         </h1>
-        
+
         <!-- Right Buttons -->
         <div class="header-right">
-          <button class="btn-action" @click="testSpeed">测速</button>
-          <button class="btn-action" @click="logout">退出</button>
+          <button class="btn-action" @click="testSpeed">Test Speed</button>
+          <button class="btn-action" @click="logout">Logout</button>
         </div>
       </div>
       
       <!-- Lines Container - 1201x61, 4 items each 299x60 -->
       <div class="lines-container">
+        <div v-if="!loading && currentLines().length === 0" class="empty-lines">
+          No lines available, please try again later or click "Test Speed" to refresh
+        </div>
+
         <div 
           v-for="line in currentLines()" 
           :key="line.id" 
@@ -269,6 +341,16 @@ onMounted(() => {
   border-radius: 8px;
   overflow: hidden;
   box-sizing: border-box;
+}
+
+.empty-lines {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #999999;
+  font-size: 14px;
 }
 
 /* Single line item - fill container height */

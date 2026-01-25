@@ -8,6 +8,11 @@ build/
 target/
 *.class
 
+# Frontend build artifacts deployed to site root
+/assets/
+/index.html
+/style.css
+
 # IDE
 .idea/
 .vscode/

@@ -26,27 +26,27 @@ type GameNavKey =
 const router = useRouter()
 const authStore = useAuthStore()
 
-// 备注：你强调“颜色以截图为准，IDE 复制不对”
-// 这里先把颜色集中在 CSS 变量里，方便你后续按截图微调（无需改结构）。
+// Note: You emphasized "colors based on screenshot, IDE copy is incorrect"
+// Here I've centralized colors in CSS variables for easy fine-tuning later (no need to change structure).
 const topNav = computed((): Array<{ key: TopNavKey; label: string }> => [
-  { key: 'betStatus', label: '下注状况' },
-  { key: 'accountHistory', label: '账户历史' },
-  { key: 'drawResults', label: '开奖结果' },
-  { key: 'profile', label: '个人资料' },
-  { key: 'rules', label: '游戏规则' },
-  { key: 'settings', label: '设置游戏' },
-  { key: 'logout', label: '退出登录' }
+  { key: 'betStatus', label: 'Bet Status' },
+  { key: 'accountHistory', label: 'Account History' },
+  { key: 'drawResults', label: 'Draw Results' },
+  { key: 'profile', label: 'Profile' },
+  { key: 'rules', label: 'Rules' },
+  { key: 'settings', label: 'Settings' },
+  { key: 'logout', label: 'Logout' }
 ])
 
 const gameNav = computed(
   (): Array<{ key: GameNavKey; label: string; badge?: 'new' | 'hot' }> => [
-    { key: 'caPc28', label: '加拿大pc28', badge: 'new' },
-    { key: 'caSsc', label: '加拿大时时彩', badge: 'new' },
-    { key: 'aus10', label: '澳洲幸运10' },
-    { key: 'aus5', label: '澳洲幸运5' },
-    { key: 'happyRacing', label: '欢乐赛车', badge: 'hot' },
-    { key: 'happySsc', label: '欢乐时时彩', badge: 'hot' },
-    { key: 'more', label: '更多游戏' }
+    { key: 'caPc28', label: 'Canada PC28', badge: 'new' },
+    { key: 'caSsc', label: 'Canada SSC', badge: 'new' },
+    { key: 'aus10', label: 'Australia Lucky 10' },
+    { key: 'aus5', label: 'Australia Lucky 5' },
+    { key: 'happyRacing', label: 'Happy Racing', badge: 'hot' },
+    { key: 'happySsc', label: 'Happy SSC', badge: 'hot' },
+    { key: 'more', label: 'More Games' }
   ]
 )
 
@@ -60,21 +60,21 @@ const onTopClick = async (key: TopNavKey) => {
     await router.push('/member/login')
     return
   }
-  // 目前仅实现顶部导航栏 UI，后续你确定每个菜单对应的页面后再补路由。
+  // Currently only implements top nav UI, will add routing for each menu later when you define corresponding pages.
 }
 
 const onGameClick = (key: GameNavKey) => {
   activeGameKey.value = key
-  // 目前仅实现 UI；后续按你的业务映射到不同玩法页面即可。
+  // Currently only implements UI; can map to different game pages according to your business later.
 }
 </script>
 
 <template>
   <div class="header-container">
     <div class="header">
-      <!-- 第一行：站点名 + 顶部导航 -->
+      <!-- First row: Site name + Top navigation -->
       <div class="row row-top">
-        <div class="brand">海富</div>
+        <div class="brand">Sea Fortune</div>
 
         <div class="top-nav">
           <template v-for="(item, idx) in topNav" :key="item.key">
@@ -90,7 +90,7 @@ const onGameClick = (key: GameNavKey) => {
         </div>
       </div>
 
-      <!-- 第二行：游戏导航 -->
+      <!-- Second row: Game navigation -->
       <div class="row row-games">
         <template v-for="item in gameNav" :key="item.key">
           <div
@@ -114,15 +114,15 @@ const onGameClick = (key: GameNavKey) => {
 
 <style scoped>
 /* =========================
- * 颜色 & 尺寸（按截图对齐）
+ * Colors & Sizes (Aligned with screenshot)
  * ========================= */
 .header-container {
-  /* 截图：整体导航条高度约 70px */
+  /* Screenshot: overall nav bar height about 70px */
   height: 70px;
   width: 100%;
   min-width: 1418px;
 
-  /* 先用近似棕色渐变；你给到准确色值后我会替换为“完全一致” */
+  /* Using approximate brown gradient; will replace with exact values after you provide them for "complete match" */
   background: linear-gradient(180deg, var(--nav-brown-1, #6a3a16) 0%, var(--nav-brown-2, #2b1204) 100%);
   color: var(--nav-text, #ffffff);
   font-weight: 700;
@@ -232,7 +232,7 @@ const onGameClick = (key: GameNavKey) => {
 
 .game-text {
   display: inline-block;
-  max-width: 71px; /* 你标注的 text 宽约 71 */
+  max-width: 71px; /* You marked text width about 71 */
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

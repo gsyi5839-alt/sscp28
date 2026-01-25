@@ -56,7 +56,7 @@ const router = createRouter({
       path: '/change-password',
       name: 'changePassword',
       component: () => import('../views/ChangePassword.vue'),
-      meta: { requiresAuth: false }  // 登录后立即跳转，组件内自行验证
+      meta: { requiresAuth: false }  // Redirect immediately after login, component validates internally
     },
     {
       path: '/force-change-password',
@@ -68,7 +68,7 @@ const router = createRouter({
       path: '/user-agreement',
       name: 'userAgreement',
       component: () => import('../views/UserAgreement.vue'),
-      meta: { requiresAuth: false }  // 登录后显示，组件内自行验证
+      meta: { requiresAuth: false }  // Displayed after login, component validates internally
     },
     {
       path: '/game',
@@ -81,9 +81,9 @@ const router = createRouter({
 
 router.beforeEach((to, _from, next) => {
   const authStore = useAuthStore()
-  
+
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
-    // 未登录时跳转到会员登录页面
+    // Redirect to member login page when not logged in
     next({ name: 'memberLogin' })
   } else {
     next()

@@ -3,6 +3,7 @@ package com.bcbbs.backend.service;
 import com.bcbbs.backend.entity.User;
 import com.bcbbs.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.lang.NonNull;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -35,27 +36,31 @@ public class UserService implements UserDetailsService {
         return userRepository.existsByEmail(email);
     }
 
-    public User save(User user) {
+    public User save(@NonNull User user) {
         return userRepository.save(user);
     }
     
     public void changePassword(User user, String oldPassword, String newPassword) {
         // Verify old password
         if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
-            throw new IllegalArgumentException("旧密码不正确");
+            throw new IllegalArgumentException("Old password is incorrect");
         }
-        
-        // 重新从数据库获取用户（确保获取最新数据）
-        User dbUser = userRepository.findById(user.getId())
+
+        // Re-fetch user from database (ensure getting latest data)
+        Long userId = user.getId();
+        if (userId == null) {
+            throw new UsernameNotFoundException("User id is missing");
+        }
+        User dbUser = userRepository.findById(userId)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
-        
+
         // Set new password
         dbUser.setPassword(passwordEncoder.encode(newPassword));
-        
-        // 标记密码已修改，重置登录计数
+
+        // Mark password as changed, reset login count
         dbUser.setPasswordChanged(true);
         dbUser.setLoginCountWithoutChange(0);
-        
+
         userRepository.save(dbUser);
     }
 }

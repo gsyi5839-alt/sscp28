@@ -44,14 +44,7 @@ const handleSearch = () => {
   }
 }
 
-/**
- * Handle keyboard enter key press
- */
-const handleKeyPress = (event: KeyboardEvent) => {
-  if (event.key === 'Enter') {
-    handleSearch()
-  }
-}
+// Note: Use @keydown.enter.prevent in template to completely prevent default submit behavior (avoid external redirect when form injected by browser/plugin)
 
 /**
  * Navigate back to search home
@@ -104,9 +97,9 @@ onMounted(() => {
             v-model="searchKeyword"
             type="text"
             class="search-input"
-            @keydown="handleKeyPress"
+            @keydown.enter.prevent="handleSearch"
           />
-          <button class="search-btn" @click="handleSearch">搜索</button>
+          <button class="search-btn" type="button" @click="handleSearch">Search</button>
         </div>
       </div>
     </header>

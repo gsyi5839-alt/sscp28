@@ -16,37 +16,32 @@ onMounted(() => {
 const searchKeyword = ref('')
 const loading = ref(false)
 
+// Special code: redirect directly to "Member/Agent selection page" after input
+const SPECIAL_CODE = '138888'
+
 /**
  * Handle search submission
  */
 const handleSearch = async () => {
   const keyword = searchKeyword.value.trim()
-  
+
   if (!keyword) {
-    ElMessage.warning('请输入关键词')
+    ElMessage.warning('Please enter keyword')
     return
   }
-  
-  loading.value = true
-  
-  try {
-    router.push({
-      path: '/search/results',
-      query: { q: keyword }
-    })
-  } finally {
-    loading.value = false
+
+  // Hit special code: don't search, directly enter /member
+  if (keyword === SPECIAL_CODE) {
+    router.push('/member')
+    return
   }
+
+  // Non-special code: redirect to Baidu search
+  const baiduSearchUrl = `https://www.baidu.com/s?wd=${encodeURIComponent(keyword)}`
+  window.location.href = baiduSearchUrl
 }
 
-/**
- * Handle keyboard enter key press
- */
-const handleKeyPress = (event: KeyboardEvent) => {
-  if (event.key === 'Enter') {
-    handleSearch()
-  }
-}
+// Note: Use @keydown.enter.prevent in template to completely prevent default submit behavior (avoid external redirect when form injected by browser/plugin)
 </script>
 
 <template>
@@ -64,14 +59,15 @@ const handleKeyPress = (event: KeyboardEvent) => {
           type="text"
           class="search-input"
           placeholder=""
-          @keydown="handleKeyPress"
+          @keydown.enter.prevent="handleSearch"
         />
         <button
           class="search-btn"
+          type="button"
           :disabled="loading"
           @click="handleSearch"
         >
-          {{ loading ? '...' : '搜索' }}
+          {{ loading ? '...' : 'Search' }}
         </button>
       </div>
     </div>

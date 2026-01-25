@@ -21,13 +21,13 @@ export default defineConfig({
     }
   },
   build: {
-    // 重要：outDir 必须与 root/publicDir 分离，且不能指向 root 的父目录，否则 Vite 会警告有覆盖源码风险
-    // 这里统一输出到 frontend/dist；再通过 npm script 安全同步到站点根目录。
+    // Important: outDir must be separate from root/publicDir and cannot point to parent directory of root, otherwise Vite will warn about risk of overwriting source code
+    // Output to frontend/dist uniformly here; then safely sync to site root directory through npm script.
     outDir: 'dist',
     assetsDir: 'assets',
     sourcemap: false,
     minify: 'esbuild',
-    // dist 目录可以放心清空
+    // dist directory can be safely cleared
     emptyOutDir: true
   }
 })

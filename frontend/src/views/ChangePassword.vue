@@ -9,16 +9,16 @@ const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
 
-// 验证用户是否已登录
+// Verify user is logged in
 onMounted(() => {
-  // 仅用于样式预览（避免未登录被重定向，便于你直接在浏览器看 UI）
-  // 示例：/change-password?preview=1
+  // For UI preview only (avoid redirect when not logged in, for direct browser preview)
+  // Example: /change-password?preview=1
   if (route.query.preview === '1') {
     return
   }
 
   if (!authStore.isAuthenticated) {
-    ElMessage.warning('请先登录')
+    ElMessage.warning('Please login first')
     router.push('/member/login')
   }
 })
@@ -33,23 +33,23 @@ const loading = ref(false)
 
 const handleChangePassword = async () => {
   if (!passwordForm.oldPassword) {
-    ElMessage.warning('请输入原始密码')
+    ElMessage.warning('Please enter old password')
     return
   }
   if (!passwordForm.newPassword) {
-    ElMessage.warning('请输入新密码')
+    ElMessage.warning('Please enter new password')
     return
   }
   if (!passwordForm.confirmPassword) {
-    ElMessage.warning('请输入确认密码')
+    ElMessage.warning('Please enter confirm password')
     return
   }
   if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-    ElMessage.error('两次输入的密码不一致')
+    ElMessage.error('Passwords do not match')
     return
   }
   if (passwordForm.newPassword.length < 6) {
-    ElMessage.warning('新密码至少6位')
+    ElMessage.warning('New password must be at least 6 characters')
     return
   }
 
@@ -60,31 +60,22 @@ const handleChangePassword = async () => {
       oldPassword: passwordForm.oldPassword,
       newPassword: passwordForm.newPassword
     })
-    
+
     if (response.code === 200) {
-      ElMessage.success('密码修改成功，请重新登录')
+      ElMessage.success('Password changed successfully')
       passwordForm.oldPassword = ''
       passwordForm.newPassword = ''
       passwordForm.confirmPassword = ''
-      
-      // 根据用户角色跳转到对应的登录页面
-      const userRole = authStore.user?.role
-      authStore.logout()
-      
+
+      // After password change success, redirect directly to user agreement page (without logout)
       setTimeout(() => {
-        if (userRole === 'AGENT') {
-          router.push('/agent/login')
-        } else if (userRole === 'MEMBER') {
-          router.push('/member/login')
-        } else {
-          router.push('/member/login')
-        }
+        router.push('/user-agreement')
       }, 1000)
     } else {
-      ElMessage.error(response.message || '密码修改失败')
+      ElMessage.error(response.message || 'Failed to change password')
     }
   } catch (error: any) {
-    const message = error.response?.data?.message || '密码修改失败'
+    const message = error.response?.data?.message || 'Failed to change password'
     ElMessage.error(message)
   } finally {
     loading.value = false
@@ -95,59 +86,59 @@ const handleChangePassword = async () => {
 <template>
   <div class="page">
     <div class="box">
-      <!-- 标题 -->
+      <!-- Title -->
       <div class="header" align="center">
-        <span class="title-text"> 修改密码 </span>
+        <span class="title-text"> Change Password </span>
       </div>
-      
-      <!-- 原始密码 -->
+
+      <!-- Old Password -->
       <div class="row">
         <div class="label">
-          <span class="red">*</span><span class="label-text">原始密码:</span>
+          <span class="red">*</span><span class="label-text">Old Password:</span>
         </div>
         <div class="field">
-          <input 
-            v-model="passwordForm.oldPassword" 
-            type="password" 
+          <input
+            v-model="passwordForm.oldPassword"
+            type="password"
             class="input"
             @keyup.enter="handleChangePassword"
           />
         </div>
       </div>
-      
-      <!-- 新设密码 -->
+
+      <!-- New Password -->
       <div class="row">
         <div class="label">
-          <span class="red">*</span><span class="label-text">新设密码:</span>
+          <span class="red">*</span><span class="label-text">New Password:</span>
         </div>
         <div class="field">
-          <input 
-            v-model="passwordForm.newPassword" 
-            type="password" 
+          <input
+            v-model="passwordForm.newPassword"
+            type="password"
             class="input"
             @keyup.enter="handleChangePassword"
           />
         </div>
       </div>
-      
-      <!-- 确认密码 -->
+
+      <!-- Confirm Password -->
       <div class="row row-last">
         <div class="label">
-          <span class="red">*</span><span class="label-text">确认密码:</span>
+          <span class="red">*</span><span class="label-text">Confirm Password:</span>
         </div>
         <div class="field">
-          <input 
-            v-model="passwordForm.confirmPassword" 
-            type="password" 
+          <input
+            v-model="passwordForm.confirmPassword"
+            type="password"
             class="input"
             @keyup.enter="handleChangePassword"
           />
         </div>
       </div>
-      
-      <!-- 按钮 -->
+
+      <!-- Button -->
       <div class="btn-row">
-        <button class="btn btn1" :disabled="loading" @click="handleChangePassword">修改密码</button>
+        <button class="btn btn1" :disabled="loading" @click="handleChangePassword">Change Password</button>
       </div>
     </div>
   </div>
@@ -177,7 +168,7 @@ const handleChangePassword = async () => {
   line-height: 30px;
   width: 458px;
   margin: 0 auto;
-  /* 标题背景需要与“原始密码:”行背景一致 */
+  /* Title background should match "Old Password:" row background */
   background: linear-gradient(180deg, #fef8f0 0%, #fef0e0 100%);
   border-bottom: 1px solid #efba84;
 }
@@ -194,7 +185,7 @@ const handleChangePassword = async () => {
   margin: 0 auto;
   border-bottom: 1px solid #efba84;
   box-sizing: border-box;
-  /* 截图：每一行背景是浅色渐变（整行统一，不允许左右出现断层） */
+  /* Screenshot: each row background is light gradient (uniform across row, no left-right disconnect) */
   background: linear-gradient(180deg, #fef8f0 0%, #fef0e0 100%);
 }
 
@@ -211,7 +202,7 @@ const handleChangePassword = async () => {
   font-size: 13px;
   color: #333;
   box-sizing: border-box;
-  /* 关键：使用整行的背景（避免左右颜色不一致） */
+  /* Key: use inherited background from row (avoid left-right color mismatch) */
   background: inherit !important;
 }
 
@@ -232,7 +223,7 @@ const handleChangePassword = async () => {
   padding-left: 10px;
   border-left: 1px solid #efba84;
   box-sizing: border-box;
-  /* 关键：右侧必须同样有底色（你标注的“没有颜色的”区域就在这里） */
+  /* Key: right side must also have background color (this is the "no color" area you marked) */
   background: inherit !important;
 }
 

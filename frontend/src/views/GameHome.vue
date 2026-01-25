@@ -15,10 +15,10 @@ onMounted(() => {
   <div class="page">
     <GameHeader />
     <div class="content">
-      <!-- 先按你的要求：优先把顶部导航栏做出来。
-           后续你再给“首页主体区域”的 DOM/截图，我继续补齐布局。 -->
+      <!-- First priority per your request: implement top navigation bar.
+           Later you provide "home page main body" DOM/screenshot, I'll continue to complete the layout. -->
       <div class="placeholder">
-        游戏首页（主体内容待接入）
+        Game Home (Main content to be implemented)
       </div>
     </div>
   </div>

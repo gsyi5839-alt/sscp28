@@ -52,7 +52,6 @@ export const useAuthStore = defineStore('auth', () => {
           nickname: response.data.nickname,
           role: response.data.role
         }
-        ElMessage.success('Login successful!')
         return true
       }
       return false
@@ -79,7 +78,6 @@ export const useAuthStore = defineStore('auth', () => {
       })
       if (response.code === 200) {
         setSession(response.data)
-        ElMessage.success('Login successful!')
         return {
           success: true,
           needPasswordChange: response.data.needPasswordChange,
@@ -130,7 +128,6 @@ export const useAuthStore = defineStore('auth', () => {
 
   const logout = () => {
     clearAuth()
-    ElMessage.success('Logged out successfully')
   }
 
   return {

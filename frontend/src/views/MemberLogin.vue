@@ -38,7 +38,7 @@ const generateCaptcha = async () => {
   } catch {
     captchaCode.value = ''
     captchaToken.value = ''
-    ElMessage.error('验证码加载失败')
+    ElMessage.error('Failed to load captcha')
   }
 }
 
@@ -55,22 +55,22 @@ const getRandomColor = (index: number) => {
 const handleLogin = async () => {
   // Validate form
   if (!loginForm.value.account.trim()) {
-    ElMessage.warning('请输入账号')
+    ElMessage.warning('Please enter account')
     return
   }
   if (!loginForm.value.password.trim()) {
-    ElMessage.warning('请输入密码')
+    ElMessage.warning('Please enter password')
     return
   }
   if (!loginForm.value.captcha.trim()) {
-    ElMessage.warning('请输入验证码')
+    ElMessage.warning('Please enter captcha')
     return
   }
   loading.value = true
 
   try {
     if (!captchaToken.value) {
-      ElMessage.warning('验证码未加载，请刷新')
+      ElMessage.warning('Captcha not loaded, please refresh')
       return
     }
     const result = await authStore.loginWithRole(
@@ -81,18 +81,17 @@ const handleLogin = async () => {
       loginForm.value.captcha
     )
     if (result.success) {
-      // 如果需要修改密码，强制跳转到修改密码页面
+      // If password change required, force redirect to change password page
       if (result.needPasswordChange) {
-        // 强制跳转到修改密码页面
+        // Force redirect to change password page
         router.push('/change-password')
         return
       }
-      // 已修改过密码：已同意过协议则直接进游戏，否则先去用户协议
-      const accepted = localStorage.getItem('userAgreementAccepted') === 'true'
-      router.push(accepted ? '/game' : '/user-agreement')
+      // Password already changed: always redirect to user agreement page on login
+      router.push('/user-agreement')
     } else {
-      // 账号被停用（历史逻辑导致）时，引导到“强制修改密码”解锁页
-      if (result.status === 403 && result.errorMessage && result.errorMessage.includes('账户已停用')) {
+      // When account is disabled (due to legacy logic), guide to "force change password" unlock page
+      if (result.status === 403 && result.errorMessage && result.errorMessage.includes('Account disabled')) {
         router.push({ path: '/force-change-password', query: { role: 'MEMBER', username: loginForm.value.account } })
         return
       }
@@ -100,7 +99,7 @@ const handleLogin = async () => {
       loginForm.value.captcha = ''
     }
   } catch (error) {
-    ElMessage.error('登录失败，请重试')
+    ElMessage.error('Login failed, please try again')
   } finally {
     loading.value = false
   }
@@ -133,34 +132,34 @@ onMounted(() => {
         <div class="form-content">
           <!-- Account input -->
           <div class="form-row">
-            <label class="form-label">账号：</label>
+            <label class="form-label">Account:</label>
             <input
               v-model="loginForm.account"
               type="text"
               class="form-input"
-              placeholder="请输入账号"
+              placeholder="Enter account"
             />
           </div>
 
           <!-- Password input -->
           <div class="form-row">
-            <label class="form-label">密码：</label>
+            <label class="form-label">Password:</label>
             <input
               v-model="loginForm.password"
               type="password"
               class="form-input"
-              placeholder="请输入密码"
+              placeholder="Enter password"
             />
           </div>
 
           <!-- Captcha input -->
           <div class="form-row">
-            <label class="form-label">验证码：</label>
+            <label class="form-label">Captcha:</label>
             <input
               v-model="loginForm.captcha"
               type="text"
               class="form-input captcha-input"
-              placeholder="验证码"
+              placeholder="Captcha"
               maxlength="4"
             />
             <!-- Captcha display -->
@@ -183,7 +182,7 @@ onMounted(() => {
               :disabled="loading"
               @click="handleLogin"
             >
-              {{ loading ? '...' : '登录' }}
+              {{ loading ? '...' : 'Login' }}
             </button>
           </div>
         </div>

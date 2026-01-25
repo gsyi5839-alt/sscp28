@@ -53,7 +53,7 @@ const handleLogout = () => {
               <el-dropdown-menu>
                 <el-dropdown-item @click="router.push('/change-password')">
                   <el-icon><Lock /></el-icon>
-                  修改密码
+                  Change Password
                 </el-dropdown-item>
                 <el-dropdown-item @click="router.push('/')">
                   <el-icon><House /></el-icon>

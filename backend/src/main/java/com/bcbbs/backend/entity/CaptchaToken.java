@@ -32,6 +32,7 @@ public class CaptchaToken {
     private LocalDateTime expiresAt;
 
     @Column(nullable = false)
+    @Builder.Default
     private Boolean used = false;
 }
 

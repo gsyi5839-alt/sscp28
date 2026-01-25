@@ -1,0 +1,12 @@
+/* 
+ * Backward-compatible stylesheet.
+ * Some older cached entry HTML (or browser extensions) may still try to load `/style.css`.
+ * Keep it lightweight and safe.
+ */
+
+html, body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
+    Arial, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC",
+    "Noto Sans SC", "Source Han Sans SC", sans-serif;
+}
+

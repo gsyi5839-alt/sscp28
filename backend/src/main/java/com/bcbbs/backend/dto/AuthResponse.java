@@ -17,10 +17,10 @@ public class AuthResponse {
     private String nickname;
     private String role;
     
-    // 是否需要修改密码
+    // Whether password change is required
     private Boolean needPasswordChange;
-    
-    // 未修改密码的登录次数
+
+    // Number of logins without password change
     private Integer loginCountWithoutChange;
 }
 

@@ -14,25 +14,24 @@ onMounted(() => {
   }
 })
 
-// 不同意 - 返回会员登录页
+// Disagree - return to member login page
 const handleDisagree = () => {
   authStore.logout()
   router.push('/member/login')
 }
 
-// 同意 - 进入线路页面
+// Agree - enter game home page
 const handleAgree = () => {
-  localStorage.setItem('userAgreementAccepted', 'true')
-  // 同意后进入“游戏首页”（按需求新建页面）
+  // Directly enter game home page
   router.push('/game')
 }
 </script>
 
 <template>
   <div class="home-container">
-    <!-- 上部分：1.png (980x634) - 标题和内容框背景 -->
+    <!-- Top section: 1.png (980x634) - title and content box background -->
     <div class="home-wrapper">
-      <!-- 内容文字区域 - 放在内容框里面 -->
+      <!-- Content text area - placed inside content box -->
       <div class="home-content">
         <p>1，使用本公司网站的客户，请留意您所在的国家或居住地的相关法律规定，如有疑问应就相关问题，寻求当地法律意见。</p>
         
@@ -40,7 +39,7 @@ const handleAgree = () => {
         
         <p>3、为避免纠纷，各会员在投注之后，请务必进入下注状况检查及打印数据。若发现任何异常，请立即与代理商联系查证，一切投注将以本公司数据库的数据为准，不得异议。如出现特殊网络情况或线路不稳定导致不能下注或下注失败。本公司概不负责。</p>
         
-        <p>4、单期同玩法最高派彩上限为<b class="color-blue">二百万</b>。</p>
+        <p>4、单期同玩法最高派彩上限为<b class="color-red">二百万</b>。</p>
         
         <p>5、开奖结果以官方公布的结果为准。</p>
         
@@ -53,10 +52,10 @@ const handleAgree = () => {
         <p class="text-center mt10">我了解以及同意下注列明的协定和规则。</p>
       </div>
     </div>
-    
-    <!-- 下部分：2.png (980x161) - 按钮在图片上 -->
+
+    <!-- Bottom section: 2.png (980x161) - buttons on image -->
     <div class="home-footer">
-      <!-- 透明点击区域覆盖在图片按钮上 -->
+      <!-- Transparent click areas overlaid on image buttons -->
       <span class="btn-area btn-disagree-area" @click="handleDisagree"></span>
       <span class="btn-area btn-agree-area" @click="handleAgree"></span>
     </div>
@@ -64,7 +63,7 @@ const handleAgree = () => {
 </template>
 
 <style scoped>
-/* 主容器 */
+/* Main container */
 .home-container {
   min-height: 100vh;
   width: 100%;
@@ -75,7 +74,7 @@ const handleAgree = () => {
   justify-content: center;
 }
 
-/* 上部分 - 背景图1（980x634）*/
+/* Top section - background image 1 (980x634) */
 .home-wrapper {
   width: 980px;
   height: 634px;
@@ -89,7 +88,7 @@ const handleAgree = () => {
   position: relative;
 }
 
-/* 下部分 - 背景图2（980x161）- 按钮在图片上 */
+/* Bottom section - background image 2 (980x161) - buttons on image */
 .home-footer {
   width: 980px;
   height: 161px;
@@ -98,7 +97,7 @@ const handleAgree = () => {
   position: relative;
 }
 
-/* 透明点击区域 */
+/* Transparent click areas */
 .btn-area {
   position: absolute;
   width: 120px;
@@ -107,17 +106,17 @@ const handleAgree = () => {
   top: 16px;
 }
 
-/* 不同意按钮点击区域 - 左侧 */
+/* Disagree button click area - left side */
 .btn-disagree-area {
   left: 355px;
 }
 
-/* 同意按钮点击区域 - 右侧 */
+/* Agree button click area - right side */
 .btn-agree-area {
   left: 505px;
 }
 
-/* 内容文字区域 540x416 */
+/* Content text area 540x416 */
 .home-content {
   width: 540px;
   height: 416px;
@@ -134,29 +133,36 @@ const handleAgree = () => {
   text-shadow: none;
 }
 
-/* 蓝色高亮文字 */
+/* Blue highlighted text */
 .color-blue {
   color: #00BFFF;
   font-weight: normal;
   text-decoration: underline;
 }
 
-/* 右对齐 */
+/* Red highlighted text */
+.color-red {
+  color: #ff0000;
+  font-weight: normal;
+  text-decoration: underline;
+}
+
+/* Right align */
 .text-right {
   text-align: right !important;
 }
 
-/* 居中 */
+/* Center */
 .text-center {
   text-align: center !important;
 }
 
-/* 上边距 */
+/* Top margin */
 .mt10 {
   margin-top: 10px !important;
 }
 
-/* 移动端适配 */
+/* Mobile responsive */
 @media screen and (max-width: 1024px) {
   .home-container {
     overflow-x: auto;

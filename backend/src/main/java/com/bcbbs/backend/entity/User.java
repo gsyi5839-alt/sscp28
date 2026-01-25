@@ -42,17 +42,21 @@ public class User implements UserDetails {
     
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
+    @Builder.Default
     private Role role = Role.USER;
-    
+
     @Column(nullable = false)
+    @Builder.Default
     private Boolean enabled = true;
-    
-    // 是否已修改过初始密码
+
+    // Whether the initial password has been changed
     @Column(name = "password_changed")
+    @Builder.Default
     private Boolean passwordChanged = false;
-    
-    // 未修改密码的登录次数（超过2次将停用）
+
+    // Number of logins without password change (account will be disabled after exceeding 2 times)
     @Column(name = "login_count_without_change")
+    @Builder.Default
     private Integer loginCountWithoutChange = 0;
     
     @Column(name = "created_at")

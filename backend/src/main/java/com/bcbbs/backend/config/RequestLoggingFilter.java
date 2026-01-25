@@ -19,26 +19,26 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
- * API请求日志过滤器
- * 记录所有HTTP请求和响应的详细信息
+ * API request logging filter
+ * Logs detailed information for all HTTP requests and responses
  */
 @Slf4j
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE)
 public class RequestLoggingFilter implements Filter {
 
-    // 专用于API日志的Logger
+    // Logger dedicated to API logs
     private static final Logger API_LOG = LoggerFactory.getLogger("API");
-    
-    // 需要记录请求体的Content-Type
+
+    // Content-Types that need request body logging
     private static final String[] LOGGABLE_CONTENT_TYPES = {
             "application/json",
             "application/xml",
             "text/xml",
             "text/plain"
     };
-    
-    // 不记录日志的路径（如静态资源）
+
+    // Paths to skip logging (such as static resources)
     private static final String[] SKIP_PATHS = {
             "/favicon.ico",
             "/assets/",
@@ -49,46 +49,47 @@ public class RequestLoggingFilter implements Filter {
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
             throws IOException, ServletException {
-        
+
         HttpServletRequest httpRequest = (HttpServletRequest) request;
         HttpServletResponse httpResponse = (HttpServletResponse) response;
-        
-        // 检查是否需要跳过日志
+
+        // Check if logging should be skipped
         String requestURI = httpRequest.getRequestURI();
         if (shouldSkipLogging(requestURI)) {
             chain.doFilter(request, response);
             return;
         }
-        
-        // 生成请求ID
+
+        // Generate request ID
         String requestId = UUID.randomUUID().toString().substring(0, 8).toUpperCase();
-        
-        // 包装请求和响应以便读取内容
+
+        // Wrap request and response to read content
         ContentCachingRequestWrapper wrappedRequest = new ContentCachingRequestWrapper(httpRequest);
+        @SuppressWarnings("null")
         ContentCachingResponseWrapper wrappedResponse = new ContentCachingResponseWrapper(httpResponse);
-        
+
         long startTime = System.currentTimeMillis();
-        
+
         try {
-            // 记录请求开始
+            // Log request start
             logRequestStart(requestId, wrappedRequest);
-            
-            // 执行请求
+
+            // Execute request
             chain.doFilter(wrappedRequest, wrappedResponse);
-            
+
         } finally {
             long duration = System.currentTimeMillis() - startTime;
-            
-            // 记录请求结束
+
+            // Log request end
             logRequestEnd(requestId, wrappedRequest, wrappedResponse, duration);
-            
-            // 将响应内容复制到原始响应
+
+            // Copy response content to original response
             wrappedResponse.copyBodyToResponse();
         }
     }
 
     /**
-     * 检查是否应该跳过日志记录
+     * Check if logging should be skipped
      */
     private boolean shouldSkipLogging(String uri) {
         for (String skipPath : SKIP_PATHS) {
@@ -100,7 +101,7 @@ public class RequestLoggingFilter implements Filter {
     }
 
     /**
-     * 记录请求开始
+     * Log request start
      */
     private void logRequestStart(String requestId, ContentCachingRequestWrapper request) {
         String clientIp = getClientIp(request);
@@ -108,95 +109,95 @@ public class RequestLoggingFilter implements Filter {
         String uri = request.getRequestURI();
         String queryString = request.getQueryString();
         String fullUrl = queryString != null ? uri + "?" + queryString : uri;
-        
-        // 获取请求头（隐藏敏感信息）
+
+        // Get request headers (hide sensitive information)
         String headers = Collections.list(request.getHeaderNames()).stream()
                 .filter(name -> !name.equalsIgnoreCase("authorization") && !name.equalsIgnoreCase("cookie"))
                 .map(name -> name + "=" + request.getHeader(name))
                 .collect(Collectors.joining(", "));
-        
-        API_LOG.info("[{}] >>> {} {} | IP: {} | Headers: [{}]", 
+
+        API_LOG.info("[{}] >>> {} {} | IP: {} | Headers: [{}]",
                 requestId, method, fullUrl, clientIp, headers);
     }
 
     /**
-     * 记录请求结束
+     * Log request end
      */
     private void logRequestEnd(String requestId, ContentCachingRequestWrapper request,
                                ContentCachingResponseWrapper response, long duration) {
         int status = response.getStatus();
         String statusDesc = getStatusDescription(status);
-        
-        // 获取请求体（如果是JSON类型）
+
+        // Get request body (if JSON type)
         String requestBody = getRequestBody(request);
-        
-        // 获取响应体（如果是JSON类型）
+
+        // Get response body (if JSON type)
         String responseBody = getResponseBody(response);
-        
-        // 根据状态码决定日志级别
+
+        // Determine log level based on status code
         if (status >= 500) {
-            API_LOG.error("[{}] <<< {} {} | Duration: {}ms | Request: {} | Response: {}", 
+            API_LOG.error("[{}] <<< {} {} | Duration: {}ms | Request: {} | Response: {}",
                     requestId, status, statusDesc, duration, requestBody, responseBody);
         } else if (status >= 400) {
-            API_LOG.warn("[{}] <<< {} {} | Duration: {}ms | Request: {} | Response: {}", 
+            API_LOG.warn("[{}] <<< {} {} | Duration: {}ms | Request: {} | Response: {}",
                     requestId, status, statusDesc, duration, requestBody, responseBody);
         } else {
-            API_LOG.info("[{}] <<< {} {} | Duration: {}ms | Request: {} | Response: {}", 
-                    requestId, status, statusDesc, duration, 
+            API_LOG.info("[{}] <<< {} {} | Duration: {}ms | Request: {} | Response: {}",
+                    requestId, status, statusDesc, duration,
                     truncate(requestBody, 500), truncate(responseBody, 500));
         }
-        
-        // 记录慢请求
+
+        // Log slow requests
         if (duration > 3000) {
-            log.warn("[SLOW_REQUEST] [{}] 请求耗时 {}ms - {} {}", 
+            log.warn("[SLOW_REQUEST] [{}] Request took {}ms - {} {}",
                     requestId, duration, request.getMethod(), request.getRequestURI());
         }
     }
 
     /**
-     * 获取请求体
+     * Get request body
      */
     private String getRequestBody(ContentCachingRequestWrapper request) {
         if (!isLoggableContentType(request.getContentType())) {
-            return "[非JSON内容]";
+            return "[Non-JSON content]";
         }
-        
+
         byte[] content = request.getContentAsByteArray();
         if (content.length == 0) {
-            return "[空]";
+            return "[Empty]";
         }
-        
+
         String body = new String(content, StandardCharsets.UTF_8);
-        // 隐藏密码字段
+        // Hide password fields
         body = body.replaceAll("\"password\"\\s*:\\s*\"[^\"]*\"", "\"password\":\"*****\"");
         body = body.replaceAll("\"oldPassword\"\\s*:\\s*\"[^\"]*\"", "\"oldPassword\":\"*****\"");
         body = body.replaceAll("\"newPassword\"\\s*:\\s*\"[^\"]*\"", "\"newPassword\":\"*****\"");
-        
+
         return body;
     }
 
     /**
-     * 获取响应体
+     * Get response body
      */
     private String getResponseBody(ContentCachingResponseWrapper response) {
         if (!isLoggableContentType(response.getContentType())) {
-            return "[非JSON内容]";
+            return "[Non-JSON content]";
         }
-        
+
         byte[] content = response.getContentAsByteArray();
         if (content.length == 0) {
-            return "[空]";
+            return "[Empty]";
         }
-        
+
         String body = new String(content, StandardCharsets.UTF_8);
-        // 隐藏token字段
+        // Hide token field
         body = body.replaceAll("\"token\"\\s*:\\s*\"[^\"]*\"", "\"token\":\"*****\"");
-        
+
         return body;
     }
 
     /**
-     * 检查Content-Type是否需要记录
+     * Check if Content-Type needs logging
      */
     private boolean isLoggableContentType(String contentType) {
         if (contentType == null) {
@@ -211,17 +212,17 @@ public class RequestLoggingFilter implements Filter {
     }
 
     /**
-     * 截断过长的内容
+     * Truncate overly long content
      */
     private String truncate(String content, int maxLength) {
         if (content == null || content.length() <= maxLength) {
             return content;
         }
-        return content.substring(0, maxLength) + "...[截断]";
+        return content.substring(0, maxLength) + "...[Truncated]";
     }
 
     /**
-     * 获取客户端IP
+     * Get client IP
      */
     private String getClientIp(HttpServletRequest request) {
         String ip = request.getHeader("X-Forwarded-For");
@@ -241,7 +242,7 @@ public class RequestLoggingFilter implements Filter {
     }
 
     /**
-     * 获取HTTP状态码描述
+     * Get HTTP status code description
      */
     private String getStatusDescription(int status) {
         return switch (status) {

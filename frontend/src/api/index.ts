@@ -2,7 +2,8 @@ import axios from 'axios'
 import { ElMessage } from 'element-plus'
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8080/api',
+  // Prefer build-time configuration; otherwise default to same-domain /api (production uses Nginx reverse proxy, local dev uses Vite proxy)
+  baseURL: import.meta.env.VITE_API_URL || '/api',
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json'
@@ -13,7 +14,10 @@ const api = axios.create({
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token')
-    if (token) {
+    // Don't send token to public/auth endpoints: avoid 403 on public endpoints caused by residual bad token in local storage
+    const url = config.url || ''
+    const isPublicOrAuth = url.startsWith('/public/') || url.startsWith('/auth/')
+    if (token && !isPublicOrAuth) {
       config.headers.Authorization = `Bearer ${token}`
     }
     return config
@@ -68,12 +72,14 @@ export const healthApi = {
 
 // Search API
 export const searchApi = {
-  search: (keyword: string) => api.get('/public/search', { params: { q: keyword } })
+  // Add t parameter to avoid occasional issues caused by intermediate caching/WAF false positives (backend ignores unknown parameters)
+  search: (keyword: string) => api.get('/public/search', { params: { q: keyword, t: Date.now() } })
 }
 
 // Lines API
 export const linesApi = {
-  getLines: (type: 'MEMBER' | 'AGENT') => api.get('/public/lines', { params: { type } })
+  // Add t parameter to avoid occasional issues caused by intermediate caching/WAF false positives (backend ignores unknown parameters)
+  getLines: (type: 'MEMBER' | 'AGENT') => api.get('/public/lines', { params: { type, t: Date.now() } })
 }
 
 // Captcha API

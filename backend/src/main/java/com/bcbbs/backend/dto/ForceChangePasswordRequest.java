@@ -7,9 +7,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * 强制修改密码请求：
- * - 解决账号因“未修改初始密码”被停用后无法登录、无法进入修改密码页的死锁问题
- * - 通过 captcha + 原密码校验后允许修改密码并自动解锁账号
+ * Force password change request:
+ * - Resolves the deadlock issue where account is disabled for "not changing initial password" and cannot login or access password change page
+ * - Allows password change and automatic account unlock after captcha + old password verification
  */
 @Data
 @NoArgsConstructor
@@ -26,7 +26,7 @@ public class ForceChangePasswordRequest {
     private String oldPassword;
 
     @NotBlank(message = "New password is required")
-    @Size(min = 6, message = "新密码至少6位")
+    @Size(min = 6, message = "New password must be at least 6 characters")
     private String newPassword;
 
     @NotBlank(message = "Captcha token is required")

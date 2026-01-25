@@ -40,10 +40,12 @@ public class AccessLine {
 
     // Whether the line is available to users
     @Column(nullable = false)
+    @Builder.Default
     private Boolean active = true;
 
     // Sort order for display
     @Column(name = "sort_order", nullable = false)
+    @Builder.Default
     private Integer sortOrder = 0;
 
     // Latest measured latency in milliseconds (optional)

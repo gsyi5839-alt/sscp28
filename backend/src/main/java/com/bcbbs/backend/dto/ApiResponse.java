@@ -19,10 +19,10 @@ public class ApiResponse<T> {
     private String message;
     private T data;
     
-    // 错误追踪ID，仅在出错时返回
+    // Error tracking ID, returned only on error
     private String errorId;
-    
-    // 时间戳，仅在出错时返回
+
+    // Timestamp, returned only on error
     private LocalDateTime timestamp;
     
     public static <T> ApiResponse<T> success(T data) {
@@ -50,7 +50,7 @@ public class ApiResponse<T> {
     }
     
     /**
-     * 带错误ID的错误响应，方便追踪问题
+     * Error response with error ID for easier issue tracking
      */
     public static <T> ApiResponse<T> error(int code, String message, String errorId) {
         return ApiResponse.<T>builder()

@@ -24,6 +24,7 @@ public class CaptchaService {
     /**
      * Create and persist a new captcha token.
      */
+    @SuppressWarnings("null")
     public CaptchaResponse createCaptcha() {
         String token = UUID.randomUUID().toString().replace("-", "");
         String code = generateCode();

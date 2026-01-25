@@ -16,6 +16,8 @@ import org.springframework.web.bind.annotation.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Objects;
+
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
@@ -31,18 +33,18 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<AuthResponse>> login(@Valid @RequestBody AuthRequest request) {
-        logger.info("========== 普通登录请求开始 ==========");
-        logger.info("请求参数 - 用户名: {}", request.getUsername());
-        
+        logger.info("========== Standard login request started ==========");
+        logger.info("Request parameters - Username: {}", request.getUsername());
+
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
         );
-        
+
         User user = (User) authentication.getPrincipal();
-        logger.info("认证成功 - 用户: {}, 角色: {}", user.getUsername(), user.getRole());
-        
+        logger.info("Authentication successful - User: {}, Role: {}", user.getUsername(), user.getRole());
+
         String token = jwtService.generateToken(user);
-        
+
         AuthResponse authResponse = AuthResponse.builder()
                 .token(token)
                 .username(user.getUsername())
@@ -50,141 +52,141 @@ public class AuthController {
                 .nickname(user.getNickname())
                 .role(user.getRole().name())
                 .build();
-        
-        logger.info("========== 普通登录请求完成 ==========\n");
+
+        logger.info("========== Standard login request completed ==========\n");
         return ResponseEntity.ok(ApiResponse.success("Login successful", authResponse));
     }
 
     /**
      * Login with a required role and captcha validation.
-     * 包含强制修改密码逻辑：
-     * - 第一次登录：提示修改密码
-     * - 第二次登录未修改：再次提示
-     * - 第三次及以后：仍提示并强制修改密码（不再永久停用，避免“无法登录也无法改密”的死锁）
+     * Contains forced password change logic:
+     * - First login: Prompt for password change
+     * - Second login without change: Prompt again
+     * - Third login and beyond: Continue prompting and require password change (no longer permanently disabled to avoid "cannot login and cannot change password" deadlock)
      */
     @PostMapping("/role-login")
     public ResponseEntity<ApiResponse<AuthResponse>> roleLogin(@Valid @RequestBody RoleLoginRequest request) {
-        logger.info("========== 角色登录请求开始 ==========");
-        logger.info("请求参数 - 用户名: {}, 角色: {}, 验证码Token: {}", 
+        logger.info("========== Role login request started ==========");
+        logger.info("Request parameters - Username: {}, Role: {}, Captcha Token: {}",
             request.getUsername(), request.getRole(), request.getCaptchaToken());
-        
+
         boolean captchaValid = captchaService.validateCaptcha(request.getCaptchaToken(), request.getCaptchaCode());
-        logger.info("验证码验证结果: {}", captchaValid);
-        
+        logger.info("Captcha validation result: {}", captchaValid);
+
         if (!captchaValid) {
-            logger.warn("验证码验证失败 - 用户: {}", request.getUsername());
+            logger.warn("Captcha validation failed - User: {}", request.getUsername());
             return ResponseEntity.badRequest()
                     .body(ApiResponse.error(400, "Invalid captcha"));
         }
 
-        // 先探测用户状态：如果账号已被"未改初始密码"机制停用，则引导走强制改密解锁接口
-        // 这里不走 AuthenticationManager（因为 disabled 会被 Spring Security 直接拦截）
+        // First probe user status: if account is disabled by "initial password not changed" mechanism, guide to forced password change endpoint
+        // Don't use AuthenticationManager here (because disabled will be directly blocked by Spring Security)
         try {
             User probe = userService.findByUsername(request.getUsername());
-            logger.info("用户探测 - 用户名: {}, 是否启用: {}, 角色: {}, 密码已修改: {}, 登录次数: {}", 
-                probe.getUsername(), probe.getEnabled(), probe.getRole(), 
+            logger.info("User probe - Username: {}, Enabled: {}, Role: {}, Password changed: {}, Login count: {}",
+                probe.getUsername(), probe.getEnabled(), probe.getRole(),
                 probe.getPasswordChanged(), probe.getLoginCountWithoutChange());
-            
+
             if (Boolean.FALSE.equals(probe.getEnabled())
                     && (probe.getRole() == User.Role.MEMBER || probe.getRole() == User.Role.AGENT)
                     && Boolean.FALSE.equals(probe.getPasswordChanged())) {
-                logger.warn("账户已停用 - 用户: {}, 原因: 连续登录未修改初始密码", probe.getUsername());
+                logger.warn("Account disabled - User: {}, Reason: Consecutive logins without changing initial password", probe.getUsername());
                 return ResponseEntity.status(403)
-                        .body(ApiResponse.error(403, "账户已停用：连续3次登录未修改初始密码，请前往【强制修改密码】解锁"));
+                        .body(ApiResponse.error(403, "Account disabled: Logged in 3 times consecutively without changing initial password, please go to [Force Change Password] to unlock"));
             }
         } catch (Exception e) {
-            logger.warn("用户探测失败 - 用户名: {}, 错误: {}", request.getUsername(), e.getMessage());
-            // 找不到用户等情况由后续 authenticationManager 处理（返回统一错误）
+            logger.warn("User probe failed - Username: {}, Error: {}", request.getUsername(), e.getMessage());
+            // Cases like user not found will be handled by subsequent authenticationManager (return unified error)
         }
 
-        logger.info("开始Spring Security认证 - 用户名: {}", request.getUsername());
+        logger.info("Starting Spring Security authentication - Username: {}", request.getUsername());
         Authentication authentication;
         try {
             authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
             );
-            logger.info("Spring Security认证成功 - 用户名: {}", request.getUsername());
+            logger.info("Spring Security authentication successful - Username: {}", request.getUsername());
         } catch (Exception e) {
-            logger.error("Spring Security认证失败 - 用户名: {}, 错误: {}", request.getUsername(), e.getMessage());
+            logger.error("Spring Security authentication failed - Username: {}, Error: {}", request.getUsername(), e.getMessage());
             throw e;
         }
 
         User user = (User) authentication.getPrincipal();
-        logger.info("认证用户信息 - ID: {}, 用户名: {}, 角色: {}, 邮箱: {}", 
+        logger.info("Authenticated user info - ID: {}, Username: {}, Role: {}, Email: {}",
             user.getId(), user.getUsername(), user.getRole(), user.getEmail());
-        
+
         User.Role requiredRole;
         try {
             requiredRole = User.Role.valueOf(request.getRole().toUpperCase());
-            logger.info("请求的角色: {}, 用户实际角色: {}", requiredRole, user.getRole());
+            logger.info("Requested role: {}, User actual role: {}", requiredRole, user.getRole());
         } catch (IllegalArgumentException ex) {
-            logger.error("无效的角色参数: {}", request.getRole());
+            logger.error("Invalid role parameter: {}", request.getRole());
             return ResponseEntity.badRequest()
                     .body(ApiResponse.error(400, "Invalid role"));
         }
 
         if (user.getRole() != requiredRole) {
-            logger.warn("角色不匹配 - 请求角色: {}, 实际角色: {}", requiredRole, user.getRole());
+            logger.warn("Role mismatch - Requested role: {}, Actual role: {}", requiredRole, user.getRole());
             return ResponseEntity.status(403)
                     .body(ApiResponse.error(403, "Role mismatch"));
         }
-        
-        logger.info("角色验证通过 - 角色: {}", requiredRole);
 
-        // 检查密码修改状态（对MEMBER和AGENT角色）
-        logger.info("========== 开始检查密码修改状态 ==========");
+        logger.info("Role verification passed - Role: {}", requiredRole);
+
+        // Check password change status (for MEMBER and AGENT roles)
+        logger.info("========== Starting password change status check ==========");
         Boolean needPasswordChange = false;
-        
+
         if (user.getRole() == User.Role.MEMBER || user.getRole() == User.Role.AGENT) {
             Boolean passwordChanged = user.getPasswordChanged();
             Integer loginCount = user.getLoginCountWithoutChange();
-            
-            logger.info("【重要】用户 {} 登录 - 数据库原始值:", user.getUsername());
+
+            logger.info("[IMPORTANT] User {} login - Database original values:", user.getUsername());
             logger.info("  - passwordChanged = {}", passwordChanged);
             logger.info("  - loginCount = {}", loginCount);
-            logger.info("  - 用户角色 = {}", user.getRole());
-            
-            // 处理null值
+            logger.info("  - User role = {}", user.getRole());
+
+            // Handle null values
             if (passwordChanged == null) {
-                logger.info("  - passwordChanged 为 NULL，设置为 false");
+                logger.info("  - passwordChanged is NULL, setting to false");
                 passwordChanged = false;
             }
             if (loginCount == null) {
-                logger.info("  - loginCount 为 NULL，设置为 0");
+                logger.info("  - loginCount is NULL, setting to 0");
                 loginCount = 0;
             }
-            
-            logger.info("【判断】passwordChanged = {}, 是否需要修改密码？", passwordChanged);
-            
-            // 如果未修改密码
+
+            logger.info("[DECISION] passwordChanged = {}, Does password need to be changed?", passwordChanged);
+
+            // If password not changed
             if (!passwordChanged) {
-                // 设置需要修改密码标志
+                // Set need password change flag
                 needPasswordChange = true;
-                logger.info("✅ 【关键】用户未修改过密码，设置 needPasswordChange = true");
-                
-                // 增加未修改密码的登录次数（先增加再判断）
+                logger.info("✅ [KEY] User has not changed password, setting needPasswordChange = true");
+
+                // Increment login count without password change (increment first then check)
                 loginCount = loginCount + 1;
                 user.setLoginCountWithoutChange(loginCount);
-                
-                logger.info("【更新】登录次数从 {} 增加到 {}", (loginCount - 1), loginCount);
-                
-                // 不再停用账户，避免死锁。仅记录次数并由前端强制跳转改密页。
+
+                logger.info("[UPDATE] Login count increased from {} to {}", (loginCount - 1), loginCount);
+
+                // No longer disable account to avoid deadlock. Only record count and let frontend force redirect to password change page.
                 userService.save(user);
-                logger.info("【保存】用户数据已更新到数据库");
+                logger.info("[SAVE] User data has been updated to database");
             } else {
                 needPasswordChange = false;
-                logger.info("✅ 用户 {} 已修改过密码 (passwordChanged=true)，无需强制修改", user.getUsername());
+                logger.info("✅ User {} has already changed password (passwordChanged=true), no forced change needed", user.getUsername());
             }
         } else {
-            logger.info("用户角色 {} 不是 MEMBER 或 AGENT，跳过密码检查", user.getRole());
+            logger.info("User role {} is not MEMBER or AGENT, skipping password check", user.getRole());
         }
-        
-        logger.info("========== 密码检查完成，needPasswordChange = {} ==========", needPasswordChange);
 
-        logger.info("========== 生成响应数据 ==========");
+        logger.info("========== Password check completed, needPasswordChange = {} ==========", needPasswordChange);
+
+        logger.info("========== Generating response data ==========");
         String token = jwtService.generateToken(user);
-        logger.info("JWT Token 已生成");
-        
+        logger.info("JWT Token generated");
+
         AuthResponse authResponse = AuthResponse.builder()
                 .token(token)
                 .username(user.getUsername())
@@ -194,8 +196,8 @@ public class AuthController {
                 .needPasswordChange(needPasswordChange)
                 .loginCountWithoutChange(user.getLoginCountWithoutChange())
                 .build();
-        
-        logger.info("【最终响应】AuthResponse 构建完成:");
+
+        logger.info("[FINAL RESPONSE] AuthResponse built:");
         logger.info("  - username: {}", authResponse.getUsername());
         logger.info("  - role: {}", authResponse.getRole());
         logger.info("  - email: {}", authResponse.getEmail());
@@ -203,71 +205,76 @@ public class AuthController {
         logger.info("  - 🔴 needPasswordChange: {}", authResponse.getNeedPasswordChange());
         logger.info("  - loginCountWithoutChange: {}", authResponse.getLoginCountWithoutChange());
         logger.info("  - token: {}...", token.substring(0, Math.min(20, token.length())));
-        
-        logger.info("========== 角色登录请求完成，返回 200 OK ==========\n");
+
+        logger.info("========== Role login request completed, returning 200 OK ==========\n");
         return ResponseEntity.ok(ApiResponse.success("Login successful", authResponse));
     }
 
     /**
-     * 强制修改密码并解锁账号（无需登录 token）
-     * 用于解决"账号因未修改初始密码被停用后无法登录、无法进入改密页"的死锁。
+     * Force change password and unlock account (no login token required)
+     * Used to solve the deadlock: "account disabled due to not changing initial password, cannot login, cannot access password change page".
      */
     @PostMapping("/force-change-password")
     public ResponseEntity<ApiResponse<AuthResponse>> forceChangePassword(
             @Valid @RequestBody ForceChangePasswordRequest request
     ) {
-        logger.info("========== 强制修改密码请求开始 ==========");
-        logger.info("请求参数 - 用户名: {}, 角色: {}", request.getUsername(), request.getRole());
-        
+        logger.info("========== Force change password request started ==========");
+        logger.info("Request parameters - Username: {}, Role: {}", request.getUsername(), request.getRole());
+
         boolean captchaValid = captchaService.validateCaptcha(request.getCaptchaToken(), request.getCaptchaCode());
-        logger.info("验证码验证结果: {}", captchaValid);
-        
+        logger.info("Captcha validation result: {}", captchaValid);
+
         if (!captchaValid) {
-            logger.warn("验证码验证失败");
+            logger.warn("Captcha validation failed");
             return ResponseEntity.badRequest()
                     .body(ApiResponse.error(400, "Invalid captcha"));
         }
 
         User user = userService.findByUsername(request.getUsername());
-        logger.info("查找用户 - 用户名: {}, 找到: {}", request.getUsername(), (user != null));
+        logger.info("User lookup - Username: {}, Found: {}", request.getUsername(), (user != null));
+        if (user == null) {
+            // Defensive null guard for static analysis tools; findByUsername should normally throw if not found.
+            return ResponseEntity.status(404)
+                    .body(ApiResponse.error(404, "User not found"));
+        }
 
         User.Role requiredRole;
         try {
             requiredRole = User.Role.valueOf(request.getRole().toUpperCase());
-            logger.info("角色验证 - 请求角色: {}", requiredRole);
+            logger.info("Role validation - Requested role: {}", requiredRole);
         } catch (IllegalArgumentException ex) {
-            logger.error("无效的角色参数: {}", request.getRole());
+            logger.error("Invalid role parameter: {}", request.getRole());
             return ResponseEntity.badRequest()
                     .body(ApiResponse.error(400, "Invalid role"));
         }
-        
+
         if (user.getRole() != requiredRole) {
-            logger.warn("角色不匹配 - 请求: {}, 实际: {}", requiredRole, user.getRole());
+            logger.warn("Role mismatch - Requested: {}, Actual: {}", requiredRole, user.getRole());
             return ResponseEntity.status(403)
                     .body(ApiResponse.error(403, "Role mismatch"));
         }
 
-        // 校验旧密码（用数据库中的 hash）
-        logger.info("验证旧密码...");
+        // Validate old password (using database hash)
+        logger.info("Validating old password...");
         if (!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
-            logger.warn("旧密码验证失败 - 用户: {}", user.getUsername());
+            logger.warn("Old password validation failed - User: {}", user.getUsername());
             return ResponseEntity.badRequest()
-                    .body(ApiResponse.error(400, "旧密码不正确"));
+                    .body(ApiResponse.error(400, "Old password is incorrect"));
         }
 
-        // 更新密码 + 解锁 + 标记已改密
-        logger.info("旧密码验证通过，更新新密码...");
+        // Update password + unlock + mark as password changed
+        logger.info("Old password validation passed, updating new password...");
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         user.setPasswordChanged(true);
         user.setLoginCountWithoutChange(0);
         user.setEnabled(true);
         userService.save(user);
-        logger.info("密码更新成功 - 用户: {}, passwordChanged=true, loginCount=0, enabled=true", 
+        logger.info("Password update successful - User: {}, passwordChanged=true, loginCount=0, enabled=true",
             user.getUsername());
 
         String token = jwtService.generateToken(user);
-        logger.info("生成新的JWT Token");
-        
+        logger.info("Generated new JWT Token");
+
         AuthResponse authResponse = AuthResponse.builder()
                 .token(token)
                 .username(user.getUsername())
@@ -277,9 +284,9 @@ public class AuthController {
                 .needPasswordChange(false)
                 .loginCountWithoutChange(0)
                 .build();
-        
-        logger.info("========== 强制修改密码请求完成 ==========\n");
-        return ResponseEntity.ok(ApiResponse.success("密码修改成功，账号已解锁", authResponse));
+
+        logger.info("========== Force change password request completed ==========\n");
+        return ResponseEntity.ok(ApiResponse.success("Password changed successfully, account unlocked", authResponse));
     }
 
     @PostMapping("/register")
@@ -303,7 +310,7 @@ public class AuthController {
                 .enabled(true)
                 .build();
         
-        user = userService.save(user);
+        user = userService.save(Objects.requireNonNull(user, "user must not be null"));
         String token = jwtService.generateToken(user);
         
         AuthResponse authResponse = AuthResponse.builder()
@@ -337,14 +344,18 @@ public class AuthController {
             Authentication authentication) {
         try {
             User user = (User) authentication.getPrincipal();
+            logger.info("Change password request - User: {}", user.getUsername());
             userService.changePassword(user, request.getOldPassword(), request.getNewPassword());
-            return ResponseEntity.ok(ApiResponse.success("密码修改成功", null));
+            logger.info("Password changed successfully - User: {}", user.getUsername());
+            return ResponseEntity.ok(ApiResponse.success("Password changed successfully", null));
         } catch (IllegalArgumentException e) {
+            logger.warn("Password change failed - Invalid parameter: {}", e.getMessage());
             return ResponseEntity.badRequest()
                     .body(ApiResponse.error(400, e.getMessage()));
         } catch (Exception e) {
+            logger.error("Password change failed - System error: ", e);
             return ResponseEntity.status(500)
-                    .body(ApiResponse.error(500, "密码修改失败"));
+                    .body(ApiResponse.error(500, "Password change failed: " + e.getMessage()));
         }
     }
 }
