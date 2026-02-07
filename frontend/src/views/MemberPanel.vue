@@ -29,17 +29,17 @@ const STORAGE_KEY_MEMBER = 'cachedMemberLines'
 const STORAGE_KEY_AGENT = 'cachedAgentLines'
 
 const DEFAULT_MEMBER_LINES: LineItem[] = [
-  { id: 'm1', name: 'Member Line 1', pingMs: 35, url: '/member/login', type: 'MEMBER' },
-  { id: 'm2', name: 'Member Line 2', pingMs: 42, url: '/member/login', type: 'MEMBER' },
-  { id: 'm3', name: 'Member Line 3', pingMs: 55, url: '/member/login', type: 'MEMBER' },
-  { id: 'm4', name: 'Member Line 4', pingMs: 68, url: '/member/login', type: 'MEMBER' }
+  { id: 'm1', name: '会员线路 1', pingMs: 35, url: '/member/login', type: 'MEMBER' },
+  { id: 'm2', name: '会员线路 2', pingMs: 42, url: '/member/login', type: 'MEMBER' },
+  { id: 'm3', name: '会员线路 3', pingMs: 55, url: '/member/login', type: 'MEMBER' },
+  { id: 'm4', name: '会员线路 4', pingMs: 68, url: '/member/login', type: 'MEMBER' }
 ]
 
 const DEFAULT_AGENT_LINES: LineItem[] = [
-  { id: 'a1', name: 'Agent Line 1', pingMs: 40, url: '/agent/login', type: 'AGENT' },
-  { id: 'a2', name: 'Agent Line 2', pingMs: 48, url: '/agent/login', type: 'AGENT' },
-  { id: 'a3', name: 'Agent Line 3', pingMs: 60, url: '/agent/login', type: 'AGENT' },
-  { id: 'a4', name: 'Agent Line 4', pingMs: 75, url: '/agent/login', type: 'AGENT' }
+  { id: 'a1', name: '代理线路 1', pingMs: 40, url: '/agent/login', type: 'AGENT' },
+  { id: 'a2', name: '代理线路 2', pingMs: 48, url: '/agent/login', type: 'AGENT' },
+  { id: 'a3', name: '代理线路 3', pingMs: 60, url: '/agent/login', type: 'AGENT' },
+  { id: 'a4', name: '代理线路 4', pingMs: 75, url: '/agent/login', type: 'AGENT' }
 ]
 
 function readCachedLines(key: string, fallback: LineItem[]) {
@@ -138,13 +138,13 @@ const loadLines = async () => {
       (memberRes.status === 'rejected' || agentRes.status === 'rejected') &&
       (memberLines.value.length > 0 || agentLines.value.length > 0)
     ) {
-      ElMessage.warning('Line API occasionally blocked, using local fallback lines')
+      ElMessage.warning('线路API偶尔被阻止，使用本地备用线路')
     }
   } catch {
     // Final fallback
     memberLines.value = readCachedLines(STORAGE_KEY_MEMBER, DEFAULT_MEMBER_LINES)
     agentLines.value = readCachedLines(STORAGE_KEY_AGENT, DEFAULT_AGENT_LINES)
-    ElMessage.error('Failed to load lines, using local fallback lines')
+    ElMessage.error('加载线路失败，使用本地备用线路')
   } finally {
     loading.value = false
   }
@@ -169,34 +169,34 @@ onMounted(() => {
             :class="{ active: activeTab === 'member' }"
             @click="switchTab('member')"
           >
-            Member Lines
+            会员线路
           </button>
           <button
             class="btn-agent"
             :class="{ active: activeTab === 'agent' }"
             @click="switchTab('agent')"
           >
-            Agent Lines
+            代理线路
           </button>
         </div>
 
         <!-- Center Title -->
         <h1 class="title">
-          <span class="welcome">Welcome</span>
-          <span class="brand">Champion</span>
+          <span class="welcome">欢迎</span>
+          <span class="brand">冠军</span>
         </h1>
 
         <!-- Right Buttons -->
         <div class="header-right">
-          <button class="btn-action" @click="testSpeed">Test Speed</button>
-          <button class="btn-action" @click="logout">Logout</button>
+          <button class="btn-action" @click="testSpeed">测速</button>
+          <button class="btn-action" @click="logout">退出</button>
         </div>
       </div>
       
       <!-- Lines Container - 1201x61, 4 items each 299x60 -->
       <div class="lines-container">
         <div v-if="!loading && currentLines().length === 0" class="empty-lines">
-          No lines available, please try again later or click "Test Speed" to refresh
+          暂无可用线路，请稍后重试或点击"测速"刷新
         </div>
 
         <div 

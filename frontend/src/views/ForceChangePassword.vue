@@ -16,38 +16,35 @@ const oldPassword = ref('')
 const newPassword = ref('')
 const confirmPassword = ref('')
 
-const captchaCode = ref('')
+const captchaImage = ref('')
 const captchaToken = ref('')
 const inputCaptcha = ref('')
-const captchaColors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD']
 
 const loading = ref(false)
-
-const getRandomColor = (index: number) => captchaColors[index % captchaColors.length]
 
 const generateCaptcha = async () => {
   try {
     const response: any = await captchaApi.getCaptcha()
     if (response.code === 200) {
-      captchaCode.value = response.data.code
+      captchaImage.value = response.data.image
       captchaToken.value = response.data.token
       inputCaptcha.value = ''
     }
   } catch {
-    captchaCode.value = ''
+    captchaImage.value = ''
     captchaToken.value = ''
-    ElMessage.error('Failed to load captcha')
+    ElMessage.error('验证码加载失败')
   }
 }
 
 const submit = async () => {
-  if (!username.value.trim()) return ElMessage.warning('Please enter account')
-  if (!oldPassword.value.trim()) return ElMessage.warning('Please enter old password')
-  if (!newPassword.value.trim()) return ElMessage.warning('Please enter new password')
-  if (newPassword.value.length < 6) return ElMessage.warning('New password must be at least 6 characters')
-  if (newPassword.value !== confirmPassword.value) return ElMessage.error('Passwords do not match')
-  if (!inputCaptcha.value.trim()) return ElMessage.warning('Please enter captcha')
-  if (!captchaToken.value) return ElMessage.warning('Captcha not loaded, please refresh')
+  if (!username.value.trim()) return ElMessage.warning('请输入账号')
+  if (!oldPassword.value.trim()) return ElMessage.warning('请输入旧密码')
+  if (!newPassword.value.trim()) return ElMessage.warning('请输入新密码')
+  if (newPassword.value.length < 6) return ElMessage.warning('新密码至少6位')
+  if (newPassword.value !== confirmPassword.value) return ElMessage.error('两次密码不一致')
+  if (!inputCaptcha.value.trim()) return ElMessage.warning('请输入验证码')
+  if (!captchaToken.value) return ElMessage.warning('验证码未加载，请刷新')
 
   loading.value = true
   try {
@@ -61,7 +58,7 @@ const submit = async () => {
     })
 
     if (response.code === 200) {
-      ElMessage.success('Password changed successfully, account unlocked')
+      ElMessage.success('密码修改成功，账户已解锁')
       authStore.setSession(response.data)
 
       // Redirect based on role
@@ -91,66 +88,59 @@ onMounted(() => {
 <template>
   <div class="page">
     <div class="box">
-      <div class="header">Force Change Password (Unlock Account)</div>
+      <div class="header">强制修改密码（解锁账户）</div>
 
       <div class="row">
-        <div class="label"><span class="red">*</span>Account:</div>
+        <div class="label"><span class="red">*</span>账号：</div>
         <div class="field">
-          <input v-model="username" class="input" placeholder="Enter account" />
+          <input v-model="username" class="input" placeholder="请输入账号" />
         </div>
       </div>
 
       <div class="row">
-        <div class="label"><span class="red">*</span>Role:</div>
+        <div class="label"><span class="red">*</span>角色：</div>
         <div class="field">
           <select v-model="role" class="input">
-            <option value="MEMBER">Member</option>
-            <option value="AGENT">Agent</option>
+            <option value="MEMBER">会员</option>
+            <option value="AGENT">代理</option>
           </select>
         </div>
       </div>
 
       <div class="row">
-        <div class="label"><span class="red">*</span>Old Password:</div>
+        <div class="label"><span class="red">*</span>旧密码：</div>
         <div class="field">
-          <input v-model="oldPassword" type="password" class="input" placeholder="Enter old password" />
+          <input v-model="oldPassword" type="password" class="input" placeholder="请输入旧密码" />
         </div>
       </div>
 
       <div class="row">
-        <div class="label"><span class="red">*</span>New Password:</div>
+        <div class="label"><span class="red">*</span>新密码：</div>
         <div class="field">
-          <input v-model="newPassword" type="password" class="input" placeholder="At least 6 characters" />
+          <input v-model="newPassword" type="password" class="input" placeholder="至少6位字符" />
         </div>
       </div>
 
       <div class="row">
-        <div class="label"><span class="red">*</span>Confirm Password:</div>
+        <div class="label"><span class="red">*</span>确认密码：</div>
         <div class="field">
-          <input v-model="confirmPassword" type="password" class="input" placeholder="Re-enter new password" />
+          <input v-model="confirmPassword" type="password" class="input" placeholder="再次输入新密码" />
         </div>
       </div>
 
       <div class="row row-last">
-        <div class="label"><span class="red">*</span>Captcha:</div>
+        <div class="label"><span class="red">*</span>验证码：</div>
         <div class="field captcha-field">
-          <input v-model="inputCaptcha" class="input captcha-input" placeholder="Captcha" maxlength="4" />
+          <input v-model="inputCaptcha" class="input captcha-input" placeholder="验证码" maxlength="4" />
           <div class="captcha-display" @click="generateCaptcha">
-            <span
-              v-for="(char, index) in captchaCode"
-              :key="index"
-              class="captcha-char"
-              :style="{ color: getRandomColor(index) }"
-            >
-              {{ char }}
-            </span>
+            <img v-if="captchaImage" :src="captchaImage" alt="captcha" class="captcha-img" />
           </div>
         </div>
       </div>
 
       <div class="btn-row">
         <button class="btn" :disabled="loading" @click="submit">
-          {{ loading ? 'Processing...' : 'Change & Unlock' }}
+          {{ loading ? '处理中...' : '修改并解锁' }}
         </button>
       </div>
     </div>
@@ -263,10 +253,10 @@ onMounted(() => {
   user-select: none;
 }
 
-.captcha-char {
-  font-weight: 700;
-  font-size: 16px;
-  margin: 0 1px;
+.captcha-img {
+  width: 90px;
+  height: 28px;
+  object-fit: contain;
 }
 </style>
 

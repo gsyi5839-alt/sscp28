@@ -1,169 +1,256 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
-import iconNew from '@/assets/图标/新.png'
-import iconHot from '@/assets/图标/热.png'
+import logoImg from '@/assets/通用/logo.png'
 
-type TopNavKey =
-  | 'betStatus'
-  | 'accountHistory'
-  | 'drawResults'
-  | 'profile'
-  | 'rules'
-  | 'settings'
-  | 'logout'
-
-type GameNavKey =
-  | 'caPc28'
-  | 'caSsc'
-  | 'aus10'
-  | 'aus5'
-  | 'happyRacing'
-  | 'happySsc'
-  | 'more'
+/* ============ 类型 ============ */
+interface NavItem { key: string; label: string }
+interface GameItem { key: string; label: string; badge?: 'new' | 'hot' }
+interface SubNavItem { key: string; label: string }
 
 const router = useRouter()
 const authStore = useAuthStore()
 
-// Note: You emphasized "colors based on screenshot, IDE copy is incorrect"
-// Here I've centralized colors in CSS variables for easy fine-tuning later (no need to change structure).
-const topNav = computed((): Array<{ key: TopNavKey; label: string }> => [
-  { key: 'betStatus', label: 'Bet Status' },
-  { key: 'accountHistory', label: 'Account History' },
-  { key: 'drawResults', label: 'Draw Results' },
-  { key: 'profile', label: 'Profile' },
-  { key: 'rules', label: 'Rules' },
-  { key: 'settings', label: 'Settings' },
-  { key: 'logout', label: 'Logout' }
-])
+/* ============ 顶部导航 ============ */
+const topNav: NavItem[] = [
+  { key: 'betStatus', label: '下注状况' },
+  { key: 'accountHistory', label: '账户历史' },
+  { key: 'drawResults', label: '开奖结果' },
+  { key: 'profile', label: '个人资料' },
+  { key: 'rules', label: '游戏规则' },
+  { key: 'settings', label: '设置游戏' },
+  { key: 'logout', label: '退出登录' },
+]
 
-const gameNav = computed(
-  (): Array<{ key: GameNavKey; label: string; badge?: 'new' | 'hot' }> => [
-    { key: 'caPc28', label: 'Canada PC28', badge: 'new' },
-    { key: 'caSsc', label: 'Canada SSC', badge: 'new' },
-    { key: 'aus10', label: 'Australia Lucky 10' },
-    { key: 'aus5', label: 'Australia Lucky 5' },
-    { key: 'happyRacing', label: 'Happy Racing', badge: 'hot' },
-    { key: 'happySsc', label: 'Happy SSC', badge: 'hot' },
-    { key: 'more', label: 'More Games' }
-  ]
-)
+/* ============ 游戏导航 ============ */
+const gameNav: GameItem[] = [
+  { key: 'caPc28', label: '加拿大pc28', badge: 'new' },
+  { key: 'caSsc', label: '加拿大时时彩', badge: 'new' },
+  { key: 'aus10', label: '澳洲幸运10' },
+  { key: 'aus5', label: '澳洲幸运5' },
+  { key: 'happyRacing', label: '欢乐赛车', badge: 'hot' },
+  { key: 'happySsc', label: '欢乐时时彩', badge: 'hot' },
+]
 
-const activeTopKey = ref<TopNavKey>('betStatus')
-const activeGameKey = ref<GameNavKey>('caPc28')
+/* ============ 更多游戏下拉 ============ */
+const moreGames: GameItem[] = [
+  { key: 'luckyPlane', label: '幸运飞艇' },
+  { key: 'speedRacing', label: '极速赛车' },
+  { key: 'speedSsc', label: '极速时时彩' },
+  { key: 'lucky168', label: '168幸运飞艇' },
+  { key: 'lottery5', label: '体彩乐透5' },
+  { key: 'lottery10', label: '体彩乐透10' },
+]
 
-const onTopClick = async (key: TopNavKey) => {
-  activeTopKey.value = key
+/* ============ 子导航（menus 栏） ============ */
+const subNav: SubNavItem[] = [
+  { key: 'twoSides', label: '两面盘' },
+  { key: 'ball13', label: '1-3球' },
+]
+
+/* ============ 主题色 ============ */
+const themeColors = [
+  { key: 'purple', color: '#b654a7' },
+  { key: 'green', color: '#4a8e57' },
+  { key: 'teal', color: '#518594' },
+  { key: 'blue', color: '#28a3ef' },
+  { key: 'brown', color: '#be9d76' },
+]
+
+/* ============ 状态 ============ */
+const activeGameKey = ref('caPc28')
+const activeSubKey = ref('twoSides')
+const activeTheme = ref('brown') // 默认棕色主题
+
+/* ============ 事件处理 ============ */
+const onTopClick = async (key: string) => {
   if (key === 'logout') {
     authStore.logout()
     await router.push('/member/login')
     return
   }
-  // Currently only implements top nav UI, will add routing for each menu later when you define corresponding pages.
+  // 其他导航功能待后续实现
 }
 
-const onGameClick = (key: GameNavKey) => {
+const onGameClick = (key: string) => {
   activeGameKey.value = key
-  // Currently only implements UI; can map to different game pages according to your business later.
+}
+
+const onMoreGameClick = (key: string) => {
+  activeGameKey.value = key
+}
+
+const onSubNavClick = (key: string) => {
+  activeSubKey.value = key
+}
+
+const onThemeClick = (key: string) => {
+  activeTheme.value = key
+  // 后续可实现主题切换逻辑
 }
 </script>
 
 <template>
   <div class="header-container">
+    <!-- ====== 主导航区域 (70px) ====== -->
     <div class="header">
-      <!-- First row: Site name + Top navigation -->
-      <div class="row row-top">
-        <div class="brand">Sea Fortune</div>
+      <div class="header-inner">
+        <!-- 第一行：Logo + 顶部导航 -->
+        <div class="row-top">
+          <!-- Logo -->
+          <div class="brand">
+            <img :src="logoImg" alt="BW" class="brand-logo" />
+            <span class="brand-name">海源</span>
+          </div>
 
-        <div class="top-nav">
-          <template v-for="(item, idx) in topNav" :key="item.key">
-            <span
-              class="top-item"
-              :class="{ active: item.key === activeTopKey }"
-              @click="onTopClick(item.key)"
-            >
-              {{ item.label }}
-            </span>
-            <span v-if="idx !== topNav.length - 1" class="sep">|</span>
-          </template>
+          <!-- 顶部功能导航 -->
+          <div class="top-nav">
+            <template v-for="(item, idx) in topNav" :key="item.key">
+              <span class="top-item" @click="onTopClick(item.key)">
+                {{ item.label }}
+              </span>
+              <span v-if="idx !== topNav.length - 1" class="sep">|</span>
+            </template>
+          </div>
         </div>
-      </div>
 
-      <!-- Second row: Game navigation -->
-      <div class="row row-games">
-        <template v-for="item in gameNav" :key="item.key">
+        <!-- 第二行：游戏导航 -->
+        <div class="row-games">
+          <!-- 主要游戏 -->
           <div
+            v-for="item in gameNav"
+            :key="item.key"
             class="game-item"
             :class="{
               active: item.key === activeGameKey,
               'is-new': item.badge === 'new',
-              'is-hot': item.badge === 'hot'
+              'is-hot': item.badge === 'hot',
             }"
             @click="onGameClick(item.key)"
           >
-            <span class="game-text">{{ item.label }}</span>
-            <img v-if="item.badge === 'new'" class="badge" :src="iconNew" alt="new" />
-            <img v-else-if="item.badge === 'hot'" class="badge" :src="iconHot" alt="hot" />
+            {{ item.label }}
           </div>
-        </template>
+
+          <!-- 更多游戏（下拉） -->
+          <el-popover
+            placement="bottom"
+            :width="124"
+            trigger="hover"
+            popper-class="more-games-popover"
+          >
+            <template #reference>
+              <div class="game-item">更多游戏</div>
+            </template>
+            <div
+              v-for="(mg, idx) in moreGames"
+              :key="mg.key"
+              class="more-game-item"
+              :class="{ 'mb5': idx !== moreGames.length - 1 }"
+              @click="onMoreGameClick(mg.key)"
+            >
+              {{ mg.label }}
+            </div>
+          </el-popover>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====== 子导航栏 (31px) ====== -->
+    <div class="menus">
+      <!-- 主题颜色切换 -->
+      <div class="theme-colors">
+        <div
+          v-for="tc in themeColors"
+          :key="tc.key"
+          class="theme-dot"
+          :style="{ background: tc.color }"
+          :class="{ 'theme-active': tc.key === activeTheme }"
+          @click="onThemeClick(tc.key)"
+        />
+      </div>
+
+      <!-- 子导航项 -->
+      <div class="menus-center">
+        <div class="sub-nav">
+          <template v-for="(item, idx) in subNav" :key="item.key">
+            <span
+              class="sub-item"
+              :class="{ active: item.key === activeSubKey }"
+              @click="onSubNavClick(item.key)"
+            >
+              {{ item.label }}
+            </span>
+            <span v-if="idx !== subNav.length - 1" class="sub-sep">|</span>
+          </template>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <style scoped>
-/* =========================
- * Colors & Sizes (Aligned with screenshot)
- * ========================= */
+/* ========================= 整体容器 ========================= */
 .header-container {
-  /* Screenshot: overall nav bar height about 70px */
-  height: 70px;
   width: 100%;
   min-width: 1418px;
-
-  /* Using approximate brown gradient; will replace with exact values after you provide them for "complete match" */
-  background: linear-gradient(180deg, var(--nav-brown-1, #6a3a16) 0%, var(--nav-brown-2, #2b1204) 100%);
-  color: var(--nav-text, #ffffff);
+  color: #ffffff;
   font-weight: 700;
 }
 
+/* ========================= 主导航 (70px) ========================= */
 .header {
-  width: 1418px;
+  height: 70px;
+  width: 100%;
+  background: linear-gradient(180deg, #6a3a16 0%, #2b1204 100%);
+}
+
+.header-inner {
+  width: 100%;
+  max-width: 1418px;
   height: 70px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: 6px 12px;
-  gap: 6px;
+  padding: 0 12px;
   box-sizing: border-box;
 }
 
-.row {
+/* ---------- 第一行：Logo + 顶部导航 ---------- */
+.row-top {
   display: flex;
   align-items: center;
-  width: 100%;
-}
-
-.row-top {
   height: 30px;
   line-height: 30px;
+  margin-bottom: 6px;
 }
 
 .brand {
+  display: flex;
+  align-items: center;
   flex: 0 0 auto;
-  margin-right: 14px;
-  font-size: 16px;
-  letter-spacing: 1px;
+  margin-right: 20px;
+}
+
+.brand-logo {
+  height: 36px;
+  width: auto;
+  margin-right: 8px;
+}
+
+.brand-name {
+  font-size: 20px;
+  letter-spacing: 2px;
+  white-space: nowrap;
 }
 
 .top-nav {
-  flex: 1 1 auto;
   display: flex;
   align-items: center;
   overflow: hidden;
-  white-space: nowrap;
+  height: 30px;
+  line-height: 30px;
 }
 
 .top-item {
@@ -177,27 +264,30 @@ const onGameClick = (key: GameNavKey) => {
   padding: 0 5px;
   cursor: pointer;
   user-select: none;
-  color: var(--nav-text, #ffffff);
+  color: #ffffff;
+  transition: color 0.15s;
 }
 
 .top-item:hover {
-  color: var(--nav-hover, #fcff00);
+  color: #fcff00;
 }
 
 .sep {
   display: inline-block;
-  width: 4px;
-  height: 30px;
-  line-height: 30px;
-  text-align: center;
-  opacity: 0.9;
-  margin: 0 6px;
-}
-
-.row-games {
   height: 22px;
   line-height: 22px;
-  gap: 0;
+  text-align: center;
+  opacity: 0.7;
+  font-weight: 400;
+  font-size: 13px;
+}
+
+/* ---------- 第二行：游戏导航 ---------- */
+.row-games {
+  display: flex;
+  align-items: center;
+  height: 22px;
+  line-height: 22px;
 }
 
 .game-item {
@@ -210,33 +300,123 @@ const onGameClick = (key: GameNavKey) => {
   font-weight: 400;
   cursor: pointer;
   user-select: none;
-  color: var(--nav-text, #ffffff);
+  color: #ffffff;
+  transition: color 0.15s;
 }
 
-.game-item:hover {
-  color: var(--nav-hover, #fcff00);
-}
-
+.game-item:hover,
 .game-item.active {
-  color: var(--nav-hover, #fcff00);
+  color: #fcff00;
 }
 
-.badge {
+/* "新" 角标 */
+.game-item.is-new::after {
+  content: '';
   position: absolute;
-  top: 1px;
-  right: 4px;
+  top: -6px;
+  right: 2px;
   width: 20px;
-  height: 20px;
+  height: 14px;
+  background: url('@/assets/图标/新.png') no-repeat center / contain;
   pointer-events: none;
 }
 
-.game-text {
-  display: inline-block;
-  max-width: 71px; /* You marked text width about 71 */
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  vertical-align: top;
+/* "热" 角标 */
+.game-item.is-hot::after {
+  content: '';
+  position: absolute;
+  top: -6px;
+  right: 2px;
+  width: 20px;
+  height: 14px;
+  background: url('@/assets/图标/热.png') no-repeat center / contain;
+  pointer-events: none;
+}
+
+/* ========================= 子导航栏 menus (31px) ========================= */
+.menus {
+  height: 31px;
+  width: 100%;
+  background: linear-gradient(180deg, #f5e6d0 0%, #e8d3b8 100%);
+  display: flex;
+  align-items: center;
+}
+
+/* ---------- 主题色圆点 ---------- */
+.theme-colors {
+  display: flex;
+  align-items: center;
+  padding-left: 40px;
+  margin-right: 65px;
+}
+
+.theme-dot {
+  width: 18px;
+  height: 18px;
+  margin-right: 3px;
+  cursor: pointer;
+  border-radius: 2px;
+  border: 1px solid transparent;
+  transition: border-color 0.2s;
+}
+
+.theme-dot:hover,
+.theme-dot.theme-active {
+  border-color: #fff;
+  box-shadow: 0 0 3px rgba(0,0,0,0.3);
+}
+
+/* ---------- 子导航项 ---------- */
+.menus-center {
+  flex: 1;
+}
+
+.sub-nav {
+  display: flex;
+  align-items: center;
+}
+
+.sub-item {
+  margin: 0 5px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--bw-default-color, #8b5e3c);
+  transition: color 0.15s;
+}
+
+.sub-item:hover {
+  color: red;
+}
+
+.sub-item.active {
+  color: red !important;
+}
+
+.sub-sep {
+  color: #000;
+  font-size: 13px;
+  font-weight: 400;
+}
+
+/* ========================= 更多游戏下拉项 ========================= */
+.more-game-item {
+  width: 100px;
+  height: 22px;
+  line-height: 22px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 400;
+  color: #ffffff;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.more-game-item:hover {
+  color: #fcff00;
+}
+
+.mb5 {
+  margin-bottom: 5px;
 }
 </style>
-

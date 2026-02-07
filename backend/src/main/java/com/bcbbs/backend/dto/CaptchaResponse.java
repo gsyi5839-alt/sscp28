@@ -14,7 +14,8 @@ import java.time.LocalDateTime;
 public class CaptchaResponse {
 
     private String token;
-    private String code;
+    // Base64-encoded SVG data URI for display.
+    private String image;
     private LocalDateTime expiresAt;
 }
 

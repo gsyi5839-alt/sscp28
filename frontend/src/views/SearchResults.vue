@@ -7,22 +7,28 @@ const route = useRoute()
 const router = useRouter()
 const searchKeyword = ref('')
 const results = ref<any[]>([])
+const page = ref(1)
+const size = ref(20)
+const total = ref(0)
 const loading = ref(false)
 
 /**
  * Fetch search results from API
  * @param keyword - Search keyword
  */
-const fetchResults = async (keyword: string) => {
+const fetchResults = async (keyword: string, pageNumber = 1) => {
   if (!keyword) return
   
   loading.value = true
   results.value = []
   
   try {
-    const response: any = await searchApi.search(keyword)
+    const response: any = await searchApi.search(keyword, pageNumber, size.value)
     if (response.code === 200) {
-      results.value = response.data || []
+      results.value = response.data?.list || []
+      page.value = response.data?.page || pageNumber
+      size.value = response.data?.size || size.value
+      total.value = response.data?.total || 0
     }
   } catch (error) {
     console.error('Search error:', error)
@@ -39,7 +45,7 @@ const handleSearch = () => {
   if (keyword) {
     router.push({
       path: '/search/results',
-      query: { q: keyword }
+      query: { q: keyword, page: '1' }
     })
   }
 }
@@ -55,11 +61,12 @@ const goBack = () => {
 
 // Watch for query parameter changes
 watch(
-  () => route.query.q,
-  (newKeyword) => {
+  () => [route.query.q, route.query.page],
+  ([newKeyword, newPage]) => {
     if (newKeyword) {
       searchKeyword.value = newKeyword as string
-      fetchResults(newKeyword as string)
+      const pageNumber = Number(newPage) || 1
+      fetchResults(newKeyword as string, pageNumber)
     }
   },
   { immediate: true }
@@ -69,9 +76,17 @@ onMounted(() => {
   const keyword = route.query.q as string
   if (keyword) {
     searchKeyword.value = keyword
-    fetchResults(keyword)
+    const pageNumber = Number(route.query.page) || 1
+    fetchResults(keyword, pageNumber)
   }
 })
+
+const handlePageChange = (newPage: number) => {
+  router.push({
+    path: '/search/results',
+    query: { q: searchKeyword.value.trim(), page: String(newPage) }
+  })
+}
 </script>
 
 <template>
@@ -120,6 +135,17 @@ onMounted(() => {
             <p class="result-desc">{{ item.description }}</p>
             <a class="result-url" :href="item.url">{{ item.url }}</a>
           </div>
+        </div>
+
+        <div v-if="total > size" class="pagination">
+          <el-pagination
+            background
+            layout="prev, pager, next"
+            :current-page="page"
+            :page-size="size"
+            :total="total"
+            @current-change="handlePageChange"
+          />
         </div>
         
         <!-- Empty state -->
@@ -314,6 +340,12 @@ onMounted(() => {
 .empty-state .hint {
   font-size: 14px;
   color: #999999;
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  padding: 24px 0;
 }
 
 /* ==================== Mobile Responsive (H5) ==================== */

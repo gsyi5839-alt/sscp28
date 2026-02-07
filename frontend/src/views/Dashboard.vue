@@ -23,7 +23,7 @@ const checkHealth = async () => {
       healthStatus.value = response.data
     }
   } catch {
-    ElMessage.warning('Could not connect to backend')
+    ElMessage.warning('无法连接到后端服务')
   }
   loading.value = false
 }
@@ -40,7 +40,7 @@ const handleLogout = () => {
       <el-header class="dashboard-header">
         <div class="logo">
           <el-icon :size="28"><Monitor /></el-icon>
-          <span>BCBBS Dashboard</span>
+          <span>BCBBS 控制面板</span>
         </div>
         <div class="header-right">
           <el-dropdown>
@@ -53,15 +53,15 @@ const handleLogout = () => {
               <el-dropdown-menu>
                 <el-dropdown-item @click="router.push('/change-password')">
                   <el-icon><Lock /></el-icon>
-                  Change Password
+                  修改密码
                 </el-dropdown-item>
                 <el-dropdown-item @click="router.push('/')">
                   <el-icon><House /></el-icon>
-                  Home
+                  返回首页
                 </el-dropdown-item>
                 <el-dropdown-item divided @click="handleLogout">
                   <el-icon><SwitchButton /></el-icon>
-                  Logout
+                  退出登录
                 </el-dropdown-item>
               </el-dropdown-menu>
             </template>
@@ -71,8 +71,8 @@ const handleLogout = () => {
       
       <el-main class="dashboard-main">
         <div class="welcome-section">
-          <h1>Welcome, {{ authStore.user?.nickname || authStore.user?.username }}! 👋</h1>
-          <p>Here's your dashboard overview</p>
+          <h1>欢迎回来，{{ authStore.user?.nickname || authStore.user?.username }}！👋</h1>
+          <p>这是您的控制面板概览</p>
         </div>
         
         <el-row :gutter="20">
@@ -81,17 +81,17 @@ const handleLogout = () => {
               <template #header>
                 <div class="card-header">
                   <el-icon :size="24" color="#409EFF"><User /></el-icon>
-                  <span>User Info</span>
+                  <span>用户信息</span>
                 </div>
               </template>
               <el-descriptions :column="1" border>
-                <el-descriptions-item label="Username">
+                <el-descriptions-item label="用户名">
                   {{ authStore.user?.username }}
                 </el-descriptions-item>
-                <el-descriptions-item label="Email">
+                <el-descriptions-item label="邮箱">
                   {{ authStore.user?.email }}
                 </el-descriptions-item>
-                <el-descriptions-item label="Role">
+                <el-descriptions-item label="角色">
                   <el-tag :type="authStore.user?.role === 'ADMIN' ? 'danger' : 'success'">
                     {{ authStore.user?.role }}
                   </el-tag>
@@ -105,12 +105,12 @@ const handleLogout = () => {
               <template #header>
                 <div class="card-header">
                   <el-icon :size="24" color="#67C23A"><Connection /></el-icon>
-                  <span>Backend Status</span>
+                  <span>后端状态</span>
                 </div>
               </template>
               <div v-if="loading" class="loading-status">
                 <el-icon class="is-loading"><Loading /></el-icon>
-                Checking...
+                检查中...
               </div>
               <div v-else-if="healthStatus" class="health-status">
                 <el-tag type="success" size="large">
@@ -122,9 +122,9 @@ const handleLogout = () => {
               <div v-else class="health-status">
                 <el-tag type="danger" size="large">
                   <el-icon><CircleClose /></el-icon>
-                  Offline
+                  离线
                 </el-tag>
-                <p class="service-name">Backend not available</p>
+                <p class="service-name">后端服务不可用</p>
               </div>
               <el-button 
                 type="primary" 
@@ -133,7 +133,7 @@ const handleLogout = () => {
                 :loading="loading"
                 style="margin-top: 10px"
               >
-                Refresh Status
+                刷新状态
               </el-button>
             </el-card>
           </el-col>
@@ -143,17 +143,17 @@ const handleLogout = () => {
               <template #header>
                 <div class="card-header">
                   <el-icon :size="24" color="#E6A23C"><InfoFilled /></el-icon>
-                  <span>Quick Actions</span>
+                  <span>快捷操作</span>
                 </div>
               </template>
               <div class="quick-actions">
                 <el-button type="primary" @click="router.push('/')">
                   <el-icon><House /></el-icon>
-                  Go to Home
+                  返回首页
                 </el-button>
                 <el-button @click="checkHealth">
                   <el-icon><Refresh /></el-icon>
-                  Refresh
+                  刷新
                 </el-button>
               </div>
             </el-card>

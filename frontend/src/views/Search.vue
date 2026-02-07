@@ -26,7 +26,7 @@ const handleSearch = async () => {
   const keyword = searchKeyword.value.trim()
 
   if (!keyword) {
-    ElMessage.warning('Please enter keyword')
+    ElMessage.warning('请输入关键词')
     return
   }
 
@@ -67,7 +67,7 @@ const handleSearch = async () => {
           :disabled="loading"
           @click="handleSearch"
         >
-          {{ loading ? '...' : 'Search' }}
+          {{ loading ? '...' : '搜索' }}
         </button>
       </div>
     </div>

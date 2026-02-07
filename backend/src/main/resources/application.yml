@@ -36,7 +36,7 @@ jwt:
 
 # CORS Configuration - Allow frontend domain
 cors:
-  allowed-origins: http://localhost:5173,https://www.bcbbs3.cn,http://www.bcbbs3.cn
+  allowed-origins: http://localhost:5173,https://www.bcbbs3.cn,http://www.bcbbs3.cn,https://18118bw.cn,http://18118bw.cn,https://www.18118bw.cn,http://www.18118bw.cn
   allowed-methods: GET,POST,PUT,DELETE,OPTIONS
   allowed-headers: "*"
   allow-credentials: true

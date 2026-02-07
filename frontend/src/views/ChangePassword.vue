@@ -18,7 +18,7 @@ onMounted(() => {
   }
 
   if (!authStore.isAuthenticated) {
-    ElMessage.warning('Please login first')
+    ElMessage.warning('请先登录')
     router.push('/member/login')
   }
 })
@@ -33,23 +33,23 @@ const loading = ref(false)
 
 const handleChangePassword = async () => {
   if (!passwordForm.oldPassword) {
-    ElMessage.warning('Please enter old password')
+    ElMessage.warning('请输入旧密码')
     return
   }
   if (!passwordForm.newPassword) {
-    ElMessage.warning('Please enter new password')
+    ElMessage.warning('请输入新密码')
     return
   }
   if (!passwordForm.confirmPassword) {
-    ElMessage.warning('Please enter confirm password')
+    ElMessage.warning('请输入确认密码')
     return
   }
   if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-    ElMessage.error('Passwords do not match')
+    ElMessage.error('两次密码不一致')
     return
   }
   if (passwordForm.newPassword.length < 6) {
-    ElMessage.warning('New password must be at least 6 characters')
+    ElMessage.warning('新密码至少6位')
     return
   }
 
@@ -62,7 +62,7 @@ const handleChangePassword = async () => {
     })
 
     if (response.code === 200) {
-      ElMessage.success('Password changed successfully')
+      ElMessage.success('密码修改成功')
       passwordForm.oldPassword = ''
       passwordForm.newPassword = ''
       passwordForm.confirmPassword = ''
@@ -72,10 +72,10 @@ const handleChangePassword = async () => {
         router.push('/user-agreement')
       }, 1000)
     } else {
-      ElMessage.error(response.message || 'Failed to change password')
+      ElMessage.error(response.message || '密码修改失败')
     }
   } catch (error: any) {
-    const message = error.response?.data?.message || 'Failed to change password'
+    const message = error.response?.data?.message || '密码修改失败'
     ElMessage.error(message)
   } finally {
     loading.value = false
@@ -88,13 +88,13 @@ const handleChangePassword = async () => {
     <div class="box">
       <!-- Title -->
       <div class="header" align="center">
-        <span class="title-text"> Change Password </span>
+        <span class="title-text">修改密码</span>
       </div>
 
       <!-- Old Password -->
       <div class="row">
         <div class="label">
-          <span class="red">*</span><span class="label-text">Old Password:</span>
+          <span class="red">*</span><span class="label-text">旧密码：</span>
         </div>
         <div class="field">
           <input
@@ -109,7 +109,7 @@ const handleChangePassword = async () => {
       <!-- New Password -->
       <div class="row">
         <div class="label">
-          <span class="red">*</span><span class="label-text">New Password:</span>
+          <span class="red">*</span><span class="label-text">新密码：</span>
         </div>
         <div class="field">
           <input
@@ -124,7 +124,7 @@ const handleChangePassword = async () => {
       <!-- Confirm Password -->
       <div class="row row-last">
         <div class="label">
-          <span class="red">*</span><span class="label-text">Confirm Password:</span>
+          <span class="red">*</span><span class="label-text">确认密码：</span>
         </div>
         <div class="field">
           <input
@@ -138,7 +138,7 @@ const handleChangePassword = async () => {
 
       <!-- Button -->
       <div class="btn-row">
-        <button class="btn btn1" :disabled="loading" @click="handleChangePassword">Change Password</button>
+        <button class="btn btn1" :disabled="loading" @click="handleChangePassword">修改密码</button>
       </div>
     </div>
   </div>

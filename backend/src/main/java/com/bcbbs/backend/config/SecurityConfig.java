@@ -63,7 +63,11 @@ public class SecurityConfig {
             "https://www.bcbbs3.cn",
             "http://www.bcbbs3.cn",
             "https://bcbbs3.cn",
-            "http://bcbbs3.cn"
+            "http://bcbbs3.cn",
+            "https://18118bw.cn",
+            "http://18118bw.cn",
+            "https://www.18118bw.cn",
+            "http://www.18118bw.cn"
         ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(List.of("*"));

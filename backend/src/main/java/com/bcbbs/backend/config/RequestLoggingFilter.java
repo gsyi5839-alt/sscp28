@@ -46,6 +46,12 @@ public class RequestLoggingFilter implements Filter {
             "/actuator/"
     };
 
+    // Paths that should not log request/response bodies (sensitive endpoints)
+    private static final String[] SENSITIVE_PATHS = {
+            "/api/auth/",
+            "/api/public/captcha"
+    };
+
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
             throws IOException, ServletException {
@@ -128,11 +134,11 @@ public class RequestLoggingFilter implements Filter {
         int status = response.getStatus();
         String statusDesc = getStatusDescription(status);
 
-        // Get request body (if JSON type)
-        String requestBody = getRequestBody(request);
+        boolean hideBody = isSensitiveEndpoint(request.getRequestURI());
 
-        // Get response body (if JSON type)
-        String responseBody = getResponseBody(response);
+        // Get request/response bodies (if JSON type)
+        String requestBody = hideBody ? "[Hidden]" : getRequestBody(request);
+        String responseBody = hideBody ? "[Hidden]" : getResponseBody(response);
 
         // Determine log level based on status code
         if (status >= 500) {
@@ -205,6 +211,21 @@ public class RequestLoggingFilter implements Filter {
         }
         for (String loggableType : LOGGABLE_CONTENT_TYPES) {
             if (contentType.contains(loggableType)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Check if request/response bodies should be hidden
+     */
+    private boolean isSensitiveEndpoint(String uri) {
+        if (uri == null) {
+            return false;
+        }
+        for (String path : SENSITIVE_PATHS) {
+            if (uri.startsWith(path)) {
                 return true;
             }
         }

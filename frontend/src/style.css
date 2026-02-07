@@ -39,3 +39,50 @@ a {
 a:hover {
   color: #535bf2;
 }
+
+/* ========== 公告弹窗：覆盖 Element Plus Dialog 默认样式 ========== */
+/* notice-dialog 和 el-dialog 在同一元素上，用无空格选择器 */
+.el-dialog.notice-dialog {
+  --el-dialog-bg-color: transparent;
+  --el-dialog-box-shadow: none;
+  --el-dialog-border-radius: 0px;
+  --el-dialog-padding-primary: 0px;
+  --el-dialog-width: 300px;
+  width: 300px !important;
+  max-width: 300px !important;
+  min-width: 300px !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+  border-radius: 0 !important;
+  overflow: visible !important;
+  padding: 0 !important;
+}
+
+.el-dialog.notice-dialog .el-dialog__header {
+  display: none !important;
+  height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.el-dialog.notice-dialog .el-dialog__body {
+  padding: 0 !important;
+  background: transparent !important;
+  overflow: visible !important;
+}
+
+/* ========== 更多游戏下拉弹窗样式 ========== */
+.more-games-popover.el-popover,
+.more-games-popover.el-popper {
+  background: rgba(60, 30, 10, 0.95) !important;
+  border: 1px solid rgba(100, 60, 20, 0.6) !important;
+  border-radius: 4px !important;
+  padding: 10px 12px !important;
+  min-width: 124px !important;
+}
+.more-games-popover .el-popper__arrow::before {
+  background: rgba(60, 30, 10, 0.95) !important;
+  border-color: rgba(100, 60, 20, 0.6) !important;
+}

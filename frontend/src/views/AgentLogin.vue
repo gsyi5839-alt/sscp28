@@ -17,9 +17,8 @@ const loginForm = ref({
   captcha: ''
 })
 
-// Captcha code from backend
-const captchaCode = ref('')
-const captchaColors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD']
+// Captcha image from backend
+const captchaImage = ref('')
 const captchaToken = ref('')
 
 // Loading state
@@ -32,21 +31,14 @@ const generateCaptcha = async () => {
   try {
     const response: any = await captchaApi.getCaptcha()
     if (response.code === 200) {
-      captchaCode.value = response.data.code
+      captchaImage.value = response.data.image
       captchaToken.value = response.data.token
     }
   } catch {
-    captchaCode.value = ''
+    captchaImage.value = ''
     captchaToken.value = ''
-    ElMessage.error('Failed to load captcha')
+    ElMessage.error('验证码加载失败')
   }
-}
-
-/**
- * Get random color for each captcha digit
- */
-const getRandomColor = (index: number) => {
-  return captchaColors[index % captchaColors.length]
 }
 
 /**
@@ -55,22 +47,22 @@ const getRandomColor = (index: number) => {
 const handleLogin = async () => {
   // Validate form
   if (!loginForm.value.account.trim()) {
-    ElMessage.warning('Please enter account')
+    ElMessage.warning('请输入账号')
     return
   }
   if (!loginForm.value.password.trim()) {
-    ElMessage.warning('Please enter password')
+    ElMessage.warning('请输入密码')
     return
   }
   if (!loginForm.value.captcha.trim()) {
-    ElMessage.warning('Please enter captcha')
+    ElMessage.warning('请输入验证码')
     return
   }
   loading.value = true
 
   try {
     if (!captchaToken.value) {
-      ElMessage.warning('Captcha not loaded, please refresh')
+      ElMessage.warning('验证码未加载，请刷新')
       return
     }
     const result = await authStore.loginWithRole(
@@ -99,7 +91,7 @@ const handleLogin = async () => {
       loginForm.value.captcha = ''
     }
   } catch (error) {
-    ElMessage.error('Login failed, please try again')
+    ElMessage.error('登录失败，请重试')
   } finally {
     loading.value = false
   }
@@ -132,46 +124,39 @@ onMounted(() => {
         <div class="form-content">
           <!-- Account input -->
           <div class="form-row">
-            <label class="form-label">Account:</label>
+            <label class="form-label">账号:</label>
             <input
               v-model="loginForm.account"
               type="text"
               class="form-input"
-              placeholder="Enter account"
+              placeholder="请输入账号"
             />
           </div>
 
           <!-- Password input -->
           <div class="form-row">
-            <label class="form-label">Password:</label>
+            <label class="form-label">密码:</label>
             <input
               v-model="loginForm.password"
               type="password"
               class="form-input"
-              placeholder="Enter password"
+              placeholder="请输入密码"
             />
           </div>
 
           <!-- Captcha input -->
           <div class="form-row">
-            <label class="form-label">Captcha:</label>
+            <label class="form-label">验证码:</label>
             <input
               v-model="loginForm.captcha"
               type="text"
               class="form-input captcha-input"
-              placeholder="Captcha"
+              placeholder="验证码"
               maxlength="4"
             />
             <!-- Captcha display -->
             <div class="captcha-display" @click="generateCaptcha">
-              <span
-                v-for="(char, index) in captchaCode"
-                :key="index"
-                class="captcha-char"
-                :style="{ color: getRandomColor(index) }"
-              >
-                {{ char }}
-              </span>
+              <img v-if="captchaImage" :src="captchaImage" alt="captcha" class="captcha-img" />
             </div>
           </div>
 
@@ -182,7 +167,7 @@ onMounted(() => {
               :disabled="loading"
               @click="handleLogin"
             >
-              {{ loading ? '...' : 'Login' }}
+              {{ loading ? '...' : '登录' }}
             </button>
           </div>
         </div>
@@ -334,12 +319,11 @@ onMounted(() => {
   user-select: none;
 }
 
-/* Individual captcha character */
-.captcha-char {
-  font-size: 20px;
-  font-weight: bold;
-  font-family: 'Arial', sans-serif;
-  letter-spacing: 2px;
+/* Captcha image */
+.captcha-img {
+  width: 90px;
+  height: 28px;
+  object-fit: contain;
 }
 
 /* Button row */

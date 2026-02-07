@@ -73,7 +73,8 @@ export const healthApi = {
 // Search API
 export const searchApi = {
   // Add t parameter to avoid occasional issues caused by intermediate caching/WAF false positives (backend ignores unknown parameters)
-  search: (keyword: string) => api.get('/public/search', { params: { q: keyword, t: Date.now() } })
+  search: (keyword: string, page = 1, size = 20) =>
+    api.get('/public/search', { params: { q: keyword, page, size, t: Date.now() } })
 }
 
 // Lines API
