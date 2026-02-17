@@ -63,6 +63,11 @@ const handleChangePassword = async () => {
 
     if (response.code === 200) {
       ElMessage.success('密码修改成功')
+      // Mark local session as password-changed, so protected pages are no longer blocked.
+      if (authStore.user) {
+        authStore.user.needPasswordChange = false
+        authStore.user.loginCountWithoutChange = 0
+      }
       passwordForm.oldPassword = ''
       passwordForm.newPassword = ''
       passwordForm.confirmPassword = ''
@@ -202,6 +207,7 @@ const handleChangePassword = async () => {
   font-size: 13px;
   color: #333;
   box-sizing: border-box;
+  white-space: nowrap;
   /* Key: use inherited background from row (avoid left-right color mismatch) */
   background: inherit !important;
 }
@@ -209,7 +215,8 @@ const handleChangePassword = async () => {
 .label-text {
   display: inline-block;
   margin-right: 5px;
-  width: 64px;
+  width: 70px;
+  white-space: nowrap;
 }
 
 .red {
@@ -223,8 +230,8 @@ const handleChangePassword = async () => {
   padding-left: 10px;
   border-left: 1px solid #efba84;
   box-sizing: border-box;
-  /* Key: right side must also have background color (this is the "no color" area you marked) */
-  background: inherit !important;
+  /* Right input area should be plain white. */
+  background: #ffffff !important;
 }
 
 .input {

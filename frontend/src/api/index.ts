@@ -14,10 +14,16 @@ const api = axios.create({
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token')
-    // Don't send token to public/auth endpoints: avoid 403 on public endpoints caused by residual bad token in local storage
+    // Public endpoints should not carry token. For auth endpoints, only unauthenticated actions are excluded.
+    // Endpoints like /auth/me and /auth/change-password must include Bearer token.
     const url = config.url || ''
-    const isPublicOrAuth = url.startsWith('/public/') || url.startsWith('/auth/')
-    if (token && !isPublicOrAuth) {
+    const isPublic = url.startsWith('/public/')
+    const isAuthWithoutToken =
+      url.startsWith('/auth/login') ||
+      url.startsWith('/auth/register') ||
+      url.startsWith('/auth/role-login') ||
+      url.startsWith('/auth/force-change-password')
+    if (token && !isPublic && !isAuthWithoutToken) {
       config.headers.Authorization = `Bearer ${token}`
     }
     return config
@@ -85,7 +91,9 @@ export const linesApi = {
 
 // Captcha API
 export const captchaApi = {
-  getCaptcha: () => api.get('/public/captcha')
+  // Add t parameter to bypass any intermediate caching (CDN/proxy/WAF/browser).
+  // Captcha tokens are one-time and must never be served from cache.
+  getCaptcha: () => api.get('/public/captcha', { params: { t: Date.now() } })
 }
 
 // Change Password API

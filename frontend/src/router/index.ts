@@ -35,10 +35,14 @@ const router = createRouter({
       meta: { requiresAuth: true }
     },
     {
-      path: '/member',
+      path: '/line.html',
       name: 'member',
       component: () => import('../views/MemberPanel.vue'),
       meta: { requiresAuth: false }
+    },
+    {
+      path: '/member',
+      redirect: '/line.html'
     },
     {
       path: '/member/login',
@@ -47,16 +51,20 @@ const router = createRouter({
       meta: { requiresAuth: false }
     },
     {
-      path: '/agent/login',
+      path: '/admin/login',
       name: 'agentLogin',
       component: () => import('../views/AgentLogin.vue'),
       meta: { requiresAuth: false }
     },
     {
+      path: '/agent/login',
+      redirect: '/admin/login'
+    },
+    {
       path: '/change-password',
       name: 'changePassword',
       component: () => import('../views/ChangePassword.vue'),
-      meta: { requiresAuth: false }  // Redirect immediately after login, component validates internally
+      meta: { requiresAuth: true }
     },
     {
       path: '/force-change-password',
@@ -68,23 +76,48 @@ const router = createRouter({
       path: '/user-agreement',
       name: 'userAgreement',
       component: () => import('../views/UserAgreement.vue'),
-      meta: { requiresAuth: false }  // Displayed after login, component validates internally
+      meta: { requiresAuth: true }
     },
     {
       path: '/game',
       name: 'gameHome',
       component: () => import('../views/GameHome.vue'),
-      meta: { requiresAuth: false }
+      meta: { requiresAuth: true }
     }
   ]
 })
 
-router.beforeEach((to, _from, next) => {
-  const authStore = useAuthStore()
+const protectedRouteNames = new Set(['dashboard', 'changePassword', 'userAgreement', 'gameHome'])
 
-  if (to.meta.requiresAuth && !authStore.isAuthenticated) {
+router.beforeEach(async (to, _from, next) => {
+  const authStore = useAuthStore()
+  const routeName = String(to.name ?? '')
+  const requiresAuth = Boolean(to.meta.requiresAuth) || protectedRouteNames.has(routeName)
+
+  if (!requiresAuth) {
+    next()
+    return
+  }
+
+  if (!authStore.isAuthenticated) {
     // Redirect to member login page when not logged in
     next({ name: 'memberLogin' })
+    return
+  }
+
+  // After page refresh, token may exist but user profile is not in memory yet.
+  if (!authStore.user) {
+    await authStore.fetchUser()
+  }
+
+  if (!authStore.user) {
+    next({ name: 'memberLogin' })
+    return
+  }
+
+  // Any protected page must complete password change first.
+  if (authStore.user.needPasswordChange && routeName !== 'changePassword') {
+    next({ name: 'changePassword' })
   } else {
     next()
   }

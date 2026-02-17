@@ -76,7 +76,7 @@ public class AuthController {
         if (!captchaValid) {
             logger.warn("Captcha validation failed - User: {}", request.getUsername());
             return ResponseEntity.badRequest()
-                    .body(ApiResponse.error(400, "Invalid captcha"));
+                    .body(ApiResponse.error(400, "验证码错误或已过期，请点击验证码图片刷新"));
         }
 
         // First probe user status: if account is disabled by "initial password not changed" mechanism, guide to forced password change endpoint
@@ -227,7 +227,7 @@ public class AuthController {
         if (!captchaValid) {
             logger.warn("Captcha validation failed");
             return ResponseEntity.badRequest()
-                    .body(ApiResponse.error(400, "Invalid captcha"));
+                    .body(ApiResponse.error(400, "验证码错误或已过期，请点击验证码图片刷新"));
         }
 
         User user = userService.findByUsername(request.getUsername());
@@ -326,6 +326,10 @@ public class AuthController {
 
     @GetMapping("/me")
     public ResponseEntity<ApiResponse<AuthResponse>> getCurrentUser(Authentication authentication) {
+        if (authentication == null || !(authentication.getPrincipal() instanceof User)) {
+            return ResponseEntity.status(401)
+                    .body(ApiResponse.error(401, "Unauthorized"));
+        }
         User user = (User) authentication.getPrincipal();
         
         AuthResponse authResponse = AuthResponse.builder()
@@ -343,6 +347,10 @@ public class AuthController {
             @Valid @RequestBody ChangePasswordRequest request,
             Authentication authentication) {
         try {
+            if (authentication == null || !(authentication.getPrincipal() instanceof User)) {
+                return ResponseEntity.status(401)
+                        .body(ApiResponse.error(401, "Unauthorized"));
+            }
             User user = (User) authentication.getPrincipal();
             logger.info("Change password request - User: {}", user.getUsername());
             userService.changePassword(user, request.getOldPassword(), request.getNewPassword());

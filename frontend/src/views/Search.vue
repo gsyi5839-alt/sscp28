@@ -16,7 +16,7 @@ onMounted(() => {
 const searchKeyword = ref('')
 const loading = ref(false)
 
-// Special code: redirect directly to "Member/Agent selection page" after input
+// Special code: redirect directly to "Member/Agent speed test selection page" after input
 const SPECIAL_CODE = '138888'
 
 /**
@@ -30,9 +30,9 @@ const handleSearch = async () => {
     return
   }
 
-  // Hit special code: don't search, directly enter /member
+  // Hit special code: don't search, directly enter /line.html
   if (keyword === SPECIAL_CODE) {
-    router.push('/member')
+    router.push('/line.html')
     return
   }
 

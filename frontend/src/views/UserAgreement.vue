@@ -2,11 +2,23 @@
 import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
+import { ElMessage } from 'element-plus'
 
 const router = useRouter()
 const authStore = useAuthStore()
 
 onMounted(() => {
+  if (!authStore.isAuthenticated) {
+    ElMessage.warning('请先登录')
+    router.push('/member/login')
+    return
+  }
+  if (authStore.user?.needPasswordChange) {
+    ElMessage.warning('请先完成密码修改')
+    router.push('/change-password')
+    return
+  }
+
   document.title = '用户协议与规则'
   const favicon = document.getElementById('favicon') as HTMLLinkElement
   if (favicon) {

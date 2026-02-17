@@ -12,12 +12,8 @@ DB_NAME="xie080886"
 generate_bcrypt() {
     local password=$1
     cd /root/sscp28/backend
-    # 临时修改GenBcrypt.java
-    sed -i "s/String password = \".*\";/String password = \"$password\";/" src/main/java/GenBcrypt.java
-    # 生成哈希
-    hash=$(mvn exec:java -Dexec.mainClass="GenBcrypt" -q 2>&1 | grep '^\$2a')
-    # 恢复原始值
-    sed -i 's/String password = ".*";/String password = "aa1010";/' src/main/java/GenBcrypt.java
+    # Compile + run GenBcrypt with arg; avoids stale classes and source edits.
+    hash=$(mvn -q -DskipTests compile exec:java -Dexec.mainClass="GenBcrypt" -Dexec.args="$password" 2>/dev/null | grep -E '^\$2[aby]\$[0-9]{2}\$')
     echo "$hash"
 }
 
@@ -44,20 +40,23 @@ create_user() {
     echo "密码哈希: ${password_hash:0:30}..."
     echo "正在创建用户 $username (角色: $role)..."
     
-    mysql -u$DB_USER -p$DB_PASS $DB_NAME << EOF
-INSERT INTO users (username, password, role, enabled, password_changed, created_at, updated_at) 
+mysql -u$DB_USER -p$DB_PASS $DB_NAME << EOF
+INSERT INTO users (username, password, role, enabled, password_changed, login_count_without_change, created_at, updated_at) 
 VALUES (
     '$username', 
     '$password_hash',
     '$role', 
     1, 
-    1, 
+    0,
+    0,
     NOW(), 
     NOW()
 )
 ON DUPLICATE KEY UPDATE 
     password = '$password_hash',
     role = '$role',
+    password_changed = 0,
+    login_count_without_change = 0,
     updated_at = NOW();
 
 SELECT id, username, role, CAST(enabled AS UNSIGNED) as enabled, CAST(password_changed AS UNSIGNED) as password_changed, created_at 

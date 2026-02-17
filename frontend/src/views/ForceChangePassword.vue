@@ -233,7 +233,7 @@ onMounted(() => {
 
 .captcha-field {
   display: flex;
-  gap: 10px;
+  gap: 0;
   align-items: center;
 }
 
@@ -242,21 +242,27 @@ onMounted(() => {
 }
 
 .captcha-display {
-  width: 90px;
-  height: 28px;
+  width: 85px;
+  height: 27px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f6f6f6;
-  border: 1px solid #ddd;
+  background: transparent;
+  border: none;
   cursor: pointer;
   user-select: none;
 }
 
 .captcha-img {
-  width: 90px;
-  height: 28px;
+  width: 85px;
+  height: 27px;
   object-fit: contain;
+  display: block;
+  vertical-align: middle;
+  margin-left: 8px;
+  cursor: pointer;
+  border-style: none;
+  box-sizing: border-box;
 }
 </style>
 

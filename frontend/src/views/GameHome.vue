@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import GameHeader from '../components/GameHeader.vue'
 import MemberSidebar from '../components/MemberSidebar.vue'
 import NoticeDialog from '../components/NoticeDialog.vue'
@@ -98,6 +98,44 @@ const patternRows = [
   { label: '半顺', odd: '1.34' },
   { label: '杂六', odd: '1.08' },
 ]
+
+type SummaryKey = 'sum' | 'size' | 'parity'
+
+const summaryTabs: Array<{ key: SummaryKey; label: string }> = [
+  { key: 'sum', label: '和值' },
+  { key: 'size', label: '和值大小' },
+  { key: 'parity', label: '和值单双' },
+]
+
+const SUMMARY_CELL_COUNT = 30
+const summaryNumbersBase = [10, 14, 18, 16, 13, 17, 12, 13, 5, 19, 1, 6, 19, 10, 8, 7, 16, 19, 15, 10, 15, 10, 22, 13]
+
+const padToCellCount = (values: string[]) => {
+  if (values.length >= SUMMARY_CELL_COUNT) {
+    return values.slice(0, SUMMARY_CELL_COUNT)
+  }
+  return [...values, ...Array(SUMMARY_CELL_COUNT - values.length).fill('')]
+}
+
+const summaryNumbers = padToCellCount(summaryNumbersBase.map((num) => String(num)))
+const summarySize = padToCellCount(summaryNumbersBase.map((num) => (num >= 14 ? '大' : '小')))
+const summaryParity = padToCellCount(summaryNumbersBase.map((num) => (num % 2 === 0 ? '双' : '单')))
+
+const activeSummaryKey = ref<SummaryKey>('sum')
+
+const activeSummaryValues = computed(() => {
+  if (activeSummaryKey.value === 'size') {
+    return summarySize
+  }
+  if (activeSummaryKey.value === 'parity') {
+    return summaryParity
+  }
+  return summaryNumbers
+})
+
+const onSummaryTabClick = (key: SummaryKey) => {
+  activeSummaryKey.value = key
+}
 
 const getBallSrc = (num: number) => {
   const safe = Math.max(0, Math.min(27, num))
@@ -244,14 +282,34 @@ const getBallSrc = (num: number) => {
             </div>
 
             <div class="summary-bar">
-              <span class="summary-item">和值</span>
-              <span class="summary-item">和值大小</span>
-              <span class="summary-item">和值单双</span>
+              <span
+                v-for="tab in summaryTabs"
+                :key="tab.key"
+                class="summary-item"
+                :class="{
+                  active: activeSummaryKey === tab.key,
+                  'summary-item-danger': activeSummaryKey === tab.key && tab.key === 'parity',
+                }"
+                @click="onSummaryTabClick(tab.key)"
+              >
+                {{ tab.label }}
+              </span>
             </div>
 
             <div class="summary-values">
-              <div v-for="n in 24" :key="n" class="summary-value">
-                <span class="value-text">{{ [10, 14, 18, 16, 13, 17, 12, 13, 5, 19, 1, 6, 19, 10, 8, 7, 16, 19, 15, 10, 15, 10, 22, 13][n - 1] }}</span>
+              <div
+                v-for="(value, idx) in activeSummaryValues"
+                :key="idx"
+                class="summary-value"
+              >
+                <div
+                  class="text-center pb10 uno-b-r wfull summary-cell-inner"
+                  :class="{ 'bg-primary5': idx % 2 === 0 }"
+                >
+                  <div>
+                    <span class="pt5 block value-text">{{ value }}</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -321,11 +379,13 @@ const getBallSrc = (num: number) => {
 /* 三栏 flex 布局 —— 不强制 min-height，高度由内容决定 */
 .main-body {
   display: flex;
+  align-items: flex-start;
 }
 
 /* ==================== 中间内容区域 ==================== */
 .center-content {
-  flex: 1;
+  flex: 0 0 720px;
+  width: 720px;
   min-height: 500px; /* 中间内容区合理最小高度，后续有真实内容后可去除 */
   border-left: none;
   border-right: none;
@@ -857,41 +917,116 @@ const getBallSrc = (num: number) => {
   height: 30px;
   line-height: 30px;
   display: flex;
-  border: 1px solid #efba84;
+  align-items: center;
+  border: 1px solid var(--bw-border-color, #efba84);
   border-top: none;
-  background: #fff1e4;
+  background: var(--bw-bg-3, #fff7ef);
   box-sizing: border-box;
+  text-align: center;
+  cursor: pointer;
+  overflow: hidden;
 }
 
 .summary-item {
   flex: 1;
   text-align: center;
+  color: #000;
+  border-right-width: 1px;
+  border-right-style: solid;
+  border-color: var(--el-border-color, #efba84);
+  border-top-color: rgb(239, 186, 132);
+  border-right-color: rgb(239, 186, 132);
+  border-bottom-color: rgb(239, 186, 132);
+  border-left-color: rgb(239, 186, 132);
+  user-select: none;
+}
+
+.summary-item:last-child {
+  border-right: none;
+}
+
+.summary-item.active {
+  background: var(--bw-bg-4, linear-gradient(to bottom, #fdeadb 0%, #f4c7a9 100%));
+  font-weight: 700;
+}
+
+.summary-item-danger {
+  color: red;
+  font-weight: 700;
+  background: var(--bw-bg-4, linear-gradient(to bottom, #fdeadb 0%, #f4c7a9 100%));
+  border-right: none !important;
 }
 
 .summary-values {
-  width: 718px;
-  height: 49px;
-  display: flex;
-  border: 1px solid #efba84;
+  width: 719.1px;
+  height: 49.88px;
+  display: grid;
+  grid-template-columns: repeat(30, 23.97px);
+  border: 1px solid var(--bw-border-color, #efba84);
   border-top: none;
   box-sizing: border-box;
+  overflow: hidden;
 }
 
 .summary-value {
-  flex: 1;
+  display: block;
+  width: 23.97px;
+  height: 49.88px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.text-center {
   text-align: center;
-  border-right: 1px solid #efba84;
-  background: #ffe3ec;
+}
+
+.pb10 {
+  padding-bottom: 10px;
+}
+
+.wfull {
+  width: 100%;
+}
+
+.block {
+  display: block;
+}
+
+.pt5 {
+  padding-top: 5px;
+}
+
+.summary-cell-inner {
+  height: 100%;
   box-sizing: border-box;
 }
 
-.summary-value:last-child {
+.bg-primary5 {
+  background: var(--bw-bg-4, linear-gradient(to bottom, #fdeadb 0%, #f4c7a9 100%));
+}
+
+.uno-b-r {
+  border-right-width: 1px;
+  border-right-style: solid;
+  border-color: var(--el-border-color, #efba84);
+  border-top-color: rgb(239, 186, 132);
+  border-right-color: rgb(239, 186, 132);
+  border-bottom-color: rgb(239, 186, 132);
+  border-left-color: rgb(239, 186, 132);
+}
+
+.summary-value:last-child .uno-b-r {
   border-right: none;
 }
 
 .value-text {
   display: block;
-  padding-top: 5px;
+  line-height: 1.2;
+  font-size: 13px;
+  white-space: nowrap;
+  word-break: normal;
+  overflow-wrap: normal;
+  padding-top: 0;
 }
 
 /* ==================== 右侧公告栏 ==================== */

@@ -99,13 +99,6 @@ const handleNext = () => {
   }
 }
 
-// 上一条
-const handlePrev = () => {
-  if (currentIndex.value > 0) {
-    currentIndex.value--
-  }
-}
-
 // 关闭对话框
 const handleClose = () => {
   emit('update:visible', false)
@@ -135,8 +128,7 @@ const dialogVisible = computed({
 
     <div class="notice-dialog-content">
       <!-- 公告头部图标 + 自定义关闭按钮 -->
-      <div class="notice-header">
-        <img :src="noticeHeaderIcon" alt="公告" />
+      <div class="notice-header" :style="{ backgroundImage: `url(${noticeHeaderIcon})` }">
         <span class="close-btn" @click="handleClose">&times;</span>
       </div>
 
@@ -172,13 +164,6 @@ const dialogVisible = computed({
 
               <!-- 分页控制 -->
               <div class="notice-pagination">
-                <span 
-                  class="page-action"
-                  :class="{ disabled: currentIndex <= 0 }"
-                  @click="handlePrev"
-                >
-                  上一条
-                </span>
                 <span class="page-info">{{ currentIndex + 1 }} / {{ totalPages }}</span>
                 <span 
                   class="page-action"
@@ -231,33 +216,31 @@ const dialogVisible = computed({
   width: 100%;
   height: 155px;
   position: relative;
-  z-index: 2;
-  background: transparent !important;
-}
-
-.notice-header img {
-  display: block;
-  width: 100%;
-  height: 155px;
+  z-index: 0;
+  /* Align with @设计样式.md: use SVG as background instead of <img>. */
+  background-position: 50% calc(100% + 1px);
+  background-size: 100%;
+  background-repeat: no-repeat;
+  margin-bottom: -10px;
 }
 
 /* 自定义关闭按钮 42x42 圆形 */
 .close-btn {
   position: absolute;
-  top: 0;
-  right: -21px;
-  width: 42px;
-  height: 42px;
+  top: 8px;
+  right: 10px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
-  background: rgba(0, 0, 0, 0.55);
+  background: rgba(0, 0, 0, 0.35);
   color: #fff;
-  font-size: 28px;
+  font-size: 22px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   z-index: 10;
-  border: 2px solid rgba(255, 255, 255, 0.8);
+  border: 2px solid rgba(255, 255, 255, 0.9);
   line-height: 1;
   transition: background 0.3s;
   user-select: none;
@@ -271,10 +254,10 @@ const dialogVisible = computed({
 .notice-body {
   width: 100%;
   background: #fff;
-  padding: 0 10px 20px 10px;
-  border-radius: 0 0 8px 8px;
+  padding: 0;
+  border-radius: 0 0 14px 14px;
   box-shadow: none;
-  margin-top: -1px;
+  margin-top: 0;
   position: relative;
   z-index: 1;
   box-sizing: border-box;
@@ -301,33 +284,63 @@ const dialogVisible = computed({
 
 /* 左侧菜单 */
 .notice-menu {
+  position: relative;
   width: 90px;
   height: 360px;
+  margin-left: -10px; /* match @设计样式.md */
+  flex-basis: 90px;
+  flex-shrink: 0;
   overflow-y: auto;
-  border-right: 1px solid #f0f0f0;
+  overflow-x: hidden;
+  padding-bottom: 10px;
+  scrollbar-width: none;
+  border-right: 1px solid rgba(0, 0, 0, 0.1);
+  z-index: 1;
 }
 
 .notice-menu-item {
   width: 90px;
-  height: 38px;
-  line-height: 38px;
   text-align: center;
-  font-size: 14px;
-  color: #666;
+  font-size: 12px;
+  color: #adadad;
   cursor: pointer;
-  transition: all 0.3s;
+  transition: color 0.2s ease-in-out;
   user-select: none;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  position: relative;
+  z-index: 0; /* create stacking context for pseudo elements */
+  overflow: hidden;
+  padding: 12px 0 12px 10px;
+  box-sizing: border-box;
 }
 
 .notice-menu-item:hover {
-  background: #fff9f0;
-  color: #ff6600;
+  color: #f28c1d;
 }
 
 .notice-menu-item.active {
-  background: #ff6600;
   color: #fff;
-  font-weight: bold;
+}
+
+/* Match @设计样式.md: pseudo layers slide in */
+.notice-menu-item::before {
+  content: '';
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: #f28c1d;
+  position: absolute;
+  right: 0;
+  top: 0;
+  z-index: -1;
+  box-shadow: 0 2px 2px #0000001a;
+  transform: translate(-100px);
+  transition: all 0.3s ease-in-out;
+}
+
+.notice-menu-item.active::before {
+  transform: translateY(0);
+  opacity: 1;
 }
 
 /* 右侧内容区域 */
@@ -337,6 +350,7 @@ const dialogVisible = computed({
   padding-right: 10px;
   line-height: 20px;
   position: relative;
+  word-break: break-all;
 }
 
 .notice-content-inner {
@@ -351,9 +365,9 @@ const dialogVisible = computed({
   overflow-y: auto;
   font-size: 14px;
   color: #333;
-  line-height: 1.8;
+  line-height: 20px;
   word-break: break-all;
-  padding: 10px;
+  padding: 0;
 }
 
 .no-data {
@@ -367,12 +381,12 @@ const dialogVisible = computed({
   height: 60px;
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 20px;
-  padding: 0 20px;
+  justify-content: space-between;
+  padding-left: 20px;
+  padding-right: 20px;
   font-size: 12px;
   color: #adadad;
-  border-top: 1px solid #f0f0f0;
+  border-top: none;
 }
 
 .page-info {
@@ -386,7 +400,7 @@ const dialogVisible = computed({
 }
 
 .page-action:hover:not(.disabled) {
-  color: #ff6600;
+  color: var(--bw-default-color, #351c0c);
 }
 
 .page-action.disabled {

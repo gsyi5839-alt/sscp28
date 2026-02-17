@@ -42,7 +42,12 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 // Allow all OPTIONS preflight requests
                 .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
-                .requestMatchers("/api/auth/**").permitAll()
+                .requestMatchers(
+                        "/api/auth/login",
+                        "/api/auth/role-login",
+                        "/api/auth/register",
+                        "/api/auth/force-change-password"
+                ).permitAll()
                 .requestMatchers("/api/public/**").permitAll()
                 .anyRequest().authenticated()
             )

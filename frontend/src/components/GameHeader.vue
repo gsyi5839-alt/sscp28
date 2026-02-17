@@ -200,20 +200,35 @@ const onThemeClick = (key: string) => {
 
 /* ========================= 主导航 (70px) ========================= */
 .header {
+  position: relative;
   height: 70px;
   width: 100%;
-  background: linear-gradient(180deg, #6a3a16 0%, #2b1204 100%);
+  background: #3a1c04 url('@/assets/顶部导航栏背景图.png') repeat-x center top;
+  background-size: auto 70px;
+  border-bottom: 1px solid #c9b79e;
+  overflow: hidden;
+}
+
+/* Top glossy light layer (simulates light reflection) */
+.header::before {
+  content: none;
+}
+
+/* Subtle beam falloff for depth */
+.header::after {
+  content: none;
 }
 
 .header-inner {
+  position: relative;
+  z-index: 1;
   width: 100%;
-  max-width: 1418px;
+  max-width: none;
   height: 70px;
-  margin: 0 auto;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: 0 12px;
+  padding: 0 20px;
   box-sizing: border-box;
 }
 
@@ -223,47 +238,65 @@ const onThemeClick = (key: string) => {
   align-items: center;
   height: 30px;
   line-height: 30px;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
+  margin-top: 9px;
 }
 
 .brand {
+  position: relative;
   display: flex;
   align-items: center;
-  flex: 0 0 auto;
-  margin-right: 20px;
+  flex: 0 0 220px;
+  width: 220px;
+  min-width: 220px;
+  height: 30px;
+  margin-right: 0;
 }
 
 .brand-logo {
-  height: 36px;
-  width: auto;
-  margin-right: 8px;
+  width: 90px;
+  height: 70px;
+  object-fit: contain;
+  position: absolute;
+  left: 0;
+  top: -9px;
 }
 
 .brand-name {
-  font-size: 20px;
-  letter-spacing: 2px;
+  position: absolute;
+  left: 95px;
+  top: 12px;
+  font-size: 24px;
+  color: #f8bb00;
+  line-height: 1;
   white-space: nowrap;
 }
 
 .top-nav {
   display: flex;
   align-items: center;
+  flex: 1;
   overflow: hidden;
+  white-space: nowrap;
   height: 30px;
   line-height: 30px;
 }
 
 .top-item {
   display: block;
+  flex: 0 0 70px;
   width: 70px;
   height: 22px;
   line-height: 22px;
   text-align: center;
   font-size: 13px;
   font-weight: 400;
-  padding: 0 5px;
+  padding-left: 5px;
+  padding-right: 5px;
   cursor: pointer;
   user-select: none;
+  white-space: nowrap;
+  box-sizing: border-box;
   color: #ffffff;
   transition: color 0.15s;
 }
@@ -286,8 +319,10 @@ const onThemeClick = (key: string) => {
 .row-games {
   display: flex;
   align-items: center;
+  gap: 6px;
   height: 22px;
   line-height: 22px;
+  padding-left: 220px;
 }
 
 .game-item {
@@ -301,10 +336,16 @@ const onThemeClick = (key: string) => {
   cursor: pointer;
   user-select: none;
   color: #ffffff;
+  background: url('@/assets/更多背景图.png') no-repeat center;
+  background-size: 100% 100%;
+  border: none;
   transition: color 0.15s;
 }
 
-.game-item:hover,
+.game-item:hover {
+  color: #fcff00;
+}
+
 .game-item.active {
   color: #fcff00;
 }
@@ -316,7 +357,7 @@ const onThemeClick = (key: string) => {
   top: -6px;
   right: 2px;
   width: 20px;
-  height: 14px;
+  height: 20px;
   background: url('@/assets/图标/新.png') no-repeat center / contain;
   pointer-events: none;
 }
@@ -328,7 +369,7 @@ const onThemeClick = (key: string) => {
   top: -6px;
   right: 2px;
   width: 20px;
-  height: 14px;
+  height: 20px;
   background: url('@/assets/图标/热.png') no-repeat center / contain;
   pointer-events: none;
 }
@@ -377,20 +418,29 @@ const onThemeClick = (key: string) => {
 }
 
 .sub-item {
-  margin: 0 5px;
+  display: inline-block;
+  min-width: 46px;
+  height: 20px;
+  line-height: 20px;
+  margin: 0 4px;
+  padding: 0 6px;
+  text-align: center;
   cursor: pointer;
   font-size: 13px;
   font-weight: 400;
   color: var(--bw-default-color, #8b5e3c);
+  border-radius: 2px;
   transition: color 0.15s;
 }
 
 .sub-item:hover {
-  color: red;
+  color: #d10000;
 }
 
 .sub-item.active {
-  color: red !important;
+  color: #d10000 !important;
+  background: linear-gradient(180deg, #d8eefc 0%, #9dd3f5 100%);
+  border: 1px solid #6aaed9;
 }
 
 .sub-sep {
@@ -409,6 +459,8 @@ const onThemeClick = (key: string) => {
   font-weight: 400;
   color: #ffffff;
   cursor: pointer;
+  background: url('@/assets/更多背景图.png') no-repeat center;
+  background-size: 100% 100%;
   transition: color 0.15s;
 }
 

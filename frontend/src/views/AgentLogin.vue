@@ -99,7 +99,7 @@ const handleLogin = async () => {
 
 // Initialize captcha on mount
 onMounted(() => {
-  document.title = '代理登录'
+  document.title = 'Welcome'
   // Set custom favicon for login page
   const favicon = document.getElementById('favicon') as HTMLLinkElement
   if (favicon) {
@@ -145,7 +145,7 @@ onMounted(() => {
           </div>
 
           <!-- Captcha input -->
-          <div class="form-row">
+          <div class="form-row captcha-row">
             <label class="form-label">验证码:</label>
             <input
               v-model="loginForm.captcha"
@@ -271,6 +271,15 @@ onMounted(() => {
   gap: 8px;
 }
 
+/* Captcha row matches design snippet: spacing via img margin-left */
+.captcha-row {
+  gap: 0;
+}
+
+.captcha-row .form-label {
+  margin-right: 8px;
+}
+
 /* Form label */
 .form-label {
   width: 60px;
@@ -311,19 +320,25 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 4px;
-  padding: 0 8px;
-  height: 28px;
-  background: #f5f5f5;
-  border-radius: 4px;
+  padding: 0;
+  height: 27px;
+  background: transparent;
+  border-radius: 0;
   cursor: pointer;
   user-select: none;
 }
 
 /* Captcha image */
 .captcha-img {
-  width: 90px;
-  height: 28px;
+  width: 85px;
+  height: 27px;
   object-fit: contain;
+  display: block;
+  margin-left: 8px;
+  vertical-align: middle;
+  cursor: pointer;
+  border-style: none;
+  box-sizing: border-box;
 }
 
 /* Button row */
