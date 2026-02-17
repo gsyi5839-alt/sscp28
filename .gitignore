@@ -28,6 +28,8 @@ Thumbs.db
 logs/
 *.log
 npm-debug.log*
+nohup.out
+backend/nohup.out
 
 # Environment variables
 .env.local
