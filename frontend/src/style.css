@@ -86,3 +86,60 @@ a:hover {
   background: rgba(60, 30, 10, 0.95) !important;
   border-color: rgba(100, 60, 20, 0.6) !important;
 }
+
+/* ========== 说明弹窗：匹配浏览器提示风格 ========== */
+.el-message-box.explain-messagebox {
+  width: 451px;
+  height: 144px;
+  padding: 16px 20px;
+  box-sizing: border-box;
+  position: fixed;
+  top: 72px;
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 0;
+  background: #1f1f1f;
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+  display: flex;
+  flex-direction: column;
+}
+
+.el-message-box.explain-messagebox .el-message-box__header {
+  padding-bottom: 0;
+}
+
+.el-message-box.explain-messagebox .el-message-box__title {
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.el-message-box.explain-messagebox .el-message-box__content {
+  padding-top: 6px;
+  flex: 1 1 auto;
+}
+
+.el-message-box.explain-messagebox .el-message-box__message {
+  color: #ffffff;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.el-message-box.explain-messagebox .el-message-box__message p {
+  margin: 0;
+}
+
+.el-message-box.explain-messagebox .el-message-box__btns {
+  padding-top: 6px;
+  padding-bottom: 0;
+}
+
+.el-message-box.explain-messagebox .el-button {
+  min-width: 72px;
+  border-radius: 16px;
+  border: 1px solid #5ea0ff;
+  color: #5ea0ff;
+  background: transparent;
+}

@@ -1,37 +1,264 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
+import { ElMessageBox } from 'element-plus'
 import GameHeader from '../components/GameHeader.vue'
 import MemberSidebar from '../components/MemberSidebar.vue'
 import NoticeDialog from '../components/NoticeDialog.vue'
+import { lotteryApi } from '../api/index'
 
-// 控制公告弹窗显示
+// ─── 公告弹窗 ────────────────────────────────────────────────────────────────
 const showNoticeDialog = ref(false)
 
-onMounted(() => {
-  document.title = '游戏首页'
-  const favicon = document.getElementById('favicon') as HTMLLinkElement
-  if (favicon) {
-    favicon.href = '/favicon.png'
-  }
-
-  // 页面加载完成后，延迟500ms显示公告弹窗
-  setTimeout(() => {
-    showNoticeDialog.value = true
-  }, 500)
-})
-
-// 关闭公告弹窗
 const handleCloseNotice = () => {
   showNoticeDialog.value = false
 }
 
-/* ============ 两面长龙排行（后续接 API） ============ */
-const dragonList = ref([
-  { label: '第1球-大', value: '7期' },
-  { label: '第2球-小', value: '3期' },
-  { label: '第3球-单', value: '3期' },
-  { label: '和值-双', value: '2期' },
-])
+// ─── 开奖 API 数据 ────────────────────────────────────────────────────────────
+/** 当前彩种 code，720 = 加拿大PC28 */
+const LOT_CODE = 720
+
+/** 上一期开奖：期号 */
+const preDrawIssue = ref('--')
+/** 上一期开奖：三个球号码 [b1, b2, b3] */
+const preDrawBalls = ref<number[]>([0, 0, 0])
+/** 上一期开奖：和值 */
+const preDrawSum = ref(0)
+
+/** 当前期（下期）期号 */
+const drawIssue = ref('--')
+/** 距离封盘倒计时字符串 HH:MM:SS */
+const sealCountdown = ref('--:--:--')
+/** 距离开奖倒计时字符串 HH:MM:SS */
+const drawCountdown = ref('--:--:--')
+/** 是否处于开奖中状态（倒计时已过，等待新期数据） */
+const isDrawing = ref(false)
+
+/** 历史统计：最近30期和值列表（来自 API） */
+const historyNums = ref<number[]>([])
+
+let countdownTimer: ReturnType<typeof setInterval> | null = null
+/** 是否正在执行自动刷新（防止重复请求） */
+let isFetching = false
+
+/** drawTime 目标时间戳（ms，UTC） */
+let drawTimestamp = 0
+/** sealTime = drawTime - 10s（封盘提前10秒） */
+let sealTimestamp = 0
+/** 当前已知的期号，用于检测新期是否到来 */
+let currentDrawIssue = ''
+/** 当前已知的上一期开奖期号 */
+let currentPreDrawIssue = ''
+const lastBallRef = ref<HTMLImageElement | null>(null)
+const countdownRef = ref<HTMLDivElement | null>(null)
+const countdownShift = ref(0)
+const COUNTDOWN_EXTRA_SHIFT = -455
+
+const parseTimestamp = (str: string | null | undefined): number => {
+  if (!str) return 0
+  // Upstream API always returns Beijing time (CST, UTC+8).
+  // Append timezone offset so Date.parse() treats it correctly regardless of browser locale.
+  // format: "2026-02-18 03:19:00" → "2026-02-18T03:19:00+08:00"
+  return new Date(str.replace(' ', 'T') + '+08:00').getTime()
+}
+
+const fmtCountdown = (diffMs: number): string => {
+  if (diffMs <= 0) return '00:00:00'
+  const totalSec = Math.floor(diffMs / 1000)
+  const h = Math.floor(totalSec / 3600)
+  const m = Math.floor((totalSec % 3600) / 60)
+  const s = totalSec % 60
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${pad(h)}:${pad(m)}:${pad(s)}`
+}
+
+const fetchLotteryInfo = async () => {
+  if (isFetching) return
+  isFetching = true
+  try {
+    const res: any = await lotteryApi.getInfo(LOT_CODE)
+    if (res?.code === 200 && res?.data) {
+      const d = res.data
+      const newIssue = d.drawIssue || ''
+
+      // Previous draw result
+      const newPreDrawIssue = d.preDrawIssue || ''
+      preDrawIssue.value = newPreDrawIssue || '--'
+      if (d.preDrawCode) {
+        preDrawBalls.value = d.preDrawCode.split(',').map(Number)
+        preDrawSum.value = preDrawBalls.value.reduce((a: number, b: number) => a + b, 0)
+        nextTick(updateCountdownPosition)
+      }
+
+      // Current draw period
+      drawIssue.value = newIssue
+      drawTimestamp = parseTimestamp(d.drawTime)
+      // Seal = drawTime - 10s (closes 10 seconds before draw, matching the upstream site design)
+      sealTimestamp = drawTimestamp - 10 * 1000
+
+      // If we have a new issue, clear the "drawing" state
+      if (newIssue && newIssue !== currentDrawIssue) {
+        currentDrawIssue = newIssue
+        isDrawing.value = false
+        // Also refresh history when a new period starts
+        fetchHistoryList()
+      }
+
+      // Refresh history when new result is published
+      if (newPreDrawIssue && newPreDrawIssue !== currentPreDrawIssue) {
+        currentPreDrawIssue = newPreDrawIssue
+        fetchHistoryList()
+      }
+    }
+  } catch (_e) {
+    // fail silently
+  } finally {
+    isFetching = false
+  }
+}
+
+const fetchHistoryList = async () => {
+  try {
+    const res: any = await lotteryApi.getList(LOT_CODE, 1, HISTORY_LIST_SIZE)
+    if (res?.code === 200 && res?.data?.list) {
+      const rawList = res.data.list || []
+      const sortedList = [...rawList].sort((a: any, b: any) => {
+        const ai = Number(a?.preDrawIssue)
+        const bi = Number(b?.preDrawIssue)
+        if (Number.isFinite(ai) && Number.isFinite(bi)) return bi - ai
+        return String(b?.preDrawIssue || '').localeCompare(String(a?.preDrawIssue || ''))
+      })
+      historyIssues.value = sortedList
+      historyNums.value = sortedList.map((item: any) => Number(item.sumValue)).filter((n: number) => !isNaN(n))
+    }
+  } catch (_e) {
+    // fail silently
+  }
+}
+
+const updateCountdownPosition = () => {
+  const ballEl = lastBallRef.value
+  const countEl = countdownRef.value
+  if (!ballEl || !countEl) return
+  const ballRect = ballEl.getBoundingClientRect()
+  // Subtract current shift to recover natural (pre-transform) left position,
+  // so repeated calls remain stable and don't reset to 0.
+  const naturalLeft = countEl.getBoundingClientRect().left - countdownShift.value
+  countdownShift.value = Math.round(ballRect.left - naturalLeft) + COUNTDOWN_EXTRA_SHIFT
+}
+
+// Re-position countdown after lottery data loads and balls are rendered
+watch(preDrawBalls, () => {
+  nextTick(updateCountdownPosition)
+})
+
+/** Called every second to tick the countdown display */
+const tickCountdown = () => {
+  const now = Date.now()
+  const drawDiff = drawTimestamp - now
+  const sealDiff = sealTimestamp - now
+
+  if (drawDiff <= 0 && drawTimestamp > 0) {
+    // Draw time has passed — enter "drawing" state and keep polling for the new period
+    isDrawing.value = true
+    drawCountdown.value = '00:00:00'
+    sealCountdown.value = '00:00:00'
+    // Aggressively re-fetch until the API returns a new period
+    fetchLotteryInfo()
+  } else {
+    isDrawing.value = false
+    drawCountdown.value = fmtCountdown(drawDiff)
+    sealCountdown.value = fmtCountdown(sealDiff)
+  }
+}
+
+onMounted(() => {
+  document.title = '游戏首页'
+  const favicon = document.getElementById('favicon') as HTMLLinkElement
+  if (favicon) favicon.href = '/favicon.png'
+
+  // Show notice after short delay
+  setTimeout(() => { showNoticeDialog.value = true }, 500)
+
+  // Initial data load
+  fetchLotteryInfo()
+  fetchHistoryList()
+
+  // Countdown tick every second; also handles auto-refresh when draw expires
+  countdownTimer = setInterval(tickCountdown, 1000)
+  nextTick(updateCountdownPosition)
+  window.addEventListener('resize', updateCountdownPosition)
+})
+
+onUnmounted(() => {
+  if (countdownTimer) clearInterval(countdownTimer)
+  window.removeEventListener('resize', updateCountdownPosition)
+})
+
+/* ============ 两面长龙排行（基于开奖历史） ============ */
+const historyIssues = ref<any[]>([])
+
+const parseBalls = (code: string | null | undefined): number[] | null => {
+  if (!code) return null
+  const nums = code.split(',').map(Number).filter(n => !isNaN(n))
+  if (nums.length < 3) return null
+  return nums.slice(0, 3)
+}
+
+const getIssueData = (issue: any) => {
+  const balls = parseBalls(issue?.preDrawCode)
+  if (!balls) return null
+  const sum = Number(issue?.sumValue)
+  const sumValue = Number.isFinite(sum) ? sum : balls.reduce((a, b) => a + b, 0)
+  return { balls, sum: sumValue }
+}
+
+const dragonDefs = [
+  { key: 'b1_big', label: '第1球-大', test: (d: any) => d.balls[0] >= 5 },
+  { key: 'b1_small', label: '第1球-小', test: (d: any) => d.balls[0] <= 4 },
+  { key: 'b1_odd', label: '第1球-单', test: (d: any) => d.balls[0] % 2 === 1 },
+  { key: 'b1_even', label: '第1球-双', test: (d: any) => d.balls[0] % 2 === 0 },
+  { key: 'b2_big', label: '第2球-大', test: (d: any) => d.balls[1] >= 5 },
+  { key: 'b2_small', label: '第2球-小', test: (d: any) => d.balls[1] <= 4 },
+  { key: 'b2_odd', label: '第2球-单', test: (d: any) => d.balls[1] % 2 === 1 },
+  { key: 'b2_even', label: '第2球-双', test: (d: any) => d.balls[1] % 2 === 0 },
+  { key: 'b3_big', label: '第3球-大', test: (d: any) => d.balls[2] >= 5 },
+  { key: 'b3_small', label: '第3球-小', test: (d: any) => d.balls[2] <= 4 },
+  { key: 'b3_odd', label: '第3球-单', test: (d: any) => d.balls[2] % 2 === 1 },
+  { key: 'b3_even', label: '第3球-双', test: (d: any) => d.balls[2] % 2 === 0 },
+  { key: 'sum_big', label: '和值-大', test: (d: any) => d.sum >= 14 },
+  { key: 'sum_small', label: '和值-小', test: (d: any) => d.sum <= 13 },
+  { key: 'sum_odd', label: '和值-单', test: (d: any) => d.sum % 2 === 1 },
+  { key: 'sum_even', label: '和值-双', test: (d: any) => d.sum % 2 === 0 },
+]
+
+const dragonList = computed(() => {
+  const issues = historyIssues.value
+  if (!issues.length) return []
+
+  const dataList = issues
+    .map((issue) => getIssueData(issue))
+    .filter(Boolean) as Array<{ balls: number[]; sum: number }>
+
+  if (!dataList.length) return []
+
+  const stats = dragonDefs.map((def, idx) => {
+    let count = 0
+    for (const d of dataList) {
+      if (def.test(d)) count += 1
+      else break
+    }
+    return { label: def.label, count, order: idx }
+  })
+
+  const DRAGON_MIN_COUNT = 2
+  const DRAGON_MAX_COUNT = 5
+
+  return stats
+    .filter((item) => item.count >= DRAGON_MIN_COUNT)
+    .sort((a, b) => (b.count - a.count) || (a.order - b.order))
+    .slice(0, DRAGON_MAX_COUNT)
+    .map((item) => ({ label: item.label, value: `${item.count}期` }))
+})
 
 const sumOdds = [
   { num: 0, odd: '399.88' },
@@ -100,6 +327,7 @@ const patternRows = [
 ]
 
 type SummaryKey = 'sum' | 'size' | 'parity'
+type QuickMode = 'quick' | 'normal'
 
 const summaryTabs: Array<{ key: SummaryKey; label: string }> = [
   { key: 'sum', label: '和值' },
@@ -108,33 +336,204 @@ const summaryTabs: Array<{ key: SummaryKey; label: string }> = [
 ]
 
 const SUMMARY_CELL_COUNT = 30
-const summaryNumbersBase = [10, 14, 18, 16, 13, 17, 12, 13, 5, 19, 1, 6, 19, 10, 8, 7, 16, 19, 15, 10, 15, 10, 22, 13]
+const HISTORY_LIST_SIZE = 200
 
-const padToCellCount = (values: string[]) => {
+const padToCellCount = (values: any[]) => {
   if (values.length >= SUMMARY_CELL_COUNT) {
     return values.slice(0, SUMMARY_CELL_COUNT)
   }
   return [...values, ...Array(SUMMARY_CELL_COUNT - values.length).fill('')]
 }
 
-const summaryNumbers = padToCellCount(summaryNumbersBase.map((num) => String(num)))
-const summarySize = padToCellCount(summaryNumbersBase.map((num) => (num >= 14 ? '大' : '小')))
-const summaryParity = padToCellCount(summaryNumbersBase.map((num) => (num % 2 === 0 ? '双' : '单')))
+const buildRoadColumns = (labels: string[]) => {
+  const cols: string[][] = []
+  for (const label of labels) {
+    if (!label) continue
+    const last = cols[cols.length - 1]
+    if (!last || last[0] !== label) {
+      cols.push([label])
+    } else {
+      last.push(label)
+    }
+    if (cols.length >= SUMMARY_CELL_COUNT) break
+  }
+  return padToCellCount(cols)
+}
+
+const getIssueSum = (issue: any): number | null => {
+  const rawSum = Number(issue?.sumValue)
+  if (Number.isFinite(rawSum)) return rawSum
+  const balls = parseBalls(issue?.preDrawCode)
+  if (!balls) return null
+  return balls.reduce((a, b) => a + b, 0)
+}
+
+/** Derive display values from historyIssues (API data, reactive) */
+const summaryNumbers = computed(() =>
+  padToCellCount(historyIssues.value.slice(0, SUMMARY_CELL_COUNT).map((issue: any) => {
+    const sum = getIssueSum(issue)
+    return sum == null ? '' : String(sum)
+  }))
+)
+const summarySize = computed(() =>
+  buildRoadColumns(historyIssues.value.map((issue: any) => {
+    const label = issue?.sizeLabel
+    if (label) return String(label)
+    const sum = getIssueSum(issue)
+    if (sum == null) return ''
+    return sum >= 14 ? '大' : '小'
+  }))
+)
+const summaryParity = computed(() =>
+  buildRoadColumns(historyIssues.value.map((issue: any) => {
+    const label = issue?.parityLabel
+    if (label) return String(label)
+    const sum = getIssueSum(issue)
+    if (sum == null) return ''
+    return sum % 2 === 0 ? '双' : '单'
+  }))
+)
 
 const activeSummaryKey = ref<SummaryKey>('sum')
+const quickMode = ref<QuickMode>('normal')
+// Active betting tab: 'twoSide' = 两面盘, 'balls' = 1-3球
+const activeBetTab = ref<'twoSide' | 'balls'>('twoSide')
+// Ball amounts for 1-3球 panel: flat map with key "${colIdx}_${ballKey}" (e.g. "0_3", "1_大")
+const ballAmounts = ref<Record<string, string>>({})
+const selectedSumNums = ref<Set<number>>(new Set())
+const sumAmounts = ref<Record<number, string>>({})
+const activeSumNum = ref<number | null>(null)
+const selectedTwoSideKeys = ref<Set<string>>(new Set())
+const twoSideAmounts = ref<Record<string, string>>({})
+const activeTwoSideKey = ref<string | null>(null)
+const selectedColorKeys = ref<Set<string>>(new Set())
+const colorAmounts = ref<Record<string, string>>({})
+const activeColorKey = ref<string | null>(null)
+const selectedPatternKeys = ref<Set<string>>(new Set())
+const patternAmounts = ref<Record<string, string>>({})
+const activePatternKey = ref<string | null>(null)
 
 const activeSummaryValues = computed(() => {
-  if (activeSummaryKey.value === 'size') {
-    return summarySize
-  }
-  if (activeSummaryKey.value === 'parity') {
-    return summaryParity
-  }
-  return summaryNumbers
+  if (activeSummaryKey.value === 'size') return summarySize.value
+  if (activeSummaryKey.value === 'parity') return summaryParity.value
+  return summaryNumbers.value
 })
 
 const onSummaryTabClick = (key: SummaryKey) => {
   activeSummaryKey.value = key
+}
+
+const setQuickMode = (mode: QuickMode) => {
+  quickMode.value = mode
+}
+
+const toggleSumSelect = (num: number) => {
+  if (quickMode.value === 'quick') {
+    const next = new Set(selectedSumNums.value)
+    if (next.has(num)) {
+      next.delete(num)
+    } else {
+      next.add(num)
+    }
+    selectedSumNums.value = next
+    return
+  }
+  activeSumNum.value = num
+}
+
+const ensureSumSelected = (num: number) => {
+  activeSumNum.value = num
+}
+
+const isSumSelected = (num: number) => {
+  if (quickMode.value === 'quick') return selectedSumNums.value.has(num)
+  const amount = sumAmounts.value[num]
+  return (amount && amount.trim() !== '') || activeSumNum.value === num
+}
+
+const toggleTwoSideSelect = (key: string) => {
+  if (quickMode.value === 'quick') {
+    const next = new Set(selectedTwoSideKeys.value)
+    if (next.has(key)) {
+      next.delete(key)
+    } else {
+      next.add(key)
+    }
+    selectedTwoSideKeys.value = next
+    return
+  }
+  activeTwoSideKey.value = key
+}
+
+const ensureTwoSideSelected = (key: string) => {
+  activeTwoSideKey.value = key
+}
+
+const isTwoSideSelected = (key: string) => {
+  if (quickMode.value === 'quick') return selectedTwoSideKeys.value.has(key)
+  const amount = twoSideAmounts.value[key]
+  return (amount && amount.trim() !== '') || activeTwoSideKey.value === key
+}
+
+const toggleColorSelect = (key: string) => {
+  if (quickMode.value === 'quick') {
+    const next = new Set(selectedColorKeys.value)
+    if (next.has(key)) {
+      next.delete(key)
+    } else {
+      next.add(key)
+    }
+    selectedColorKeys.value = next
+    return
+  }
+  activeColorKey.value = key
+}
+
+const ensureColorSelected = (key: string) => {
+  activeColorKey.value = key
+}
+
+const isColorSelected = (key: string) => {
+  if (quickMode.value === 'quick') return selectedColorKeys.value.has(key)
+  const amount = colorAmounts.value[key]
+  return (amount && amount.trim() !== '') || activeColorKey.value === key
+}
+
+const togglePatternSelect = (key: string) => {
+  if (quickMode.value === 'quick') {
+    const next = new Set(selectedPatternKeys.value)
+    if (next.has(key)) {
+      next.delete(key)
+    } else {
+      next.add(key)
+    }
+    selectedPatternKeys.value = next
+    return
+  }
+  activePatternKey.value = key
+}
+
+const ensurePatternSelected = (key: string) => {
+  activePatternKey.value = key
+}
+
+const isPatternSelected = (key: string) => {
+  if (quickMode.value === 'quick') return selectedPatternKeys.value.has(key)
+  const amount = patternAmounts.value[key]
+  return (amount && amount.trim() !== '') || activePatternKey.value === key
+}
+
+const onExplainClick = () => {
+  ElMessageBox.alert(
+    '保存可以将金额保存為常用筹码，最多可以保存三个。',
+    'xxobudi.gl7f25n0.com显示',
+    {
+      confirmButtonText: '确定',
+      showClose: false,
+      closeOnClickModal: true,
+      customClass: 'explain-messagebox',
+    }
+  )
 }
 
 const getBallSrc = (num: number) => {
@@ -165,70 +564,118 @@ const getBallSrc = (num: number) => {
                   <span class="text-red">今日输赢：0</span>
                 </div>
                 <div class="issue-right">
-                  <b class="text-green mr10">3393560</b>
+                  <b class="text-green mr10">{{ preDrawIssue }}</b>
                   <span>期开奖：</span>
-                  <img class="ball-img" :src="getBallSrc(3)" alt="3" />
-                  <span class="symbol">+</span>
-                  <img class="ball-img" :src="getBallSrc(9)" alt="9" />
-                  <span class="symbol">+</span>
-                  <img class="ball-img" :src="getBallSrc(6)" alt="6" />
-                  <span class="symbol">=</span>
-                  <img class="ball-img" :src="getBallSrc(18)" alt="18" />
+                  <template v-if="preDrawBalls.length === 3">
+                    <img class="ball-img" :src="getBallSrc(preDrawBalls[0]!)" :alt="String(preDrawBalls[0])" />
+                    <span class="symbol">+</span>
+                    <img class="ball-img" :src="getBallSrc(preDrawBalls[1]!)" :alt="String(preDrawBalls[1])" />
+                    <span class="symbol">+</span>
+                    <img class="ball-img" :src="getBallSrc(preDrawBalls[2]!)" :alt="String(preDrawBalls[2])" />
+                    <span class="symbol">=</span>
+                    <img ref="lastBallRef" class="ball-img" :src="getBallSrc(preDrawSum)" :alt="String(preDrawSum)" />
+                  </template>
                 </div>
               </div>
               <div class="issue-row">
                 <div class="issue-left">
-                  <b class="text-green">3393562</b>
+                  <b class="text-green">{{ drawIssue }}</b>
                   <span class="ml10">期</span>
-                  <span class="text-blue ml10">两面盘</span>
+                  <span
+                    class="bet-tab ml10"
+                    :class="{ 'bet-tab-active': activeBetTab === 'twoSide' }"
+                    @click="activeBetTab = 'twoSide'"
+                  >两面盘</span>
+                  <span
+                    class="bet-tab ml10"
+                    :class="{ 'bet-tab-active': activeBetTab === 'balls' }"
+                    @click="activeBetTab = 'balls'"
+                  >1-3球</span>
                 </div>
                 <div class="issue-right">
-                  <span class="ml40">距离封盘:</span>
-                  <b class="time-box time-red ml5">00</b>
-                  <span class="time-sep">:</span>
-                  <b class="time-box time-red">02</b>
-                  <span class="time-sep">:</span>
-                  <b class="time-box time-red">52</b>
-                  <span class="ml40">距离开奖:</span>
-                  <b class="time-box time-green ml5">00</b>
-                  <span class="time-sep">:</span>
-                  <b class="time-box time-green">03</b>
-                  <span class="time-sep">:</span>
-                  <b class="time-box time-green">02</b>
+                  <template v-if="isDrawing">
+                    <span class="text-red ml40" style="font-weight:bold;">正在开奖...</span>
+                  </template>
+                  <template v-else>
+                    <div
+                      ref="countdownRef"
+                      class="countdown-group"
+                      :style="{ transform: `translateX(${countdownShift}px)` }"
+                    >
+                      <span class="ml40">距离封盘:</span>
+                      <b class="time-box time-red ml5">{{ sealCountdown.split(':')[0] }}</b>
+                      <span class="time-sep">:</span>
+                      <b class="time-box time-red">{{ sealCountdown.split(':')[1] }}</b>
+                      <span class="time-sep">:</span>
+                      <b class="time-box time-red">{{ sealCountdown.split(':')[2] }}</b>
+                      <span class="ml40">距离开奖:</span>
+                      <b class="time-box time-green ml5">{{ drawCountdown.split(':')[0] }}</b>
+                      <span class="time-sep">:</span>
+                      <b class="time-box time-green">{{ drawCountdown.split(':')[1] }}</b>
+                      <span class="time-sep">:</span>
+                      <b class="time-box time-green">{{ drawCountdown.split(':')[2] }}</b>
+                    </div>
+                  </template>
                 </div>
               </div>
             </div>
 
-            <div class="quick-bar">
-              <span class="quick-tab">快捷</span>
-              <span class="quick-tab active">一般</span>
+            <div class="quick-bar quick-bar-top">
+              <span
+                class="quick-tab"
+                :class="{ active: quickMode === 'quick' }"
+                @click="setQuickMode('quick')"
+              >
+                快捷
+              </span>
+              <span
+                class="quick-tab"
+                :class="{ active: quickMode === 'normal' }"
+                @click="setQuickMode('normal')"
+              >
+                一般
+              </span>
               <span class="text-blue ml10">金额</span>
               <input class="amount-input" type="text" />
               <button class="btn btn-ok">确定</button>
               <button class="btn btn-clear">清空</button>
               <button class="btn btn-save">保存</button>
-              <span class="ml10">（说明）</span>
+              <span class="ml10" role="button" tabindex="0" @click="onExplainClick">（说明）</span>
               <button class="btn btn-recent">最近开奖</button>
             </div>
 
+            <!-- 两面盘 content (hidden when 1-3球 tab is active) -->
+            <div v-show="activeBetTab === 'twoSide'">
             <h5 class="section-title">和值</h5>
 
-            <div class="sum-grid">
+            <div class="sum-grid" :class="{ 'sum-grid--quick': quickMode === 'quick' }">
               <div v-for="(group, groupIndex) in sumGroups" :key="groupIndex" class="sum-col">
                 <div class="sum-head">
                   <div class="sum-head-cell">和值</div>
                   <div class="sum-head-cell">赔率</div>
-                  <div class="sum-head-cell">金额</div>
+                  <div v-if="quickMode === 'normal'" class="sum-head-cell">金额</div>
                 </div>
-                <div v-for="item in group" :key="item.num" class="sum-row">
+                <div
+                  v-for="item in group"
+                  :key="item.num"
+                  class="sum-row"
+                  :class="{ 'sum-row-selected': isSumSelected(item.num) }"
+                  @click="toggleSumSelect(item.num)"
+                >
                   <div class="sum-cell ball-cell">
                     <img class="ball-img" :src="getBallSrc(item.num)" :alt="String(item.num)" />
                   </div>
                   <div class="sum-cell odd-cell">
                     <b class="text-red">{{ item.odd }}</b>
                   </div>
-                  <div class="sum-cell input-cell">
-                    <input class="cell-input" type="text" />
+                  <div v-if="quickMode === 'normal'" class="sum-cell input-cell">
+                    <input
+                      v-model="sumAmounts[item.num]"
+                      class="cell-input"
+                      type="text"
+                      @click.stop
+                      @focus="ensureSumSelected(item.num)"
+                    />
                   </div>
                 </div>
               </div>
@@ -237,11 +684,24 @@ const getBallSrc = (num: number) => {
             <h5 class="section-title two-side-title">两面</h5>
             <div class="two-side-grid">
               <div v-for="(row, index) in twoSideRows" :key="index" class="two-side-row">
-                <div v-for="item in row" :key="item.label" class="two-side-item">
+                <div
+                  v-for="item in row"
+                  :key="item.label"
+                  class="two-side-item"
+                  :class="{ 'bet-item-selected': isTwoSideSelected(item.label) }"
+                  @click="toggleTwoSideSelect(item.label)"
+                >
                   <span class="label">{{ item.label }}</span>
                   <span class="odd text-red">{{ item.odd }}</span>
                   <div class="input-box">
-                    <input class="cell-input" type="text" />
+                    <input
+                      v-if="quickMode === 'normal'"
+                      v-model="twoSideAmounts[item.label]"
+                      class="cell-input"
+                      type="text"
+                      @click.stop
+                      @focus="ensureTwoSideSelected(item.label)"
+                    />
                   </div>
                 </div>
               </div>
@@ -249,36 +709,124 @@ const getBallSrc = (num: number) => {
 
             <h5 class="section-title color-title">色波</h5>
             <div class="color-grid">
-              <div v-for="item in colorRows" :key="item.label" class="color-item">
+              <div
+                v-for="item in colorRows"
+                :key="item.label"
+                class="color-item"
+                :class="{ 'bet-item-selected': isColorSelected(item.label) }"
+                @click="toggleColorSelect(item.label)"
+              >
                 <span class="label" :class="`label-${item.label}`">{{ item.label }}</span>
                 <span class="odd text-red">{{ item.odd }}</span>
                 <div class="input-box">
-                  <input class="cell-input" type="text" />
+                  <input
+                    v-if="quickMode === 'normal'"
+                    v-model="colorAmounts[item.label]"
+                    class="cell-input"
+                    type="text"
+                    @click.stop
+                    @focus="ensureColorSelected(item.label)"
+                  />
                 </div>
               </div>
             </div>
 
             <h5 class="section-title pattern-title">豹子/顺子/对子</h5>
             <div class="pattern-grid">
-              <div v-for="item in patternRows" :key="item.label" class="pattern-item">
+              <div
+                v-for="item in patternRows"
+                :key="item.label"
+                class="pattern-item"
+                :class="{ 'bet-item-selected': isPatternSelected(item.label) }"
+                @click="togglePatternSelect(item.label)"
+              >
                 <span class="label">{{ item.label }}</span>
                 <span class="odd text-red">{{ item.odd }}</span>
                 <div class="input-box">
-                  <input class="cell-input" type="text" />
+                  <input
+                    v-if="quickMode === 'normal'"
+                    v-model="patternAmounts[item.label]"
+                    class="cell-input"
+                    type="text"
+                    @click.stop
+                    @focus="ensurePatternSelected(item.label)"
+                  />
                 </div>
               </div>
             </div>
+            </div><!-- end v-show twoSide -->
+
+            <!-- 1-3球 betting panel -->
+            <div v-show="activeBetTab === 'balls'" class="balls-panel">
+              <div class="balls-grid">
+                <div
+                  v-for="(colName, colIdx) in ['第一球', '第二球', '第三球']"
+                  :key="colIdx"
+                  class="balls-col"
+                >
+                  <!-- Column header with gradient background -->
+                  <div class="balls-col-header">{{ colName }}</div>
+
+                  <!-- Ball rows 0-9, odds 9.9 -->
+                  <div
+                    v-for="n in 10"
+                    :key="n - 1"
+                    class="balls-row"
+                  >
+                    <div class="balls-ball-cell">
+                      <img :src="getBallSrc(n - 1)" class="ball-img balls-ball-img" :alt="String(n - 1)" />
+                    </div>
+                    <div class="balls-odd-cell"><b class="text-red">9.9</b></div>
+                    <div class="balls-input-cell">
+                      <input
+                        v-model="ballAmounts[`${colIdx}_${n - 1}`]"
+                        class="balls-cell-input"
+                        type="text"
+                      />
+                    </div>
+                  </div>
+
+                  <!-- Two-side rows: 大 小 单 双, odds 1.9776 -->
+                  <div
+                    v-for="label in ['大', '小', '单', '双']"
+                    :key="label"
+                    class="balls-row"
+                  >
+                    <div class="balls-label-cell">{{ label }}</div>
+                    <div class="balls-odd-cell"><b class="text-red">1.9776</b></div>
+                    <div class="balls-input-cell">
+                      <input
+                        v-model="ballAmounts[`${colIdx}_${label}`]"
+                        class="balls-cell-input"
+                        type="text"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div><!-- end 1-3球 panel -->
 
             <div class="quick-bar quick-bar-bottom">
-              <span class="quick-tab">快捷</span>
-              <span class="quick-tab active">一般</span>
+              <span
+                class="quick-tab"
+                :class="{ active: quickMode === 'quick' }"
+                @click="setQuickMode('quick')"
+              >
+                快捷
+              </span>
+              <span
+                class="quick-tab"
+                :class="{ active: quickMode === 'normal' }"
+                @click="setQuickMode('normal')"
+              >
+                一般
+              </span>
               <span class="text-blue ml10">金额</span>
               <input class="amount-input" type="text" />
               <button class="btn btn-ok">确定</button>
               <button class="btn btn-clear">清空</button>
               <button class="btn btn-save">保存</button>
-              <span class="ml10">（说明）</span>
-              <button class="btn btn-recent">最近开奖</button>
+              <span class="ml10" role="button" tabindex="0" @click="onExplainClick">（说明）</span>
             </div>
 
             <div class="summary-bar">
@@ -288,7 +836,7 @@ const getBallSrc = (num: number) => {
                 class="summary-item"
                 :class="{
                   active: activeSummaryKey === tab.key,
-                  'summary-item-danger': activeSummaryKey === tab.key && tab.key === 'parity',
+                  'summary-item-danger': activeSummaryKey === tab.key,
                 }"
                 @click="onSummaryTabClick(tab.key)"
               >
@@ -296,7 +844,7 @@ const getBallSrc = (num: number) => {
               </span>
             </div>
 
-            <div class="summary-values">
+            <div class="summary-values" :class="`summary-values--${activeSummaryKey}`">
               <div
                 v-for="(value, idx) in activeSummaryValues"
                 :key="idx"
@@ -306,7 +854,16 @@ const getBallSrc = (num: number) => {
                   class="text-center pb10 uno-b-r wfull summary-cell-inner"
                   :class="{ 'bg-primary5': idx % 2 === 0 }"
                 >
-                  <div>
+                  <div v-if="Array.isArray(value)" class="multi-row">
+                    <span
+                      v-for="(item, itemIdx) in value"
+                      :key="itemIdx"
+                      class="value-text-multi"
+                    >
+                      {{ item }}
+                    </span>
+                  </div>
+                  <div v-else>
                     <span class="pt5 block value-text">{{ value }}</span>
                   </div>
                 </div>
@@ -371,7 +928,10 @@ const getBallSrc = (num: number) => {
 /* 不使用 flex:1，白色区域只占内容需要的高度 */
 .main-wrapper {
   width: 92%;
+  /* Shift entire panel 102px to the left */
   margin: 5px auto 0;
+  position: relative;
+  left: -102px;
   background: #fff;
   border-bottom: none;
 }
@@ -431,6 +991,12 @@ const getBallSrc = (num: number) => {
 .issue-right {
   display: flex;
   align-items: center;
+}
+
+.countdown-group {
+  display: inline-flex;
+  align-items: center;
+  pointer-events: none; /* prevent transformed element from intercepting tab button clicks */
 }
 
 .text-blue {
@@ -512,6 +1078,11 @@ const getBallSrc = (num: number) => {
   gap: 6px;
 }
 
+.quick-bar-top {
+  justify-content: flex-end;
+  padding: 0 10px;
+}
+
 .quick-bar-bottom {
   height: 48px;
   margin-top: 10px;
@@ -523,6 +1094,7 @@ const getBallSrc = (num: number) => {
   width: 35px;
   text-align: center;
   cursor: pointer;
+  color: #ff0000;
 }
 
 .quick-tab.active {
@@ -530,6 +1102,7 @@ const getBallSrc = (num: number) => {
   border: 1px solid #efba84;
   height: 25px;
   line-height: 25px;
+  color: #ff0000;
 }
 
 .amount-input {
@@ -561,8 +1134,11 @@ const getBallSrc = (num: number) => {
 }
 
 .btn-recent {
-  width: 72px;
-  background: #f5a623;
+  width: auto;
+  padding: 0 10px;
+  line-height: 20px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, #ff9c00, #ff5100);
 }
 
 .section-title {
@@ -655,6 +1231,10 @@ const getBallSrc = (num: number) => {
   border-bottom: 1px solid #efba84;
 }
 
+.sum-row {
+  cursor: pointer;
+}
+
 .sum-col .sum-row:last-child {
   border-bottom: none;
 }
@@ -662,6 +1242,12 @@ const getBallSrc = (num: number) => {
 .sum-row:hover .sum-cell,
 .sum-row:focus-within .sum-cell {
   background: #be9d76;
+}
+
+.sum-row-selected .sum-cell,
+.sum-row-selected:hover .sum-cell,
+.sum-row-selected:focus-within .sum-cell {
+  background: #ffc214;
 }
 
 .sum-cell {
@@ -687,6 +1273,19 @@ const getBallSrc = (num: number) => {
 .sum-cell:nth-child(3) {
   width: 74px;
   flex: 0 0 74px;
+}
+
+/* Quick mode: hide amount column and let odds stretch */
+.sum-grid--quick .sum-head-cell:nth-child(1),
+.sum-grid--quick .sum-cell:nth-child(1) {
+  width: 30px;
+  flex: 0 0 30px;
+}
+
+.sum-grid--quick .sum-head-cell:nth-child(2),
+.sum-grid--quick .sum-cell:nth-child(2) {
+  width: auto;
+  flex: 1 1 auto;
 }
 
 .sum-cell:last-child {
@@ -732,6 +1331,12 @@ const getBallSrc = (num: number) => {
   height: 30px;
   border-right: 1px solid #efba84;
   box-sizing: border-box;
+  cursor: pointer;
+}
+
+.two-side-item:hover,
+.two-side-item:focus-within {
+  background: #be9d76;
 }
 
 .two-side-item:last-child {
@@ -749,6 +1354,11 @@ const getBallSrc = (num: number) => {
   box-sizing: border-box;
   display: inline-block;
   font-size: 13px;
+}
+
+.two-side-item:hover .label,
+.two-side-item:focus-within .label {
+  background: transparent;
 }
 
 .two-side-item .odd {
@@ -796,6 +1406,12 @@ const getBallSrc = (num: number) => {
   height: 30px;
   border-right: 1px solid #efba84;
   box-sizing: border-box;
+  cursor: pointer;
+}
+
+.color-item:hover,
+.color-item:focus-within {
+  background: #be9d76;
 }
 
 .color-item:last-child {
@@ -869,6 +1485,30 @@ const getBallSrc = (num: number) => {
   height: 30px;
   border-right: 1px solid #efba84;
   box-sizing: border-box;
+  cursor: pointer;
+}
+
+.bet-item-selected,
+.bet-item-selected:hover,
+.bet-item-selected:focus-within {
+  background: #ffc214;
+}
+
+.bet-item-selected .label,
+.bet-item-selected:hover .label,
+.bet-item-selected:focus-within .label,
+.bet-item-selected .odd,
+.bet-item-selected:hover .odd,
+.bet-item-selected:focus-within .odd,
+.bet-item-selected .input-box,
+.bet-item-selected:hover .input-box,
+.bet-item-selected:focus-within .input-box {
+  background: #ffc214;
+}
+
+.pattern-item:hover,
+.pattern-item:focus-within {
+  background: #be9d76;
 }
 
 .pattern-item:last-child {
@@ -959,19 +1599,35 @@ const getBallSrc = (num: number) => {
 
 .summary-values {
   width: 719.1px;
-  height: 49.88px;
   display: grid;
   grid-template-columns: repeat(30, 23.97px);
+  /* Single row should fill the container height */
+  grid-auto-rows: 1fr;
   border: 1px solid var(--bw-border-color, #efba84);
   border-top: none;
   box-sizing: border-box;
   overflow: hidden;
 }
 
+/* Per-tab heights (3 different sizes in the design) */
+.summary-values--sum {
+  height: 49.88px;
+}
+
+.summary-values--size {
+  /* Match design inspection: 23.97 × 129.63 per cell */
+  height: 129.63px;
+}
+
+.summary-values--parity {
+  /* Match design inspection screenshot: 23.95 × 149.56 (inner cell) */
+  height: 149.56px;
+}
+
 .summary-value {
   display: block;
   width: 23.97px;
-  height: 49.88px;
+  height: 100%;
   box-sizing: border-box;
   overflow: hidden;
 }
@@ -1029,11 +1685,29 @@ const getBallSrc = (num: number) => {
   padding-top: 0;
 }
 
+.multi-row {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  padding: 4px 0;
+  height: 100%;
+}
+
+.value-text-multi {
+  display: block;
+  line-height: 1;
+  font-size: 13px;
+  padding: 1px 0;
+}
+
 /* ==================== 右侧公告栏 ==================== */
 .right-sidebar {
   width: 160px;
   flex-shrink: 0;
   margin-left: 10px;
+  /* Align top with game-panel top border (game-panel has margin-top: 5px) */
+  margin-top: 5px;
 }
 
 /* 公告标题行 */
@@ -1158,5 +1832,129 @@ const getBallSrc = (num: number) => {
   font-size: 13px;
   font-weight: 400;
   line-height: 30px;
+}
+
+/* ==================== 下注 tab 按钮 ==================== */
+.bet-tab {
+  cursor: pointer;
+  color: blue;
+  padding: 1px 4px;
+  font-size: 12px;
+}
+
+.bet-tab-active {
+  background: #ffffbf;
+  border: 1px solid #efba84;
+  color: #c00;
+}
+
+/* ==================== 1-3球 面板 ==================== */
+.balls-panel {
+  width: 720px;
+}
+
+.balls-grid {
+  width: 720px;
+  display: flex;
+  border: 1px solid #efba84;
+  box-sizing: border-box;
+}
+
+/* Each column: 1/3 width */
+.balls-col {
+  flex: 0 0 33.333%;
+  width: 33.333%;
+  border-right: 1px solid #efba84;
+  box-sizing: border-box;
+}
+
+.balls-col:last-child {
+  border-right: none;
+}
+
+/* Gradient header (第一球/第二球/第三球) */
+.balls-col-header {
+  height: 30px;
+  line-height: 30px;
+  text-align: center;
+  font-weight: bold;
+  font-size: 13px;
+  color: #fff;
+  background: linear-gradient(to bottom, #ab6939 0%, #3a1c04 100%);
+}
+
+/* Each data row */
+.balls-row {
+  display: flex;
+  height: 30px;
+  line-height: 30px;
+  border-top: 1px solid #efba84;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.balls-row:hover .balls-ball-cell,
+.balls-row:hover .balls-odd-cell,
+.balls-row:hover .balls-input-cell,
+.balls-row:hover .balls-label-cell {
+  background: #be9d76;
+}
+
+/* Ball image cell (60px) */
+.balls-ball-cell {
+  width: 60px;
+  flex: 0 0 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-right: 1px solid #efba84;
+  box-sizing: border-box;
+}
+
+/* Override default ball-img margin for this context */
+.balls-ball-img {
+  margin-left: 0 !important;
+}
+
+/* Odds cell (flex-1) */
+.balls-odd-cell {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-right: 1px solid #efba84;
+  box-sizing: border-box;
+}
+
+/* Amount input cell (flex-1) */
+.balls-input-cell {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+/* Amount text input */
+.balls-cell-input {
+  width: 50px;
+  height: 20px;
+  border: 1px solid #a0b4d8;
+  text-align: center;
+  font-size: 12px;
+  box-sizing: border-box;
+}
+
+/* Two-side label cell (大/小/单/双) with warm background */
+.balls-label-cell {
+  width: 60px;
+  flex: 0 0 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-right: 1px solid #efba84;
+  font-weight: bold;
+  background: #fff1e4;
+  box-sizing: border-box;
 }
 </style>

@@ -102,3 +102,13 @@ export const passwordApi = {
     api.post('/auth/change-password', data)
 }
 
+// Lottery API - proxies upstream bw1284.cc lottery data
+export const lotteryApi = {
+  /** Get current issue info: latest result + next draw countdown */
+  getInfo: (lotCode = 720) =>
+    api.get('/public/lottery/info', { params: { lotCode, t: Date.now() } }),
+
+  /** Get paginated lottery history list */
+  getList: (lotCode = 720, pageNo = 1, pageSize = 30) =>
+    api.get('/public/lottery/list', { params: { lotCode, pageNo, pageSize, t: Date.now() } }),
+}

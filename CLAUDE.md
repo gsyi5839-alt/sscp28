@@ -1,5 +1,7 @@
 # CLAUDE.md
 
+SSH：ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGvOP0Rx02V3eJXkG5du64sMKudkZr4rMDbpEn6Rduve root@C202512162177144，已添加
+
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Project Overview

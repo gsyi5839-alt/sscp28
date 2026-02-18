@@ -16,15 +16,16 @@ const frozenAmount = computed(() => 0)
 
 /* ============ 左侧游戏快捷入口 ============ */
 const sideGames = [
-  { key: 'bw128', label: 'BW128开奖网' },
-  { key: 'caPc28', label: '加拿大PC28' },
-  { key: 'caSsc', label: '加拿大时时彩' },
-  { key: 'happyRacing', label: '欢乐赛车' },
-  { key: 'happySsc', label: '欢乐时时彩' },
+  { key: 'bw128', label: 'BW128开奖网', url: 'https://bw1283.cc/#/home' },
+  { key: 'caPc28', label: '加拿大PC28', url: 'https://bw1284.cc/#/detail/1725113792562?lotCode=720' },
+  { key: 'caSsc', label: '加拿大时时彩', url: 'https://bw1284.cc/#/detail/1725113905463?lotCode=719' },
+  { key: 'happyRacing', label: '欢乐赛车', url: 'https://bw1283.cc/#/detail/1725113915131?lotCode=763' },
+  { key: 'happySsc', label: '欢乐时时彩', url: 'https://bw1285.cc/#/detail/1725113923036?lotCode=762' },
 ]
 
-const onGameClick = (key: string) => {
-  console.log('切换游戏:', key)
+const onGameClick = (url: string) => {
+  // 在新标签页中打开游戏链接
+  window.open(url, '_blank')
 }
 </script>
 
@@ -65,7 +66,7 @@ const onGameClick = (key: string) => {
         type="primary"
         size="large"
         class="game-btn"
-        @click="onGameClick(game.key)"
+        @click="onGameClick(game.url)"
       >
         {{ game.label }}
       </el-button>
@@ -77,6 +78,8 @@ const onGameClick = (key: string) => {
 .member-sidebar {
   width: 200px;
   flex-shrink: 0;
+  /* Align top with game-panel top border (game-panel has margin-top: 5px) */
+  margin-top: 5px;
 }
 
 /* 统一内容宽度（与设计 184px 一致） */
