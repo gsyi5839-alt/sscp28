@@ -101,10 +101,10 @@ const onGameClick = (url: string) => {
   color: #fff;
   font-weight: 400;
   font-size: 13px;
-  /* 原版 .uno-b-b：border-bottom 1px solid #efba84 */
-  border-bottom: 1px solid #efba84;
+  /* 原版 .uno-b-b：border-bottom 1px solid var(--bw-border-color, #efba84) */
+  border-bottom: 1px solid var(--bw-border-color, #efba84);
   /* 原版 gradient-bg3 = --bw-linear-bg */
-  background: linear-gradient(to bottom, #ab6939 0%, #3a1c04 100%);
+  background: var(--bw-linear-bg, linear-gradient(to bottom, #a6744d 0%, #351c0c 100%));
 }
 
 /* ========== 用户名 ========== */
@@ -116,10 +116,10 @@ const onGameClick = (url: string) => {
   color: red;
   font-weight: 400;
   font-size: 13px;
-  /* 原版 .uno-b-b：border-bottom 1px solid #efba84 */
-  border-bottom: 1px solid #efba84;
-  border-left: 1px solid #efba84;
-  border-right: 1px solid #efba84;
+  /* 原版 .uno-b-b：border-bottom 1px solid var(--bw-border-color, #efba84) */
+  border-bottom: 1px solid var(--bw-border-color, #efba84);
+  border-left: 1px solid var(--bw-border-color, #efba84);
+  border-right: 1px solid var(--bw-border-color, #efba84);
 }
 
 /* ========== 额度信息（表格样式） ========== */
@@ -127,8 +127,8 @@ const onGameClick = (url: string) => {
 /* 不需要 border-top，.username 的 border-bottom 已提供上边线 */
 .info-list {
   padding: 0;
-  border-left: 1px solid #efba84;
-  border-right: 1px solid #efba84;
+  border-left: 1px solid var(--bw-border-color, #efba84);
+  border-right: 1px solid var(--bw-border-color, #efba84);
 }
 
 .info-row {
@@ -136,7 +136,7 @@ const onGameClick = (url: string) => {
   align-items: center;
   height: 32px;
   line-height: 32px;
-  border-bottom: 1px solid #efba84;
+  border-bottom: 1px solid var(--bw-border-color, #efba84);
   box-sizing: border-box;
 }
 
@@ -147,15 +147,15 @@ const onGameClick = (url: string) => {
   font-weight: 400;
   flex-shrink: 0;
   text-align: center;
-  /* 原版：border-right: 1px solid #efba84 */
-  border-right: 1px solid #efba84;
+  /* 原版：border-right: 1px solid var(--bw-border-color, #efba84) */
+  border-right: 1px solid var(--bw-border-color, #efba84);
   height: 100%;
   display: flex;
   align-items: center;
   justify-content: flex-end;
   padding-right: 0;
-  /* 原版：background-color: var(--bw-form-item-label-bg-color) = #fff1e4 */
-  background-color: #fff1e4;
+  /* 原版：background-color: var(--bw-form-item-label-bg-color) = var(--bw-form-item-label-bg-color, #fff1e4) */
+  background-color: var(--bw-form-item-label-bg-color, #fff1e4);
 }
 
 .info-value {
@@ -184,13 +184,13 @@ const onGameClick = (url: string) => {
   text-align: center !important;
   justify-content: center !important;
   padding: 0 !important;
-  /* 原版按钮背景色 #5c2e0d（深棕色） */
-  --el-button-bg-color: #5c2e0d !important;
-  --el-button-border-color: #5c2e0d !important;
-  --el-button-hover-bg-color: rgba(92, 46, 13, 0.9) !important;
-  --el-button-hover-border-color: rgba(92, 46, 13, 0.9) !important;
-  --el-button-active-bg-color: #5c2e0d !important;
-  --el-button-active-border-color: #5c2e0d !important;
+  /* 原版按钮背景色 var(--el-color-primary, #5c2e0d)（深棕色） */
+  --el-button-bg-color: var(--el-color-primary, #5c2e0d) !important;
+  --el-button-border-color: var(--el-color-primary, #5c2e0d) !important;
+  --el-button-hover-bg-color: var(--el-color-primary-light-3, rgba(92, 46, 13, 0.9)) !important;
+  --el-button-hover-border-color: var(--el-color-primary-light-3, rgba(92, 46, 13, 0.9)) !important;
+  --el-button-active-bg-color: var(--el-color-primary, #5c2e0d) !important;
+  --el-button-active-border-color: var(--el-color-primary, #5c2e0d) !important;
 }
 
 .game-btn:last-child {

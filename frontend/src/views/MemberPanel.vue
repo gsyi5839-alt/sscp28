@@ -36,10 +36,10 @@ const DEFAULT_MEMBER_LINES: LineItem[] = [
 ]
 
 const DEFAULT_AGENT_LINES: LineItem[] = [
-  { id: 'a1', name: '代理线路 1', pingMs: 40, url: '/admin/login', type: 'AGENT' },
-  { id: 'a2', name: '代理线路 2', pingMs: 48, url: '/admin/login', type: 'AGENT' },
-  { id: 'a3', name: '代理线路 3', pingMs: 60, url: '/admin/login', type: 'AGENT' },
-  { id: 'a4', name: '代理线路 4', pingMs: 75, url: '/admin/login', type: 'AGENT' }
+  { id: 'a1', name: '代理线路 1', pingMs: 40, url: '/agent/login', type: 'AGENT' },
+  { id: 'a2', name: '代理线路 2', pingMs: 48, url: '/agent/login', type: 'AGENT' },
+  { id: 'a3', name: '代理线路 3', pingMs: 60, url: '/agent/login', type: 'AGENT' },
+  { id: 'a4', name: '代理线路 4', pingMs: 75, url: '/agent/login', type: 'AGENT' }
 ]
 
 function readCachedLines(key: string, fallback: LineItem[]) {
@@ -96,7 +96,7 @@ const selectLine = () => {
   if (activeTab.value === 'member') {
     router.push('/member/login')
   } else {
-    router.push('/admin/login')
+    router.push('/agent/login')
   }
 }
 

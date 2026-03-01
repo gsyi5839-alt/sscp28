@@ -1,8 +1,12 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import logoImg from '@/assets/通用/logo.png'
+
+// Expose the "盘面" selection (两面盘 / 1-3球) to the parent page (GameHome)
+// so clicking the header sub-nav can switch the actual betting panel.
+const betTab = defineModel<'twoSide' | 'balls'>('betTab', { default: 'twoSide' })
 
 /* ============ 类型 ============ */
 interface NavItem { key: string; label: string }
@@ -50,18 +54,32 @@ const subNav: SubNavItem[] = [
 ]
 
 /* ============ 主题色 ============ */
-const themeColors = [
-  { key: 'purple', color: '#b654a7' },
+type ThemeKey = 'red' | 'green' | 'cyan' | 'blue' | 'brown'
+
+const themeColors: Array<{ key: ThemeKey; color: string }> = [
+  { key: 'red', color: '#b654a7' },
   { key: 'green', color: '#4a8e57' },
-  { key: 'teal', color: '#518594' },
+  { key: 'cyan', color: '#518594' },
   { key: 'blue', color: '#28a3ef' },
   { key: 'brown', color: '#be9d76' },
 ]
 
 /* ============ 状态 ============ */
 const activeGameKey = ref('caPc28')
-const activeSubKey = ref('twoSides')
-const activeTheme = ref('brown') // 默认棕色主题
+const activeTheme = ref<ThemeKey>('brown') // 默认棕色主题
+const THEME_STORAGE_KEY = 'bw-member-active-theme-name'
+const THEME_CLASS_LIST: ThemeKey[] = ['red', 'green', 'cyan', 'blue', 'brown']
+
+const isThemeKey = (value: string | null): value is ThemeKey => {
+  return !!value && THEME_CLASS_LIST.includes(value as ThemeKey)
+}
+
+const applyTheme = (theme: ThemeKey) => {
+  const root = document.documentElement
+  root.classList.remove(...THEME_CLASS_LIST)
+  root.classList.add(theme)
+  localStorage.setItem(THEME_STORAGE_KEY, theme)
+}
 
 /* ============ 事件处理 ============ */
 const onTopClick = async (key: string) => {
@@ -82,13 +100,23 @@ const onMoreGameClick = (key: string) => {
 }
 
 const onSubNavClick = (key: string) => {
-  activeSubKey.value = key
+  // Map header sub-nav keys to actual betting tab values used in GameHome.
+  // twoSides -> twoSide, ball13 -> balls
+  if (key === 'twoSides') betTab.value = 'twoSide'
+  if (key === 'ball13') betTab.value = 'balls'
 }
 
-const onThemeClick = (key: string) => {
+const onThemeClick = (key: ThemeKey) => {
   activeTheme.value = key
-  // 后续可实现主题切换逻辑
+  applyTheme(key)
 }
+
+onMounted(() => {
+  const saved = localStorage.getItem(THEME_STORAGE_KEY)
+  const nextTheme: ThemeKey = isThemeKey(saved) ? saved : 'brown'
+  activeTheme.value = nextTheme
+  applyTheme(nextTheme)
+})
 </script>
 
 <template>
@@ -176,7 +204,10 @@ const onThemeClick = (key: string) => {
           <template v-for="(item, idx) in subNav" :key="item.key">
             <span
               class="sub-item"
-              :class="{ active: item.key === activeSubKey }"
+              :class="{
+                active: (betTab === 'twoSide' ? 'twoSides' : 'ball13') === item.key,
+                'sub-item-ball13': item.key === 'ball13'
+              }"
               @click="onSubNavClick(item.key)"
             >
               {{ item.label }}
@@ -203,9 +234,9 @@ const onThemeClick = (key: string) => {
   position: relative;
   height: 70px;
   width: 100%;
-  background: #3a1c04 url('@/assets/顶部导航栏背景图.png') repeat-x center top;
-  background-size: auto 70px;
-  border-bottom: 1px solid #c9b79e;
+  background: var(--bw-linear-bg, linear-gradient(to bottom, #a6744d 0%, #351c0c 100%));
+  border-bottom: 1px solid var(--bw-border-color, #efba84);
+  box-shadow: inset 0 1px 0 rgba(255, 197, 138, 0.55), inset 0 -1px 0 rgba(0, 0, 0, 0.3);
   overflow: hidden;
 }
 
@@ -267,7 +298,7 @@ const onThemeClick = (key: string) => {
   left: 95px;
   top: 12px;
   font-size: 24px;
-  color: #f8bb00;
+  color: var(--bw-header-color, #be9d76);
   line-height: 1;
   white-space: nowrap;
 }
@@ -336,9 +367,9 @@ const onThemeClick = (key: string) => {
   cursor: pointer;
   user-select: none;
   color: #ffffff;
-  background: url('@/assets/更多背景图.png') no-repeat center;
-  background-size: 100% 100%;
-  border: none;
+  background: var(--bw-linear-bg, linear-gradient(to bottom, #a6744d 0%, #351c0c 100%));
+  border: 1px solid var(--bw-border-color, #efba84);
+  box-sizing: border-box;
   transition: color 0.15s;
 }
 
@@ -378,7 +409,9 @@ const onThemeClick = (key: string) => {
 .menus {
   height: 31px;
   width: 100%;
-  background: linear-gradient(180deg, #f5e6d0 0%, #e8d3b8 100%);
+  background: var(--bw-bg-3, #fff7ef);
+  border-top: 1px solid var(--bw-border-color, #efba84);
+  border-bottom: 1px solid var(--bw-border-color, #efba84);
   display: flex;
   align-items: center;
 }
@@ -419,34 +452,41 @@ const onThemeClick = (key: string) => {
 
 .sub-item {
   display: inline-block;
-  min-width: 46px;
-  height: 20px;
-  line-height: 20px;
-  margin: 0 4px;
-  padding: 0 6px;
+  min-width: auto;
+  width: auto;
+  height: 17px;
+  line-height: 17px;
+  margin: 0 5px;
+  padding: 0;
   text-align: center;
   cursor: pointer;
   font-size: 13px;
-  font-weight: 400;
-  color: var(--bw-default-color, #8b5e3c);
-  border-radius: 2px;
+  font-weight: 700;
+  color: var(--bw-default-color, #351c0c);
   transition: color 0.15s;
+  white-space: nowrap;
+}
+
+.sub-item-ball13 {
+  width: 34.72px;
 }
 
 .sub-item:hover {
-  color: #d10000;
+  color: #ff0000;
 }
 
 .sub-item.active {
-  color: #d10000 !important;
-  background: linear-gradient(180deg, #d8eefc 0%, #9dd3f5 100%);
-  border: 1px solid #6aaed9;
+  color: #ff0000 !important;
+  /* Active: keep font color highlight only (no background fill). */
+  background: transparent !important;
+  border: none !important;
 }
 
 .sub-sep {
-  color: #000;
+  color: #fff;
   font-size: 13px;
-  font-weight: 400;
+  line-height: 17px;
+  font-weight: 700;
 }
 
 /* ========================= 更多游戏下拉项 ========================= */
@@ -459,8 +499,9 @@ const onThemeClick = (key: string) => {
   font-weight: 400;
   color: #ffffff;
   cursor: pointer;
-  background: url('@/assets/更多背景图.png') no-repeat center;
-  background-size: 100% 100%;
+  background: var(--bw-linear-bg, linear-gradient(to bottom, #a6744d 0%, #351c0c 100%));
+  border: 1px solid var(--bw-border-color, #efba84);
+  box-sizing: border-box;
   transition: color 0.15s;
 }
 

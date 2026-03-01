@@ -121,7 +121,8 @@ onMounted(() => {
       <!-- Right side - Login form with background image -->
       <div class="right-section" :style="{ backgroundImage: `url(${rightBgImage})` }">
         <!-- Login form - title is part of background image -->
-        <div class="form-content">
+        <!-- Use a real <form> so Enter submits the login action (account/password/captcha). -->
+        <form class="form-content" @submit.prevent="handleLogin">
           <!-- Account input -->
           <div class="form-row">
             <label class="form-label">账号:</label>
@@ -130,6 +131,7 @@ onMounted(() => {
               type="text"
               class="form-input"
               placeholder="请输入账号"
+              @keydown.enter.prevent="handleLogin"
             />
           </div>
 
@@ -141,6 +143,7 @@ onMounted(() => {
               type="password"
               class="form-input"
               placeholder="请输入密码"
+              @keydown.enter.prevent="handleLogin"
             />
           </div>
 
@@ -153,6 +156,7 @@ onMounted(() => {
               class="form-input captcha-input"
               placeholder="验证码"
               maxlength="4"
+              @keydown.enter.prevent="handleLogin"
             />
             <!-- Captcha display -->
             <div class="captcha-display" @click="generateCaptcha">
@@ -164,13 +168,13 @@ onMounted(() => {
           <div class="form-row button-row">
             <button
               class="login-btn"
+              type="submit"
               :disabled="loading"
-              @click="handleLogin"
             >
               {{ loading ? '...' : '登录' }}
             </button>
           </div>
-        </div>
+        </form>
 
         <!-- Divider line inside login box -->
         <div class="divider"></div>
@@ -409,4 +413,3 @@ onMounted(() => {
   }
 }
 </style>
-
