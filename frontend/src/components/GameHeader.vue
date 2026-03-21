@@ -1,12 +1,20 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import logoImg from '@/assets/通用/logo.png'
+
+// Props for controlling header behavior
+const props = defineProps<{
+  hideSubNav?: boolean  // Hide the sub-nav (两面盘 | 1-3球) on certain pages like BetStatus
+}>()
 
 // Expose the "盘面" selection (两面盘 / 1-3球) to the parent page (GameHome)
 // so clicking the header sub-nav can switch the actual betting panel.
 const betTab = defineModel<'twoSide' | 'balls'>('betTab', { default: 'twoSide' })
+
+// Expose content view state for switching between game panel and draw results
+const contentView = defineModel<'game' | 'drawResults'>('contentView', { default: 'game' })
 
 /* ============ 类型 ============ */
 interface NavItem { key: string; label: string }
@@ -14,6 +22,7 @@ interface GameItem { key: string; label: string; badge?: 'new' | 'hot' }
 interface SubNavItem { key: string; label: string }
 
 const router = useRouter()
+const route = useRoute()
 const authStore = useAuthStore()
 
 /* ============ 顶部导航 ============ */
@@ -88,22 +97,77 @@ const onTopClick = async (key: string) => {
     await router.push('/member/login')
     return
   }
-  // 其他导航功能待后续实现
+  if (key === 'betStatus') {
+    await router.push('/bet-status')
+    return
+  }
+  if (key === 'accountHistory') {
+    await router.push('/account-history')
+    return
+  }
+  if (key === 'drawResults') {
+    contentView.value = 'drawResults'
+    const nextQuery = { ...route.query, view: 'drawResults' }
+    if (router.currentRoute.value.name !== 'gameHome') {
+      await router.push({ name: 'gameHome', query: nextQuery })
+      return
+    }
+    await router.replace({ name: 'gameHome', query: nextQuery })
+    return
+  }
+  // Other navigation functions to be implemented
 }
 
 const onGameClick = (key: string) => {
   activeGameKey.value = key
+  // Reset to game view when switching games
+  contentView.value = 'game'
+  // If not on GameHome page, navigate to it
+  if (router.currentRoute.value.name !== 'gameHome') {
+    router.push({ name: 'gameHome' })
+    return
+  }
+  if (route.query.view) {
+    const nextQuery = { ...route.query }
+    delete nextQuery.view
+    router.replace({ name: 'gameHome', query: nextQuery })
+  }
 }
 
 const onMoreGameClick = (key: string) => {
   activeGameKey.value = key
+  // Reset to game view when switching games
+  contentView.value = 'game'
+  // If not on GameHome page, navigate to it
+  if (router.currentRoute.value.name !== 'gameHome') {
+    router.push({ name: 'gameHome' })
+    return
+  }
+  if (route.query.view) {
+    const nextQuery = { ...route.query }
+    delete nextQuery.view
+    router.replace({ name: 'gameHome', query: nextQuery })
+  }
 }
 
 const onSubNavClick = (key: string) => {
   // Map header sub-nav keys to actual betting tab values used in GameHome.
   // twoSides -> twoSide, ball13 -> balls
-  if (key === 'twoSides') betTab.value = 'twoSide'
-  if (key === 'ball13') betTab.value = 'balls'
+  const newTab = key === 'twoSides' ? 'twoSide' : 'balls'
+  contentView.value = 'game'
+  
+  // If on GameHome page, just switch the tab
+  if (router.currentRoute.value.name === 'gameHome') {
+    betTab.value = newTab
+    if (route.query.view) {
+      const nextQuery = { ...route.query }
+      delete nextQuery.view
+      router.replace({ name: 'gameHome', query: nextQuery })
+    }
+  } else {
+    // On other pages (e.g. BetStatus), navigate to GameHome with the tab parameter
+    router.push({ name: 'gameHome', query: { tab: newTab } })
+  }
 }
 
 const onThemeClick = (key: ThemeKey) => {
@@ -198,8 +262,8 @@ onMounted(() => {
         />
       </div>
 
-      <!-- 子导航项 -->
-      <div class="menus-center">
+      <!-- 子导航项 - 可通过 hideSubNav prop 隐藏 -->
+      <div v-if="!props.hideSubNav" class="menus-center">
         <div class="sub-nav">
           <template v-for="(item, idx) in subNav" :key="item.key">
             <span
@@ -224,7 +288,10 @@ onMounted(() => {
 /* ========================= 整体容器 ========================= */
 .header-container {
   width: 100%;
-  min-width: 1418px;
+  /* Removed min-width: 1418px to prevent horizontal overflow causing colored bars on the right side */
+  /* Use max-width and overflow-x to contain content without forcing viewport expansion */
+  max-width: 100vw;
+  overflow-x: hidden;
   color: #ffffff;
   font-weight: 700;
 }
@@ -298,7 +365,7 @@ onMounted(() => {
   left: 95px;
   top: 12px;
   font-size: 24px;
-  color: var(--bw-header-color, #be9d76);
+  color: #f8bb00;
   line-height: 1;
   white-space: nowrap;
 }

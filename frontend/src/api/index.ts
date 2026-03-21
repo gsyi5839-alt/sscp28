@@ -108,7 +108,11 @@ export const lotteryApi = {
   getInfo: (lotCode = 720) =>
     api.get('/public/lottery/info', { params: { lotCode, t: Date.now() } }),
 
+  /** Get upstream lottery catalog */
+  getGames: () =>
+    api.get('/public/lottery/games', { params: { t: Date.now() } }),
+
   /** Get paginated lottery history list */
-  getList: (lotCode = 720, pageNo = 1, pageSize = 30) =>
-    api.get('/public/lottery/list', { params: { lotCode, pageNo, pageSize, t: Date.now() } }),
+  getList: (lotCode = 720, pageNo = 1, pageSize = 30, date?: string | null) =>
+    api.get('/public/lottery/list', { params: { lotCode, pageNo, pageSize, date, t: Date.now() } }),
 }

@@ -1,17 +1,53 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { ElMessageBox } from 'element-plus'
 import GameHeader from '../components/GameHeader.vue'
 import MemberSidebar from '../components/MemberSidebar.vue'
 import NoticeDialog from '../components/NoticeDialog.vue'
+import DrawResults from './DrawResults.vue'
 import { lotteryApi } from '../api/index'
+import systemClosedBg from '@/assets/通用/bg.png'
+
+const route = useRoute()
 
 // ─── 公告弹窗 ────────────────────────────────────────────────────────────────
+const NOTICE_SHOWN_KEY = 'bw-notice-shown-session'
 const showNoticeDialog = ref(false)
+const showNoticeList = ref(false)
 
 const handleCloseNotice = () => {
   showNoticeDialog.value = false
+  // Mark notice as shown in this session
+  sessionStorage.setItem(NOTICE_SHOWN_KEY, 'true')
 }
+
+// ─── 内嵌公告列表 ──────────────────────────────────────────────────────────────
+const activeNoticeTab = ref('特别通知')
+const noticeTabItems = [
+  { key: '特别通知', label: '特别通知' },
+  { key: '通知', label: '通知' },
+  { key: '安全通知', label: '安全通知' },
+  { key: '站点通知', label: '站点通知' }
+]
+const noticeListData: Record<string, Array<{ id: number; time: string; content: string; isHighlight?: boolean }>> = {
+  '特别通知': [
+    { id: 1, time: '2026-02-27 12:03', content: '尊敬的会员您好！值此马年新春之际，谨向一直以来支持与信赖我们的广大用户朋友致以衷心感谢和新春祝福！新的一年，我们将持续提升系统稳定性与服务效率，优化产品体验，为您提供更加安全、便捷、优质的服务保障。感谢您一直以来对本系统的支持！请认准本系统(18118bw.com,18118bw.cc)开奖网(bw128.cc)', isHighlight: true },
+    { id: 2, time: '2026-01-20 05:11', content: '尊敬的会员您好，当心市场冒充老BW这类骗局，请认准本系统(18118bw.com,18118bw.cc)开奖网(bw128.cc)' },
+    { id: 3, time: '2024-09-14 06:59', content: '尊敬的会员，您好！为了公平公正的原则，以及更好的游戏氛围及体验，本系统新添加官方游戏，加拿大PC28和加拿大时时彩，开奖数据由加拿大官方提供(https://lotto.bclc.com)同时每个游戏添加新玩法（宝斗，牛牛，斗牛）' }
+  ],
+  '通知': [
+    { id: 4, time: '2026-02-15 10:00', content: '请各位会员注意保管好自己的账号密码，不要向任何人透露您的账户信息。' }
+  ],
+  '安全通知': [
+    { id: 5, time: '2026-02-10 08:30', content: '为了保障您的账户安全，建议定期修改密码，并开启双重验证。' }
+  ],
+  '站点通知': [
+    { id: 6, time: '2026-02-01 09:00', content: '欢迎访问本站，祝您使用愉快！如有任何问题请联系在线客服。' }
+  ]
+}
+const currentNoticeList = computed(() => noticeListData[activeNoticeTab.value] || [])
+const onNoticeTabClick = (key: string) => { activeNoticeTab.value = key }
 
 // ─── 开奖 API 数据 ────────────────────────────────────────────────────────────
 /** 当前彩种 code，720 = 加拿大PC28 */
@@ -32,6 +68,15 @@ const sealCountdown = ref('--:--:--')
 const drawCountdown = ref('--:--:--')
 /** 是否处于开奖中状态（倒计时已过，等待新期数据） */
 const isDrawing = ref(false)
+
+/** 系统封盘时间状态（中国时间每天 06:00-07:00） */
+const currentTime = ref(new Date())
+const isSystemClosed = computed(() => {
+  // Convert to China time (UTC+8)
+  const now = currentTime.value
+  const chinaHour = (now.getUTCHours() + 8) % 24
+  return chinaHour >= 6 && chinaHour < 7
+})
 
 /** 历史统计：最近30期和值列表（来自 API） */
 const historyNums = ref<number[]>([])
@@ -166,6 +211,9 @@ const tickCountdown = () => {
   const drawDiff = drawTimestamp - now
   const sealDiff = sealTimestamp - now
 
+  // Update current time for system closed check (06:00-07:00)
+  currentTime.value = new Date()
+
   if (drawDiff <= 0 && drawTimestamp > 0) {
     // Draw time has passed — enter "drawing" state and keep polling for the new period
     isDrawing.value = true
@@ -185,8 +233,20 @@ onMounted(() => {
   const favicon = document.getElementById('favicon') as HTMLLinkElement
   if (favicon) favicon.href = '/favicon.png'
 
-  // Show notice after short delay
-  setTimeout(() => { showNoticeDialog.value = true }, 500)
+  // Handle tab parameter from URL query (for navigation from other pages)
+  const tabFromQuery = route.query.tab as string
+  if (tabFromQuery === 'twoSide' || tabFromQuery === 'balls') {
+    activeBetTab.value = tabFromQuery
+  }
+  if (route.query.view === 'drawResults') {
+    activeContentView.value = 'drawResults'
+  }
+
+  // Show notice after short delay (only once per session)
+  const hasShownNotice = sessionStorage.getItem(NOTICE_SHOWN_KEY)
+  if (!hasShownNotice) {
+    setTimeout(() => { showNoticeDialog.value = true }, 500)
+  }
 
   // Initial data load
   fetchLotteryInfo()
@@ -444,9 +504,10 @@ const summarySize = computed(() =>
 const summaryParity = computed(() =>
   buildRoadColumns(historyIssues.value.map((issue: any) => {
     const label = issue?.parityLabel
-    if (label) return String(label)
+    // Skip tie results ('和') — sum=27 in PC28 is neither 单 nor 双
+    if (label && label !== '和') return String(label)
     const sum = getIssueSum(issue)
-    if (sum == null) return ''
+    if (sum == null || sum === 27) return ''
     return sum % 2 === 0 ? '双' : '单'
   }))
 )
@@ -455,8 +516,41 @@ const activeSummaryKey = ref<SummaryKey>('sum')
 const quickMode = ref<QuickMode>('normal')
 // Active betting tab: 'twoSide' = 两面盘, 'balls' = 1-3球
 const activeBetTab = ref<'twoSide' | 'balls'>('twoSide')
+// Active content view: 'game' = default game panel, 'drawResults' = lottery results
+const activeContentView = ref<'game' | 'drawResults'>('game')
+const centerContentClasses = computed(() => ({
+  'center-content--wide': activeContentView.value === 'drawResults'
+}))
+const mainWrapperClasses = computed(() => ({
+  'main-wrapper--draw-results': activeContentView.value === 'drawResults'
+}))
+// 当切换游戏标签时，自动返回游戏内容
+watch(activeBetTab, () => {
+  showNoticeList.value = false
+  activeContentView.value = 'game'
+})
+
+watch(activeContentView, (view) => {
+  if (view === 'drawResults') {
+    showNoticeList.value = false
+  }
+})
+
+watch(
+  () => route.query.view,
+  (view) => {
+    activeContentView.value = view === 'drawResults' ? 'drawResults' : 'game'
+    if (view === 'drawResults') {
+      showNoticeList.value = false
+    }
+  },
+  { immediate: true }
+)
 // Ball amounts for 1-3球 panel: flat map with key "${colIdx}_${ballKey}" (e.g. "0_3", "1_大")
 const ballAmounts = ref<Record<string, string>>({})
+// 1-3球选中状态
+const selectedBallKeys = ref<Set<string>>(new Set())
+const activeBallKey = ref<string | null>(null)
 const selectedSumNums = ref<Set<number>>(new Set())
 const sumAmounts = ref<Record<number, string>>({})
 const activeSumNum = ref<number | null>(null)
@@ -578,6 +672,31 @@ const isPatternSelected = (key: string) => {
   if (quickMode.value === 'quick') return selectedPatternKeys.value.has(key)
   const amount = patternAmounts.value[key]
   return (amount && amount.trim() !== '') || activePatternKey.value === key
+}
+
+// 1-3球选中状态函数
+const toggleBallSelect = (key: string) => {
+  if (quickMode.value === 'quick') {
+    const next = new Set(selectedBallKeys.value)
+    if (next.has(key)) {
+      next.delete(key)
+    } else {
+      next.add(key)
+    }
+    selectedBallKeys.value = next
+    return
+  }
+  activeBallKey.value = key
+}
+
+const ensureBallSelected = (key: string) => {
+  activeBallKey.value = key
+}
+
+const isBallSelected = (key: string) => {
+  if (quickMode.value === 'quick') return selectedBallKeys.value.has(key)
+  const amount = ballAmounts.value[key]
+  return (amount && amount.trim() !== '') || activeBallKey.value === key
 }
 
 const onExplainClick = () => {
@@ -745,18 +864,28 @@ const getBallSrc = (num: number) => {
 
 <template>
   <div class="page">
-    <GameHeader v-model:betTab="activeBetTab" />
+    <GameHeader v-model:betTab="activeBetTab" v-model:contentView="activeContentView" />
 
-    <!-- 主体：92%宽度居中，白色背景，无底边框 -->
-    <div class="main-wrapper">
+    <!-- main wrapper: 92% width centered, white bg, no bottom border -->
+    <div class="main-wrapper" :class="mainWrapperClasses">
       <!-- 三栏布局：左侧栏 + 主内容 + 右侧栏 -->
       <div class="main-body">
         <!-- 左侧：会员信息 -->
         <MemberSidebar />
 
         <!-- 中间：主内容区域 -->
-        <div class="center-content">
-          <div class="game-panel">
+        <div class="center-content" :class="centerContentClasses">
+          <!-- Draw Results panel -->
+          <div v-if="activeContentView === 'drawResults'" key="draw-results-view" class="draw-results-view">
+            <DrawResults />
+          </div>
+
+          <!-- 游戏面板（默认显示） -->
+          <div v-else-if="!showNoticeList" key="game-panel-view" class="game-panel">
+            <!-- 系统封盘遮罩层（中国时间每天 06:00-07:00） -->
+            <div v-if="isSystemClosed" class="system-closed-overlay">
+              <img :src="systemClosedBg" alt="系统封盘" class="system-closed-bg" />
+            </div>
             <div class="issue-bar">
               <div class="issue-row issue-row-top">
                 <div class="issue-left">
@@ -800,7 +929,7 @@ const getBallSrc = (num: number) => {
                       <b class="time-box time-red">{{ sealCountdown.split(':')[1] }}</b>
                       <span class="time-sep">:</span>
                       <b class="time-box time-red">{{ sealCountdown.split(':')[2] }}</b>
-                      <span class="ml40">距离开奖:</span>
+                      <span class="ml50">距离开奖:</span>
                       <b class="time-box time-green ml5">{{ drawCountdown.split(':')[0] }}</b>
                       <span class="time-sep">:</span>
                       <b class="time-box time-green">{{ drawCountdown.split(':')[1] }}</b>
@@ -971,6 +1100,8 @@ const getBallSrc = (num: number) => {
                     v-for="n in 10"
                     :key="n - 1"
                     class="balls-row"
+                    :class="{ 'balls-row-selected': isBallSelected(`${colIdx}_${n - 1}`) }"
+                    @click="toggleBallSelect(`${colIdx}_${n - 1}`)"
                   >
                     <div class="balls-ball-cell">
                       <img :src="getBallSrc(n - 1)" class="ball-img balls-ball-img" :alt="String(n - 1)" />
@@ -981,6 +1112,7 @@ const getBallSrc = (num: number) => {
                         v-model="ballAmounts[`${colIdx}_${n - 1}`]"
                         class="balls-cell-input"
                         type="text"
+                        @focus="ensureBallSelected(`${colIdx}_${n - 1}`)"
                       />
                     </div>
                   </div>
@@ -990,6 +1122,8 @@ const getBallSrc = (num: number) => {
                     v-for="label in ['大', '小', '单', '双']"
                     :key="label"
                     class="balls-row"
+                    :class="{ 'balls-row-selected': isBallSelected(`${colIdx}_${label}`) }"
+                    @click="toggleBallSelect(`${colIdx}_${label}`)"
                   >
                     <div class="balls-label-cell">{{ label }}</div>
                     <div class="balls-odd-cell"><b class="text-red">1.9776</b></div>
@@ -998,6 +1132,7 @@ const getBallSrc = (num: number) => {
                         v-model="ballAmounts[`${colIdx}_${label}`]"
                         class="balls-cell-input"
                         type="text"
+                        @focus="ensureBallSelected(`${colIdx}_${label}`)"
                       />
                     </div>
                   </div>
@@ -1028,51 +1163,84 @@ const getBallSrc = (num: number) => {
               <span class="ml10" role="button" tabindex="0" @click="onExplainClick">（说明）</span>
             </div>
 
-            <div class="summary-bar">
-              <span
-                v-for="tab in summaryTabs"
-                :key="tab.key"
-                class="summary-item"
-                :class="{
-                  active: activeSummaryKey === tab.key,
-                  'summary-item-danger': activeSummaryKey === tab.key,
-                }"
-                @click="onSummaryTabClick(tab.key)"
-              >
-                {{ tab.label }}
-              </span>
-            </div>
-
-            <div class="summary-values" :class="`summary-values--${activeSummaryKey}`">
-              <div
-                v-for="(value, idx) in activeSummaryValues"
-                :key="idx"
-                class="summary-value"
-              >
-                <div
-                  class="text-center pb10 uno-b-r wfull summary-cell-inner"
-                  :class="{ 'bg-primary5': idx % 2 === 0 }"
+            <!-- Layout: height varies by active tab; sum=79.89px, size/parity=148.73px -->
+            <div class="summary-road mt10" :class="`summary-road--${activeSummaryKey}`">
+              <div class="summary-bar">
+                <span
+                  v-for="tab in summaryTabs"
+                  :key="tab.key"
+                  class="summary-item"
+                  :class="{
+                    active: activeSummaryKey === tab.key,
+                    'summary-item-danger': activeSummaryKey === tab.key,
+                  }"
+                  @click="onSummaryTabClick(tab.key)"
                 >
-                  <div v-if="Array.isArray(value)" class="multi-row">
-                    <span
-                      v-for="(item, itemIdx) in value"
-                      :key="itemIdx"
-                      class="value-text-multi"
-                    >
-                      {{ item }}
-                    </span>
+                  {{ tab.label }}
+                </span>
+              </div>
+
+              <div class="summary-values-shell">
+                <div class="summary-values" :class="`summary-values--${activeSummaryKey}`">
+                <div
+                  v-for="(value, idx) in activeSummaryValues"
+                  :key="idx"
+                  class="summary-value"
+                >
+                  <div
+                    class="text-center uno-b-r wfull summary-cell-inner summary-cell-inner--road"
+                    :class="{ 'bg-primary5': idx % 2 === 0 }"
+                  >
+                    <div v-if="Array.isArray(value)" class="multi-row">
+                      <span
+                        v-for="(item, itemIdx) in value"
+                        :key="itemIdx"
+                        class="value-text-multi"
+                      >
+                        {{ item }}
+                      </span>
+                    </div>
+                    <div v-else>
+                      <span class="pt5 block value-text">{{ value }}</span>
+                    </div>
                   </div>
-                  <div v-else>
-                    <span class="pt5 block value-text">{{ value }}</span>
-                  </div>
+                </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <!-- 右侧：公告 + 长龙排行 -->
-        <div class="right-sidebar">
+          <!-- 公告列表（点击"更多"显示, only in game view） -->
+          <div v-else key="notice-list-view" class="notice-list-panel">
+            <!-- 标签页菜单 -->
+            <div class="notice-tabs">
+              <div
+                v-for="item in noticeTabItems"
+                :key="item.key"
+                :class="['notice-tab', { active: item.key === activeNoticeTab }]"
+                @click="onNoticeTabClick(item.key)"
+              >
+                {{ item.label }}
+              </div>
+            </div>
+            <!-- 公告列表 -->
+            <div class="notice-list-body">
+              <div
+                v-for="notice in currentNoticeList"
+                :key="notice.id"
+                :class="['notice-row', { highlight: notice.isHighlight }]"
+              >
+                <div class="notice-time-col">{{ notice.time }}</div>
+                <div class="notice-content-col">{{ notice.content }}</div>
+              </div>
+              <div v-if="currentNoticeList.length === 0" class="notice-empty">
+                暂无公告
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- 右侧：公告 + 长龙排行（公告列表显示时或开奖结果页面时隐藏） -->
+        <div v-if="!showNoticeList && activeContentView === 'game'" class="right-sidebar">
           <!-- 公告标题 -->
           <div class="announce-header">
             <span class="announce-title">公告</span>
@@ -1094,16 +1262,14 @@ const getBallSrc = (num: number) => {
       </div>
     </div>
 
-    <!-- 底部滚动公告栏 -->
-    <div class="footer-bar">
-      <marquee
-        behavior="scroll"
-        direction="left"
-        scrollamount="3"
-        class="footer-marquee"
-      >
-        尊敬的会员您好，当心市场冒充老BW这类骗局，请认准本系统(18118bw.com,18118bw.cc)开奖网(bw128.cc)
-      </marquee>
+    <!-- Bottom marquee bar (shown for game and draw results views) -->
+    <div v-if="activeContentView === 'game' || activeContentView === 'drawResults'" class="footer-bar">
+      <div class="marquee-box">
+        <div class="marquee-content">
+          <b class="footer-marquee-text">尊敬的会员您好，当心市场冒充老BW这类骗局，请认准本系统(18118bw.com,18118bw.cc)开奖网(bw128.cc)</b>
+        </div>
+      </div>
+      <div class="footer-more" @click="showNoticeList = !showNoticeList">{{ showNoticeList ? '返回' : '更多' }}</div>
     </div>
 
     <!-- 最近开奖弹窗（无蒙层，支持拖动） -->
@@ -1230,25 +1396,37 @@ const getBallSrc = (num: number) => {
   background: #fff;
   display: flex;
   flex-direction: column;
+  /* Prevent horizontal overflow from causing visible background color bars on the right side */
+  overflow-x: hidden;
 }
 
-/* ==================== 主体容器 ==================== */
-/* 原版：w-92% m-auto bg-[#fff] mt5 b-b-none */
-/* 不使用 flex:1，白色区域只占内容需要的高度 */
+/* ==================== Main Container ==================== */
+/* Original: w-92% m-auto bg-[#fff] mt5 b-b-none */
+/* No flex:1, white area only takes content height */
 .main-wrapper {
   width: 92%;
-  /* Shift entire panel 102px to the left */
+  /* Shift entire panel 67px to the left */
   margin: 5px auto 0;
   position: relative;
-  left: -102px;
+  left: -67px;
   background: #fff;
   border-bottom: none;
+}
+
+/* Draw results mode: expand to fill screen width with 7px gap to scrollbar */
+.main-wrapper--draw-results {
+  width: calc(100% - 7px);
+  left: 0;
+  margin-left: 0;
+  margin-right: 7px;
+  box-sizing: border-box;
 }
 
 /* 三栏 flex 布局 —— 不强制 min-height，高度由内容决定 */
 .main-body {
   display: flex;
   align-items: flex-start;
+  width: 100%;
 }
 
 /* ==================== 中间内容区域 ==================== */
@@ -1258,6 +1436,23 @@ const getBallSrc = (num: number) => {
   min-height: 500px; /* 中间内容区合理最小高度，后续有真实内容后可去除 */
   border-left: none;
   border-right: none;
+  /* PC28 表格背景色 - 继承主题变量 (--pc28-cell-bg) */
+}
+
+/* Draw results mode: center-content expands to fill available space */
+/* Using compound selector for higher specificity to override base .center-content styles */
+.center-content.center-content--wide {
+  flex: 1 1 0 !important;
+  width: auto !important;
+  min-width: 0;
+  max-width: none;
+}
+
+/* Draw results view container - ensure full width inheritance */
+.draw-results-view {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .placeholder {
@@ -1269,9 +1464,13 @@ const getBallSrc = (num: number) => {
 
 .game-panel {
   width: 720px;
-  height: 733px;
+  /* Do not set a fixed height: content is taller than legacy estimates and would overflow onto the footer. */
+  min-height: 733px;
   margin: 5px 0 30px;
   position: relative;
+  overflow: hidden;
+  /* Extra paint containment: clips descendants that still paint outside overflow:hidden in some engines */
+  contain: paint;
 }
 
 .issue-bar {
@@ -1279,7 +1478,7 @@ const getBallSrc = (num: number) => {
   height: 56px;
   padding: 5px 20px;
   border: 1px solid var(--bw-border-color, #efba84);
-  border-bottom: 1px solid var(--bw-border-color, #efba84);
+  border-bottom: none;
   border-radius: 4px 4px 0 0;
   font-size: 12px;
   box-sizing: border-box;
@@ -1343,6 +1542,10 @@ const getBallSrc = (num: number) => {
   margin-left: 40px;
 }
 
+.ml50 {
+  margin-left: 50px;
+}
+
 .ball-img {
   width: 27px;
   height: 27px;
@@ -1388,7 +1591,7 @@ const getBallSrc = (num: number) => {
   border: 1px solid var(--bw-border-color, #efba84);
   border-top: none;
   border-bottom: none;
-  background: var(--bw-form-item-label-bg-color, #fff1e4);
+  background: var(--pc28-cell-bg, #f2eae0);
   box-sizing: border-box;
   font-size: 12px;
   gap: 6px;
@@ -1685,7 +1888,7 @@ const getBallSrc = (num: number) => {
   color: #000;
   border: 1px solid var(--bw-border-color, #efba84);
   border-bottom: none;
-  background: var(--bw-form-item-label-bg-color, #fff1e4);
+  background: var(--pc28-cell-bg, #f2eae0);
   margin: 0;
   box-sizing: border-box;
 }
@@ -1695,7 +1898,7 @@ const getBallSrc = (num: number) => {
   border-bottom: none;
   border-left: 1px solid var(--bw-border-color, #efba84);
   border-right: 1px solid var(--bw-border-color, #efba84);
-  background: var(--bw-form-item-label-bg-color, #fff1e4);
+  background: var(--pc28-cell-bg, #f2eae0);
 }
 
 .color-title {
@@ -1703,7 +1906,7 @@ const getBallSrc = (num: number) => {
   border-bottom: none;
   border-left: 1px solid var(--bw-border-color, #efba84);
   border-right: 1px solid var(--bw-border-color, #efba84);
-  background: var(--bw-form-item-label-bg-color, #fff1e4);
+  background: var(--pc28-cell-bg, #f2eae0);
 }
 
 .sum-grid {
@@ -1728,7 +1931,7 @@ const getBallSrc = (num: number) => {
   display: flex;
   height: 30px;
   line-height: 30px;
-  background: var(--bw-form-item-label-bg-color, #fff1e4);
+  background: var(--pc28-cell-bg, #f2eae0);
   border-bottom: 1px solid var(--bw-border-color, #efba84);
 }
 
@@ -1736,6 +1939,7 @@ const getBallSrc = (num: number) => {
   flex: 1;
   text-align: center;
   border-right: 1px solid var(--bw-border-color, #efba84);
+  background: var(--pc28-cell-bg, #f2eae0);
   box-sizing: border-box;
 }
 
@@ -1763,6 +1967,7 @@ const getBallSrc = (num: number) => {
   height: 30px;
   line-height: 30px;
   border-bottom: 1px solid var(--bw-border-color, #efba84);
+  background: var(--pc28-cell-bg, #f2eae0);
 }
 
 .sum-row {
@@ -1792,6 +1997,7 @@ const getBallSrc = (num: number) => {
   display: flex;
   align-items: center;
   justify-content: center;
+  background: var(--pc28-cell-bg, #f2eae0);
 }
 
 .sum-cell:nth-child(1) {
@@ -2103,12 +2309,57 @@ const getBallSrc = (num: number) => {
   height: 20px;
 }
 
-.summary-bar {
+/* Spacing above road block (matches design class div.mt10 in screenshots) */
+.mt10 {
+  margin-top: 10px;
+}
+
+/* Summary road: height varies by active tab; tab=30px, body adapts to content */
+.summary-road {
+  --summary-tab-height: 30px;
+  /* Default for size/parity: 30px tabs + 110.73px body; total ~148.73px with border */
+  --summary-road-height: 148.73px;
+  --summary-body-height: 110.73px;
+  position: relative;
+  z-index: 1;
   width: 720px;
-  height: 30px;
-  line-height: 30px;
+  height: auto;
+  max-height: none;
+  min-height: auto;
+  box-sizing: border-box;
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  flex-shrink: 0;
+  /* CRITICAL: clip overflow to prevent content from bleeding into footer */
+  overflow: hidden;
+  contain: layout paint;
+}
+
+/* Sum tab: 30px tabs + 49.89px body */
+.summary-road--sum {
+  --summary-road-height: 79.89px;
+  --summary-body-height: 49.89px;
+}
+
+/* Size tab: 30px tabs + 110.73px body */
+.summary-road--size {
+  --summary-road-height: 148.73px;
+  --summary-body-height: 110.73px;
+}
+
+/* Parity tab: 30px tabs + 110.73px body */
+.summary-road--parity {
+  --summary-road-height: 148.73px;
+  --summary-body-height: 110.73px;
+}
+
+.summary-bar {
+  flex: 0 0 var(--summary-tab-height);
+  width: 720px;
+  height: var(--summary-tab-height);
+  line-height: var(--summary-tab-height);
+  display: flex;
+  align-items: stretch;
   border: 1px solid var(--bw-border-color, #efba84);
   border-top: none;
   background: var(--bw-bg-3, #fff7ef);
@@ -2120,6 +2371,10 @@ const getBallSrc = (num: number) => {
 
 .summary-item {
   flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
   text-align: center;
   color: #000;
   border-right-width: 1px;
@@ -2145,40 +2400,64 @@ const getBallSrc = (num: number) => {
   color: red;
   font-weight: 700;
   background: var(--bw-bg-4, linear-gradient(to bottom, #fdeadb 0%, #f4c7a9 100%));
-  border-right: none !important;
+}
+
+/* Road body: adapts to active tab height via CSS variable */
+.summary-values-shell {
+  position: relative;
+  flex: 0 0 var(--summary-body-height);
+  width: 720px;
+  height: var(--summary-body-height);
+  min-height: var(--summary-body-height);
+  max-height: var(--summary-body-height);
+  box-sizing: border-box;
+  border: 1px solid var(--bw-border-color, #efba84);
+  border-top: none;
+  background: var(--pc28-cell-bg, #f2eae0);
+  /* Force clip all overflow */
+  overflow: hidden;
+  overflow: clip;
+  contain: strict;
+  isolation: isolate;
 }
 
 .summary-values {
-  width: 719.1px;
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  /* Explicit height prevents grid content from expanding beyond container */
+  height: 100%;
   display: grid;
-  grid-template-columns: repeat(30, 23.97px);
-  /* Single row should fill the container height */
-  grid-auto-rows: 1fr;
-  border: 1px solid var(--bw-border-color, #efba84);
-  border-top: none;
+  grid-template-columns: repeat(30, minmax(0, 1fr));
+  grid-template-rows: minmax(0, 1fr);
   box-sizing: border-box;
   overflow: hidden;
+  contain: strict;
 }
 
-/* Per-tab heights (3 different sizes in the design) */
+/* Each mode adapts to shell height; content auto-fits within the container */
 .summary-values--sum {
-  height: 49.88px;
+  height: var(--summary-body-height, 49.89px);
+  max-height: var(--summary-body-height, 49.89px);
 }
 
 .summary-values--size {
-  /* Match design inspection: 23.97 × 129.63 per cell */
-  height: 129.63px;
+  height: var(--summary-body-height, 110.73px);
+  max-height: var(--summary-body-height, 110.73px);
 }
 
 .summary-values--parity {
-  /* Match design inspection screenshot: 23.95 × 149.56 (inner cell) */
-  height: 149.56px;
+  height: var(--summary-body-height, 110.73px);
+  max-height: var(--summary-body-height, 110.73px);
 }
 
 .summary-value {
   display: block;
-  width: 23.97px;
+  width: 100%;
   height: 100%;
+  min-width: 0;
+  min-height: 0;
   box-sizing: border-box;
   overflow: hidden;
 }
@@ -2205,7 +2484,24 @@ const getBallSrc = (num: number) => {
 
 .summary-cell-inner {
   height: 100%;
+  min-height: 0;
+  max-height: 100%;
   box-sizing: border-box;
+  overflow: hidden;
+  overflow: clip;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+/* Road cells: drop pb10 so padding cannot expand past the fixed shell height */
+.summary-cell-inner--road {
+  padding-bottom: 2px;
+  padding-top: 0;
+}
+
+.summary-cell-inner--road .pt5 {
+  padding-top: 0;
 }
 
 .bg-primary5 {
@@ -2241,8 +2537,13 @@ const getBallSrc = (num: number) => {
   flex-direction: column;
   justify-content: flex-start;
   align-items: center;
-  padding: 4px 0;
-  height: 100%;
+  padding: 2px 0;
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: 100%;
+  overflow: hidden;
+  /* Ensure text clips within cell */
+  overflow: clip;
 }
 
 .value-text-multi {
@@ -2369,20 +2670,62 @@ const getBallSrc = (num: number) => {
 /* ==================== 底部滚动公告栏 ==================== */
 /* margin-top: auto 配合 page 的 flex-column，始终推到页面最底部 */
 .footer-bar {
-  width: 92%;
+  position: relative;
+  z-index: 100;
+  width: 100%;
+  height: 34px;
   margin: 0 auto;
   margin-top: auto;
-  height: 30px;
   line-height: 30px;
-  background: var(--bw-header-bg, #351c0c);
+  background-color: #fdfdfd;
+  border-top: 1px solid var(--el-border-color, #EFBA84);
   overflow: hidden;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
 }
 
-.footer-marquee {
-  color: red;
+.marquee-box {
+  flex: 1;
+  overflow: hidden;
+  white-space: nowrap;
+  position: relative;
+}
+
+.marquee-content {
+  display: inline-block;
+  white-space: nowrap;
+  line-height: 34px;
+  padding-left: 100%;
+  animation: marquee-scroll 35s linear infinite;
+}
+
+@keyframes marquee-scroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+.footer-marquee-text {
+  color: var(--bw-default-color, #351c0c);
   font-size: 13px;
-  font-weight: 400;
-  line-height: 30px;
+  font-weight: bolder;
+  font-family: "Microsoft YaHei", Tahoma, "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+.footer-more {
+  flex-shrink: 0;
+  padding: 0 15px;
+  color: #ff0000;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.footer-more:hover {
+  text-decoration: underline;
 }
 
 /* ==================== 下注 tab 按钮 ==================== */
@@ -2420,6 +2763,7 @@ const getBallSrc = (num: number) => {
   width: 720px;
   display: flex;
   border: 1px solid var(--bw-border-color, #efba84);
+  background: var(--pc28-cell-bg, #f2eae0);
   box-sizing: border-box;
 }
 
@@ -2435,15 +2779,15 @@ const getBallSrc = (num: number) => {
   border-right: none;
 }
 
-/* Gradient header (第一球/第二球/第三球) */
+/* Match the requested style: light beige headers and body, no dark brown. */
 .balls-col-header {
   height: 30px;
   line-height: 30px;
   text-align: center;
   font-weight: bold;
   font-size: 13px;
-  color: #fff;
-  background: var(--bw-linear-bg, linear-gradient(to bottom, #a6744d 0%, #351c0c 100%));
+  color: #000;
+  background: var(--bw-table-header-bg-color, linear-gradient(to bottom, #fff 0%, #fff1e4 100%));
 }
 
 /* Each data row */
@@ -2453,6 +2797,7 @@ const getBallSrc = (num: number) => {
   line-height: 30px;
   border-top: 1px solid var(--bw-border-color, #efba84);
   cursor: pointer;
+  background: var(--pc28-cell-bg, #f2eae0);
   box-sizing: border-box;
 }
 
@@ -2463,6 +2808,18 @@ const getBallSrc = (num: number) => {
   background: var(--bw-header-color, #be9d76);
 }
 
+/* 1-3球选中状态 - 黄色背景 */
+.balls-row-selected .balls-ball-cell,
+.balls-row-selected .balls-odd-cell,
+.balls-row-selected .balls-input-cell,
+.balls-row-selected .balls-label-cell,
+.balls-row-selected:hover .balls-ball-cell,
+.balls-row-selected:hover .balls-odd-cell,
+.balls-row-selected:hover .balls-input-cell,
+.balls-row-selected:hover .balls-label-cell {
+  background: #ffc214;
+}
+
 /* Ball image cell (60px) */
 .balls-ball-cell {
   width: 60px;
@@ -2471,6 +2828,7 @@ const getBallSrc = (num: number) => {
   align-items: center;
   justify-content: center;
   border-right: 1px solid var(--bw-border-color, #efba84);
+  background: var(--pc28-cell-bg, #f2eae0);
   box-sizing: border-box;
 }
 
@@ -2486,6 +2844,7 @@ const getBallSrc = (num: number) => {
   align-items: center;
   justify-content: center;
   border-right: 1px solid var(--bw-border-color, #efba84);
+  background: var(--pc28-cell-bg, #f2eae0);
   box-sizing: border-box;
 }
 
@@ -2500,6 +2859,7 @@ const getBallSrc = (num: number) => {
   display: flex;
   align-items: center;
   justify-content: center;
+  background: var(--pc28-cell-bg, #f2eae0);
   box-sizing: border-box;
 }
 
@@ -2508,6 +2868,8 @@ const getBallSrc = (num: number) => {
   width: 50px;
   height: 20px;
   border: 1px solid #a0b4d8;
+  border-radius: 6px;
+  background: #ffffff;
   text-align: center;
   font-size: 12px;
   box-sizing: border-box;
@@ -2522,7 +2884,147 @@ const getBallSrc = (num: number) => {
   justify-content: center;
   border-right: 1px solid var(--bw-border-color, #efba84);
   font-weight: bold;
-  background: var(--bw-form-item-label-bg-color, #fff1e4);
+  background: var(--pc28-cell-bg, #f2eae0);
   box-sizing: border-box;
+}
+
+/* ─── 内嵌公告列表样式 ─────────────────────────────────────────────────────── */
+.notice-list-panel {
+  width: 600px;
+  min-height: 247px;
+  background: #fff;
+  border: 1px solid var(--bw-border-color, #EFBA84);
+  display: flex;
+  flex-direction: column;
+}
+
+.notice-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--bw-border-color, #EFBA84);
+  background: var(--bw-bg-3, #fff7ef);
+}
+
+.notice-tab {
+  flex: 1;
+  text-align: center;
+  padding: 6px 0;
+  font-size: 13px;
+  color: #000;
+  cursor: pointer;
+  border-right: 1px solid var(--bw-border-color, #EFBA84);
+  transition: all 0.2s;
+  user-select: none;
+  height: 30px;
+  line-height: 18px;
+  box-sizing: border-box;
+}
+
+.notice-tab:last-child {
+  border-right: none;
+}
+
+.notice-tab:hover {
+  background: var(--bw-bg-4, linear-gradient(to bottom, #fdeadb 0%, #f4c7a9 100%));
+}
+
+.notice-tab.active {
+  color: red;
+  font-weight: bold;
+  background: var(--bw-bg-4, linear-gradient(to bottom, #fdeadb 0%, #f4c7a9 100%));
+}
+
+.notice-list-body {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.notice-row {
+  display: flex;
+  align-items: stretch;
+  border-bottom: 1px solid var(--bw-border-color, #EFBA84);
+  line-height: 1.5;
+}
+
+.notice-row:last-child {
+  border-bottom: none;
+}
+
+.notice-row.highlight {
+  font-weight: bold;
+  color: red;
+}
+
+.notice-time-col {
+  flex-shrink: 0;
+  width: 150px;
+  padding: 8px 6px;
+  text-align: center;
+  background: var(--bw-form-item-label-bg-color, #fff1e4);
+  border-right: 1px solid var(--bw-border-color, #EFBA84);
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.notice-content-col {
+  flex: 1;
+  width: 80%;
+  padding: 8px;
+  font-size: 13px;
+  word-break: break-all;
+  display: flex;
+  align-items: center;
+  line-height: 1.5;
+}
+
+.notice-empty {
+  padding: 40px;
+  text-align: center;
+  color: #999;
+  font-size: 14px;
+}
+
+/* 滚动条 */
+.notice-list-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.notice-list-body::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.notice-list-body::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 3px;
+}
+
+.notice-list-body::-webkit-scrollbar-thumb:hover {
+  background: #999;
+}
+
+/* ============ 系统封盘遮罩层（每天 06:00-07:00） ============ */
+.system-closed-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.system-closed-bg {
+  width: 500px;
+  max-width: 90%;
+  opacity: 0.9;
+}
+
+/* 确保 game-panel 有相对定位以便遮罩层定位 */
+.game-panel {
+  position: relative;
 }
 </style>

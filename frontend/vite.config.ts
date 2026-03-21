@@ -4,7 +4,19 @@ import { resolve } from 'path'
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [vue()],
+  plugins: [
+    vue(),
+    {
+      name: 'inject-build-meta',
+      transformIndexHtml(html) {
+        const stamp = new Date().toISOString()
+        return html.replace(
+          '<head>',
+          `<head>\n    <meta name="frontend-build" content="${stamp}" />`
+        )
+      },
+    },
+  ],
   resolve: {
     alias: {
       '@': resolve(__dirname, 'src')

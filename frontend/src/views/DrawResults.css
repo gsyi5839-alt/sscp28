@@ -1,0 +1,167 @@
+/* DrawResults.vue styles - extracted for better maintainability */
+
+/* Full width container - block display ensures it fills available width */
+.draw-results {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Card fills available width - parent already has 7px gap to scrollbar */
+.draw-results-card {
+  display: block;
+  width: 100%;
+  min-height: 803px;
+  border: 1px solid var(--bw-border-color, #efba84);
+  background: #fff;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+/* Toolbar: bg-3, height 40px, padding 20px left/right */
+.toolbar {
+  display: flex;
+  align-items: center;
+  height: 40px;
+  line-height: 40px;
+  padding-left: 20px;
+  padding-right: 20px;
+  border-bottom: 1px solid var(--el-border-color, #efba84);
+  background: var(--bw-bg-3, #e1f5fc);
+}
+
+/* Game selector: 120px width */
+.game-select {
+  width: 120px;
+  flex-shrink: 0;
+}
+
+/* Toolbar title: 16px bold, margin-left 20px */
+.toolbar-title {
+  font-size: 16px;
+  font-weight: bold;
+  color: #000;
+  margin-left: 20px;
+}
+
+.toolbar-spacer {
+  flex: 1;
+}
+
+/* Date picker: 130px width, right aligned via ml-auto effect from spacer */
+.date-picker {
+  width: 130px;
+  flex-shrink: 0;
+}
+
+/* Table container: expanded width to accommodate new columns, left-aligned with 32px inset */
+.table-shell {
+  width: 1000px;
+  margin: 32px 0 0 32px;
+  overflow: hidden;
+  box-sizing: border-box;
+  border: 1px solid var(--bw-border-color, #efba84);
+}
+
+/* Table: fills 700px container width, no outer border (table-shell provides it) */
+.results-table {
+  width: 100%;
+  --el-table-border-color: var(--bw-border-color, #efba84);
+}
+
+/* Table header: height 40px, text #000, 14px, bold */
+.header-text {
+  color: #000;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+/* Ball list container */
+.ball-list {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Ball PNG image: 26px size, 3px margin */
+.ball-img {
+  width: 26px;
+  height: 26px;
+  margin-left: 3px;
+  margin-right: 3px;
+  object-fit: contain;
+}
+
+/* Summary row: flex layout with 3 cells */
+.summary-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 30px;
+  font-size: 14px;
+}
+
+/* Summary cell: equal width, centered text */
+.summary-cell {
+  flex: 1;
+  text-align: center;
+}
+
+/* Border between summary cells (except last) */
+.summary-cell--border {
+  border-right: 1px solid var(--bw-border-color, #efba84);
+}
+
+/* Calculation result cell: centered text with standard height */
+.calc-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 30px;
+  font-size: 14px;
+}
+
+/* Dragon/Tiger color classes */
+.color-red {
+  color: red;
+}
+
+.color-green {
+  color: green;
+}
+
+/* Pagination container: inside table-shell, no extra margin */
+.pagination-container {
+  display: flex;
+  justify-content: flex-start;
+  width: 100%;
+  padding: 8px 4px;
+  box-sizing: border-box;
+}
+
+/* Responsive styles */
+@media (max-width: 900px) {
+  .toolbar {
+    flex-wrap: wrap;
+    height: auto;
+    padding: 8px 12px;
+  }
+
+  .toolbar-spacer {
+    display: none;
+  }
+
+  .date-picker {
+    width: 130px;
+    margin-left: auto;
+  }
+
+  .table-shell,
+  .pagination-container {
+    width: calc(100% - 24px);
+    margin-left: 12px;
+    margin-right: 12px;
+  }
+}

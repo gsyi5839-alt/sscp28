@@ -83,11 +83,23 @@ const router = createRouter({
       name: 'gameHome',
       component: () => import('../views/GameHome.vue'),
       meta: { requiresAuth: true }
+    },
+    {
+      path: '/bet-status',
+      name: 'betStatus',
+      component: () => import('../views/BetStatus.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/account-history',
+      name: 'accountHistory',
+      component: () => import('../views/AccountHistory.vue'),
+      meta: { requiresAuth: true }
     }
   ]
 })
 
-const protectedRouteNames = new Set(['dashboard', 'changePassword', 'userAgreement', 'gameHome'])
+const protectedRouteNames = new Set(['dashboard', 'changePassword', 'userAgreement', 'gameHome', 'betStatus', 'accountHistory'])
 
 router.beforeEach(async (to, _from, next) => {
   const authStore = useAuthStore()

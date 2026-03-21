@@ -1,12 +1,14 @@
 package com.bcbbs.backend.service;
 
 import com.bcbbs.backend.dto.LotteryInfoResponse;
+import com.bcbbs.backend.dto.LotteryGameOption;
 import com.bcbbs.backend.dto.LotteryIssueItem;
 import com.bcbbs.backend.dto.LotteryListResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -73,13 +75,19 @@ public class LotteryService {
      * @param lotCode  lottery code
      * @param pageNo   page number (1-based)
      * @param pageSize items per page (default 30 for history display)
+     * @param date     optional filter date in YYYY-MM-DD
      * @return mapped LotteryListResponse
      */
     @SuppressWarnings("unchecked")
-    public LotteryListResponse getHistoryList(int lotCode, int pageNo, int pageSize) {
-        String url = UPSTREAM_BASE + "/api/lottery_code/getLotteryList?lotCode=" + lotCode
-                + "&pageNo=" + pageNo + "&pageSize=" + pageSize
-                + "&t=" + System.currentTimeMillis();
+    public LotteryListResponse getHistoryList(int lotCode, int pageNo, int pageSize, String date) {
+        String url = UriComponentsBuilder
+                .fromHttpUrl(UPSTREAM_BASE + "/api/lottery_code/getLotteryList")
+                .queryParam("lotCode", lotCode)
+                .queryParam("pageNo", pageNo)
+                .queryParam("pageSize", pageSize)
+                .queryParam("t", System.currentTimeMillis())
+                .queryParamIfPresent("date", isBlank(date) ? java.util.Optional.empty() : java.util.Optional.of(date))
+                .toUriString();
         try {
             Map<String, Object> resp = restTemplate.getForObject(url, Map.class);
             if (resp == null || !Integer.valueOf(0).equals(resp.get("code"))) {
@@ -121,6 +129,41 @@ public class LotteryService {
         }
     }
 
+    /**
+     * Fetch available lotteries from the upstream allLottery endpoint.
+     */
+    @SuppressWarnings("unchecked")
+    public List<LotteryGameOption> getAvailableGames() {
+        String url = UPSTREAM_BASE + "/api/lottery_code/allLottery?t=" + System.currentTimeMillis();
+        try {
+            Map<String, Object> resp = restTemplate.getForObject(url, Map.class);
+            if (resp == null || !Integer.valueOf(0).equals(resp.get("code"))) {
+                log.warn("Upstream allLottery returned unexpected response");
+                return List.of();
+            }
+
+            List<Map<String, Object>> rawList = (List<Map<String, Object>>) resp.get("data");
+            if (rawList == null || rawList.isEmpty()) {
+                return List.of();
+            }
+
+            List<LotteryGameOption> games = new ArrayList<>(rawList.size());
+            for (Map<String, Object> item : rawList) {
+                games.add(LotteryGameOption.builder()
+                        .lotCode(toInt(item, "lotCode"))
+                        .lotName(str(item, "lotName"))
+                        .lotType(toInt(item, "lotType"))
+                        .lotLabel(toInt(item, "lotLabel"))
+                        .sort(toInt(item, "sort"))
+                        .build());
+            }
+            return games;
+        } catch (Exception e) {
+            log.error("Failed to fetch lottery games: {}", e.getMessage());
+            return List.of();
+        }
+    }
+
     // ─── helpers ────────────────────────────────────────────────────────────────
 
     private String str(Map<String, Object> map, String key) {
@@ -133,6 +176,10 @@ public class LotteryService {
         if (v == null) return null;
         if (v instanceof Number) return ((Number) v).intValue();
         try { return Integer.parseInt(String.valueOf(v)); } catch (Exception e) { return null; }
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.trim().isEmpty();
     }
 
     private LotteryListResponse emptyList(int pageNo, int pageSize) {
