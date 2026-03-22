@@ -245,7 +245,7 @@ onMounted(() => {
             popper-class="more-games-popover"
           >
             <template #reference>
-              <div class="game-item">更多游戏</div>
+              <div class="game-item more-games-btn">更多游戏</div>
             </template>
             <div
               v-for="(mg, idx) in moreGames"
@@ -357,6 +357,7 @@ onMounted(() => {
   line-height: 30px;
   margin-bottom: 4px;
   margin-top: 9px;
+  margin-left: -19px;
 }
 
 .brand {
@@ -441,10 +442,10 @@ onMounted(() => {
 .row-games {
   display: flex;
   align-items: center;
-  gap: 0;
+  gap: 6px;
   height: 22px;
   line-height: 22px;
-  padding-left: 240px;
+  padding-left: 221px;
   margin-top: -13px; /* Move game navigation row up by 13px */
   margin-bottom: 13px; /* Bottom spacing for game navigation row */
 }
@@ -466,6 +467,13 @@ onMounted(() => {
   border: 1px solid var(--bw-border-color, #efba84);
   box-sizing: border-box;
   transition: color 0.15s;
+  overflow: visible;
+  white-space: nowrap;
+}
+
+.more-games-btn {
+  width: 100px;
+  height: 22px;
 }
 
 .game-item:hover {
@@ -515,7 +523,7 @@ onMounted(() => {
 .theme-colors {
   display: flex;
   align-items: center;
-  padding-left: 40px;
+  padding-left: 21px;
   margin-right: 65px;
 }
 

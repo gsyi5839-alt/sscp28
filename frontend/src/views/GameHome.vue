@@ -69,6 +69,11 @@ const drawCountdown = ref('--:--:--')
 /** Whether in drawing state (countdown passed, waiting for new period data) */
 const isDrawing = ref(false)
 
+/** Whether betting is sealed (seal countdown <= 0, last 10 seconds before draw) */
+const isSealed = computed(() => {
+  return sealCountdown.value === '00:00:00' || sealCountdown.value.startsWith('-')
+})
+
 /** System closed status (China time daily 06:00-07:00) */
 const currentTime = ref(new Date())
 const isSystemClosed = computed(() => {
@@ -82,6 +87,8 @@ const isSystemClosed = computed(() => {
 const historyNums = ref<number[]>([])
 
 let countdownTimer: ReturnType<typeof setInterval> | null = null
+/** Timer for polling history list refresh (every 5 seconds) */
+let historyPollTimer: ReturnType<typeof setInterval> | null = null
 /** Whether auto-refresh is in progress (prevent duplicate requests) */
 let isFetching = false
 
@@ -254,12 +261,19 @@ onMounted(() => {
 
   // Countdown tick every second; also handles auto-refresh when draw expires
   countdownTimer = setInterval(tickCountdown, 1000)
+  
+  // Poll history list every 5 seconds for real-time updates
+  historyPollTimer = setInterval(() => {
+    fetchHistoryList()
+  }, 5000)
+  
   nextTick(updateCountdownPosition)
   window.addEventListener('resize', handleWindowResize)
 })
 
 onUnmounted(() => {
   if (countdownTimer) clearInterval(countdownTimer)
+  if (historyPollTimer) clearInterval(historyPollTimer)
   window.removeEventListener('resize', handleWindowResize)
   stopRecentDialogDrag()
 })
@@ -462,21 +476,6 @@ const padToCellCount = (values: any[]) => {
   return [...values, ...Array(SUMMARY_CELL_COUNT - values.length).fill('')]
 }
 
-const buildRoadColumns = (labels: string[]) => {
-  const cols: string[][] = []
-  for (const label of labels) {
-    if (!label) continue
-    const last = cols[cols.length - 1]
-    if (!last || last[0] !== label) {
-      cols.push([label])
-    } else {
-      last.push(label)
-    }
-    if (cols.length >= SUMMARY_CELL_COUNT) break
-  }
-  return padToCellCount(cols)
-}
-
 const getIssueSum = (issue: any): number | null => {
   const rawSum = Number(issue?.sumValue)
   if (Number.isFinite(rawSum)) return rawSum
@@ -486,31 +485,38 @@ const getIssueSum = (issue: any): number | null => {
 }
 
 /** Derive display values from historyIssues (API data, reactive) */
-const summaryNumbers = computed(() =>
-  padToCellCount(historyIssues.value.slice(0, SUMMARY_CELL_COUNT).map((issue: any) => {
+const summaryNumbers = computed(() => {
+  const nums = historyIssues.value.slice(0, SUMMARY_CELL_COUNT).map((issue: any) => {
     const sum = getIssueSum(issue)
     return sum == null ? '' : String(sum)
-  }))
-)
-const summarySize = computed(() =>
-  buildRoadColumns(historyIssues.value.map((issue: any) => {
+  })
+  // Reverse to show newest on the right
+  return padToCellCount(nums.reverse())
+})
+const summarySize = computed(() => {
+  const labels = historyIssues.value.slice(0, SUMMARY_CELL_COUNT).map((issue: any) => {
     const label = issue?.sizeLabel
-    if (label) return String(label)
+    // Only trust API label if it's a valid size string
+    if (label === '大' || label === '小') return label
     const sum = getIssueSum(issue)
     if (sum == null) return ''
     return sum >= 14 ? '大' : '小'
-  }))
-)
-const summaryParity = computed(() =>
-  buildRoadColumns(historyIssues.value.map((issue: any) => {
+  })
+  // Reverse to show newest on the right
+  return padToCellCount(labels.reverse())
+})
+const summaryParity = computed(() => {
+  const labels = historyIssues.value.slice(0, SUMMARY_CELL_COUNT).map((issue: any) => {
     const label = issue?.parityLabel
-    // Skip tie results ('Tie') — sum=27 in PC28 is neither Odd nor Even
-    if (label && label !== '和') return String(label)
+    // Only trust API label if it's a valid parity string (skip '和' for tie)
+    if (label === '单' || label === '双') return label
     const sum = getIssueSum(issue)
     if (sum == null || sum === 27) return ''
     return sum % 2 === 0 ? '双' : '单'
-  }))
-)
+  })
+  // Reverse to show newest on the right
+  return padToCellCount(labels.reverse())
+})
 
 const activeSummaryKey = ref<SummaryKey>('sum')
 const quickMode = ref<QuickMode>('normal')
@@ -1013,13 +1019,14 @@ const getBallSrc = (num: number) => {
                   </div>
                   <div class="sum-cell odd-cell">
                     <!-- /root/sscp28/设计元素.md: odds text should not be bold; keep #ff0000 color via .text-red -->
-                    <span class="text-red sum-odd-text" :style="sumOddTextStyle(item.odd)">{{ item.odd }}</span>
+                    <span class="text-red sum-odd-text" :style="sumOddTextStyle(item.odd)">{{ isSealed ? '--' : item.odd }}</span>
                   </div>
                   <div v-if="quickMode === 'normal'" class="sum-cell input-cell">
                     <input
                       v-model="sumAmounts[item.num]"
                       class="cell-input"
                       type="text"
+                      :disabled="isSealed"
                       @click.stop
                       @focus="ensureSumSelected(item.num)"
                     />
@@ -1040,7 +1047,7 @@ const getBallSrc = (num: number) => {
                 >
                   <span class="label">{{ item.label }}</span>
                   <span class="odd text-red">
-                    <span class="two-side-odd-text" :style="twoSideOddTextStyle(item.odd)">{{ item.odd }}</span>
+                    <span class="two-side-odd-text" :style="twoSideOddTextStyle(item.odd)">{{ isSealed ? '--' : item.odd }}</span>
                   </span>
                   <div class="input-box">
                     <input
@@ -1048,6 +1055,7 @@ const getBallSrc = (num: number) => {
                       v-model="twoSideAmounts[item.label]"
                       class="cell-input"
                       type="text"
+                      :disabled="isSealed"
                       @click.stop
                       @focus="ensureTwoSideSelected(item.label)"
                     />
@@ -1067,7 +1075,7 @@ const getBallSrc = (num: number) => {
               >
                 <span class="label" :class="`label-${item.label}`">{{ item.label }}</span>
                 <span class="odd text-red">
-                  <span class="color-odd-text" :style="colorOddTextStyle(item.odd)">{{ item.odd }}</span>
+                  <span class="color-odd-text" :style="colorOddTextStyle(item.odd)">{{ isSealed ? '--' : item.odd }}</span>
                 </span>
                 <div class="input-box">
                   <input
@@ -1075,6 +1083,7 @@ const getBallSrc = (num: number) => {
                     v-model="colorAmounts[item.label]"
                     class="cell-input"
                     type="text"
+                    :disabled="isSealed"
                     @click.stop
                     @focus="ensureColorSelected(item.label)"
                   />
@@ -1093,16 +1102,17 @@ const getBallSrc = (num: number) => {
               >
                 <span class="label">{{ item.label }}</span>
                 <span class="odd text-red">
-                  <span class="pattern-odd-text" :style="patternOddTextStyle(item.odd)">{{ item.odd }}</span>
+                  <span class="pattern-odd-text" :style="patternOddTextStyle(item.odd)">{{ isSealed ? '--' : item.odd }}</span>
                 </span>
                 <div class="input-box">
                   <input
                     v-if="quickMode === 'normal'"
                     v-model="patternAmounts[item.label]"
-                    class="cell-input"
-                    type="text"
-                    @click.stop
-                    @focus="ensurePatternSelected(item.label)"
+                      class="cell-input"
+                      type="text"
+                      :disabled="isSealed"
+                      @click.stop
+                      @focus="ensurePatternSelected(item.label)"
                   />
                 </div>
               </div>
@@ -1137,6 +1147,7 @@ const getBallSrc = (num: number) => {
                         v-model="ballAmounts[`${colIdx}_${n - 1}`]"
                         class="balls-cell-input"
                         type="text"
+                        :disabled="isSealed"
                         @focus="ensureBallSelected(`${colIdx}_${n - 1}`)"
                       />
                     </div>
@@ -1157,6 +1168,7 @@ const getBallSrc = (num: number) => {
                         v-model="ballAmounts[`${colIdx}_${label}`]"
                         class="balls-cell-input"
                         type="text"
+                        :disabled="isSealed"
                         @focus="ensureBallSelected(`${colIdx}_${label}`)"
                       />
                     </div>
