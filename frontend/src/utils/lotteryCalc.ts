@@ -5,15 +5,15 @@
 
 /**
  * Calculate dragon/tiger result from lottery numbers
- * Compare first and last number
- * @param numbers - array of lottery numbers (at least 5 numbers)
- * @returns '龙' if first > last, '虎' if first < last, '和' if equal
+ * Compare first and last number (supports any array length >= 2)
+ * @param numbers - array of lottery numbers (at least 2 numbers)
+ * @returns 'Dragon' if first > last, 'Tiger' if first < last, 'Tie' if equal
  */
 export function calcDragonTiger(numbers: number[]): '龙' | '虎' | '和' {
-  if (!numbers || numbers.length < 5) return '和'
+  if (!numbers || numbers.length < 2) return '和'
   
   const first = numbers[0]!
-  const last = numbers[4]!
+  const last = numbers[numbers.length - 1]!  // Use last element, not hardcoded [4]
   
   if (first > last) return '龙'
   if (first < last) return '虎'
@@ -72,34 +72,34 @@ function hasConsecutivePair(nums: number[]): boolean {
 /**
  * Calculate three-number pattern type
  * @param threeNums - array of exactly 3 numbers
- * @returns pattern type: '豹子' | '顺子' | '对子' | '半顺' | '杂六'
+ * @returns pattern type: 'Leopard' | 'Straight' | 'Pair' | 'Half-Straight' | 'Misc'
  */
 export function calcThreePattern(threeNums: number[]): '豹子' | '顺子' | '对子' | '半顺' | '杂六' {
   if (!threeNums || threeNums.length !== 3) return '杂六'
   
   const [a, b, c] = threeNums
   
-  // 豹子: all three numbers are the same (e.g., 3,3,3)
+  // Leopard: all three numbers are the same (e.g., 3,3,3)
   if (a === b && b === c) {
     return '豹子'
   }
   
-  // 顺子: three consecutive numbers (e.g., 3,4,5 or 5,4,3, including wrap-around 8,9,0)
+  // Straight: three consecutive numbers (e.g., 3,4,5 or 5,4,3, including wrap-around 8,9,0)
   if (isStraight(threeNums)) {
     return '顺子'
   }
   
-  // 对子: exactly two numbers are the same (e.g., 3,3,5)
+  // Pair: exactly two numbers are the same (e.g., 3,3,5)
   if (a === b || b === c || a === c) {
     return '对子'
   }
   
-  // 半顺: any two numbers are consecutive (including 0,9 wrap-around)
+  // Half-Straight: any two numbers are consecutive (including 0,9 wrap-around)
   if (hasConsecutivePair(threeNums)) {
     return '半顺'
   }
   
-  // 杂六: none of the above patterns
+  // Misc: none of the above patterns
   return '杂六'
 }
 
@@ -112,7 +112,7 @@ export function calcThreePattern(threeNums: number[]): '豹子' | '顺子' | '�
 export function calcBullResult(numbers: number[]): string {
   if (!numbers || numbers.length !== 5) return '无牛'
   
-  // Bull result names mapping
+  // Bull result names mapping (NiuNiu, Niu1-Niu9, No Bull)
   const bullNames = ['牛牛', '牛一', '牛二', '牛三', '牛四', '牛五', '牛六', '牛七', '牛八', '牛九']
   
   // Try all combinations of 3 numbers from 5
@@ -160,7 +160,7 @@ export function getDragonTigerColor(result: string): string {
       return 'color-green'  // Green for tie
     case '虎':
     default:
-      return ''             // Default black for tiger
+      return ''             // Default color (black) for tiger
   }
 }
 
@@ -175,4 +175,75 @@ export function parseNumbers(code: string): number[] {
     .split(',')
     .map(item => parseInt(item.trim(), 10))
     .filter(num => !isNaN(num))
+}
+
+/**
+ * Calculate dragon/tiger pairs for 10-ball racing games (Australian Lucky 10)
+ * Compares positions: 1 vs 10, 2 vs 9, 3 vs 8, 4 vs 7, 5 vs 6
+ * @param numbers - array of 10 lottery numbers
+ * @returns array of 5 results: '龙' (dragon) if front > back, '虎' (tiger) if front < back, '和' (tie) if equal
+ */
+export function calcDragonTigerPairs(numbers: number[]): string[] {
+  if (!numbers || numbers.length < 10) {
+    return ['和', '和', '和', '和', '和']
+  }
+  
+  // Comparison pairs: [front position index, back position index]
+  // Position 1 vs 10, 2 vs 9, 3 vs 8, 4 vs 7, 5 vs 6
+  const pairs: [number, number][] = [
+    [0, 9],  // Position 1 vs Position 10
+    [1, 8],  // Position 2 vs Position 9
+    [2, 7],  // Position 3 vs Position 8
+    [3, 6],  // Position 4 vs Position 7
+    [4, 5],  // Position 5 vs Position 6
+  ]
+  
+  return pairs.map(([frontIdx, backIdx]) => {
+    const front = numbers[frontIdx]!
+    const back = numbers[backIdx]!
+    if (front > back) return '龙'
+    if (front < back) return '虎'
+    return '和'
+  })
+}
+
+/**
+ * Calculate BaoDou (宝斗) result for racing games
+ * Based on champion-runner sum (冠亚合) value range
+ * Rule: sum in range 9-12 = '入' (in), otherwise = '出' (out)
+ * @param numbers - array of lottery numbers (at least 2)
+ * @returns '入' or '出'
+ */
+export function calcBaoDou(numbers: number[]): string {
+  if (!numbers || numbers.length < 2) return '出'
+  
+  // Calculate champion (1st) + runner-up (2nd) sum
+  const sum = numbers[0]! + numbers[1]!
+  
+  // Sum in range 9-12 is 'In', otherwise 'Out'
+  return (sum >= 9 && sum <= 12) ? '入' : '出'
+}
+
+/**
+ * Calculate NiuNiu (牛牛) results for 10-ball racing games using sliding window
+ * Returns 6 results for: 庄(Banker), 闲一(Player1), 闲二(Player2), 闲三(Player3), 闲四(Player4), 闲五(Player5)
+ * Window positions: balls[0..4], balls[1..5], balls[2..6], balls[3..7], balls[4..8], balls[5..9]
+ * @param numbers - array of 10 lottery numbers
+ * @returns array of 6 bull results
+ */
+export function calcNiuNiu10(numbers: number[]): string[] {
+  if (!numbers || numbers.length < 10) {
+    return ['无牛', '无牛', '无牛', '无牛', '无牛', '无牛']
+  }
+  
+  // Sliding window starting positions for 6 groups
+  // Banker: [0-4], Player1: [1-5], Player2: [2-6], Player3: [3-7], Player4: [4-8], Player5: [5-9]
+  const windowStarts = [0, 1, 2, 3, 4, 5]
+  
+  return windowStarts.map(start => {
+    // Extract 5 balls for current window
+    const fiveBalls = numbers.slice(start, start + 5)
+    // Use existing calcBullResult function for 5-ball bull calculation
+    return calcBullResult(fiveBalls)
+  })
 }

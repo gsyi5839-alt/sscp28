@@ -15,10 +15,10 @@ const emit = defineEmits<{
   (e: 'close'): void
 }>()
 
-// 当前激活的菜单类型
+// Currently active menu type
 const activeMenu = ref('特别通知')
 
-// 菜单列表
+// Menu list
 const menuItems = [
   { key: '特别通知', label: '特别通知' },
   { key: '通知', label: '通知' },
@@ -26,7 +26,7 @@ const menuItems = [
   { key: '站点通知', label: '站点通知' }
 ]
 
-// 模拟公告数据（实际项目中应该从后端API获取）
+// Mock notice data (should be fetched from backend API in real project)
 const noticeData = {
   '特别通知': [
     {
@@ -68,44 +68,44 @@ const noticeData = {
   ]
 }
 
-// 当前菜单对应的公告列表
+// Notice list for current menu
 const currentNotices = computed(() => {
   return noticeData[activeMenu.value as keyof typeof noticeData] || []
 })
 
-// 当前显示的公告索引
+// Currently displayed notice index
 const currentIndex = ref(0)
 
-// 当前显示的公告
+// Currently displayed notice
 const currentNotice = computed(() => {
   return currentNotices.value[currentIndex.value] || null
 })
 
-// 总页数
+// Total pages
 const totalPages = computed(() => {
   return currentNotices.value.length
 })
 
-// 切换菜单
+// Switch menu
 const handleMenuClick = (menuKey: string) => {
   activeMenu.value = menuKey
-  currentIndex.value = 0 // 切换菜单时重置到第一条
+  currentIndex.value = 0 // Reset to first item when switching menu
 }
 
-// 下一条
+// Next item
 const handleNext = () => {
   if (currentIndex.value < currentNotices.value.length - 1) {
     currentIndex.value++
   }
 }
 
-// 关闭对话框
+// Close dialog
 const handleClose = () => {
   emit('update:visible', false)
   emit('close')
 }
 
-// 对话框内部visible状态
+// Dialog internal visible state
 const dialogVisible = computed({
   get: () => props.visible,
   set: (val) => emit('update:visible', val)
@@ -182,7 +182,7 @@ const dialogVisible = computed({
 </template>
 
 <style scoped>
-/* 彻底覆盖 Element Plus Dialog 默认样式 */
+/* Completely override Element Plus Dialog default styles */
 :deep(.el-dialog) {
   border-radius: 0 !important;
   padding: 0 !important;
@@ -204,27 +204,27 @@ const dialogVisible = computed({
   background: transparent !important;
 }
 
-/* 公告对话框内容容器 - 唯一控制宽度的地方 */
+/* Notice dialog content container - only place to control width */
 .notice-dialog-content {
   width: 300px;
   margin: 0 auto;
   background: transparent;
 }
 
-/* 公告头部图标 - 继承父容器300px宽度 */
+/* Notice header icon - inherits parent container 300px width */
 .notice-header {
   width: 100%;
   height: 155px;
   position: relative;
   z-index: 0;
-  /* Align with @设计样式.md: use SVG as background instead of <img>. */
+  /* Align with @design.md: use SVG as background instead of <img>. */
   background-position: 50% calc(100% + 1px);
   background-size: 100%;
   background-repeat: no-repeat;
   margin-bottom: -10px;
 }
 
-/* 自定义关闭按钮 42x42 圆形 */
+/* Custom close button 42x42 circle */
 .close-btn {
   position: absolute;
   top: 8px;
@@ -250,7 +250,7 @@ const dialogVisible = computed({
   background: rgba(0, 0, 0, 0.75);
 }
 
-/* 白色背景内容区 - 继承父容器300px宽度，紧贴SVG底部 */
+/* White background content area - inherits parent 300px width, flush with SVG bottom */
 .notice-body {
   width: 100%;
   background: #fff;
@@ -263,7 +263,7 @@ const dialogVisible = computed({
   box-sizing: border-box;
 }
 
-/* 公告详情标题 */
+/* Notice detail title */
 .notice-title {
   font-size: 20px;
   height: 40px;
@@ -275,19 +275,19 @@ const dialogVisible = computed({
   color: #333;
 }
 
-/* 主体内容区域 */
+/* Main content area */
 .notice-main {
   display: flex;
   min-height: 360px;
   max-height: 360px;
 }
 
-/* 左侧菜单 */
+/* Left menu */
 .notice-menu {
   position: relative;
   width: 90px;
   height: 360px;
-  margin-left: -10px; /* match @设计样式.md */
+  margin-left: -10px; /* match @design.md */
   flex-basis: 90px;
   flex-shrink: 0;
   overflow-y: auto;
@@ -322,7 +322,7 @@ const dialogVisible = computed({
   color: #fff;
 }
 
-/* Match @设计样式.md: pseudo layers slide in */
+/* Match @design.md: pseudo layers slide in */
 .notice-menu-item::before {
   content: '';
   display: block;
@@ -343,7 +343,7 @@ const dialogVisible = computed({
   opacity: 1;
 }
 
-/* 右侧内容区域 */
+/* Right content area */
 .notice-content-wrapper {
   flex: 1;
   padding-left: 10px;
@@ -359,7 +359,7 @@ const dialogVisible = computed({
   height: 100%;
 }
 
-/* 公告内容 */
+/* Notice content */
 .notice-content {
   flex: 1;
   overflow-y: auto;
@@ -376,7 +376,7 @@ const dialogVisible = computed({
   padding: 40px 0;
 }
 
-/* 分页控制 */
+/* Pagination control */
 .notice-pagination {
   height: 60px;
   display: flex;
@@ -408,7 +408,7 @@ const dialogVisible = computed({
   opacity: 0.5;
 }
 
-/* 隐藏所有滚动条（保留滚动功能） */
+/* Hide all scrollbars (keep scroll functionality) */
 .scroll-bar {
   scrollbar-width: none; /* Firefox */
   -ms-overflow-style: none; /* IE/Edge */
@@ -444,7 +444,7 @@ const dialogVisible = computed({
   padding: 0 !important;
 }
 
-/* header 和 body 是 .notice-dialog 的子元素，用空格选择器 */
+/* header and body are children of .notice-dialog, use space selector */
 .el-dialog.notice-dialog .el-dialog__header {
   display: none !important;
   padding: 0 !important;

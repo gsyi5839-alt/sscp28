@@ -22,3 +22,5 @@ trigger: always_on
 写完代码之后必须进行代码审查，检查是否有错误逻辑
 
 禁止写多BUG，严格进行代码逻辑审查
+
+cd /root/sscp28/frontend && npm run build:site，构建命令请等待结果之后在执行检查，不能直接重复

@@ -117,7 +117,7 @@ const thisWeekTableData = computed(() => {
 const getLastWeekSummary = () => {
   const data = lastWeekTableData.value
   return [
-    '上周总计:',
+'上周总计:',
     String(data.reduce((sum, item) => sum + item.orderCount, 0)),
     String(data.reduce((sum, item) => sum + item.betAmount, 0)),
     String(data.reduce((sum, item) => sum + item.validAmount, 0)),
@@ -130,7 +130,7 @@ const getLastWeekSummary = () => {
 const getThisWeekSummary = () => {
   const data = thisWeekTableData.value
   return [
-    '本周总计:',
+'本周总计:',
     String(data.reduce((sum, item) => sum + item.orderCount, 0)),
     String(data.reduce((sum, item) => sum + item.betAmount, 0)),
     String(data.reduce((sum, item) => sum + item.validAmount, 0)),

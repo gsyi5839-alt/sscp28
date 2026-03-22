@@ -6,6 +6,9 @@ import com.bcbbs.backend.dto.LotteryIssueItem;
 import com.bcbbs.backend.dto.LotteryListResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -29,6 +32,11 @@ public class LotteryService {
     private static final String UPSTREAM_BASE = "https://bw1284.cc";
 
     private final RestTemplate restTemplate;
+    
+    /** Self-reference for invoking cached methods through Spring proxy */
+    @Lazy
+    @Autowired
+    private LotteryService self;
 
     /**
      * Fetch current issue info (latest draw result + next draw countdown) from upstream.
@@ -36,6 +44,7 @@ public class LotteryService {
      * @param lotCode lottery code, e.g. 720 for 加拿大PC28
      * @return mapped LotteryInfoResponse
      */
+    @Cacheable(value = "lotteryInfo", key = "#lotCode")
     @SuppressWarnings("unchecked")
     public LotteryInfoResponse getCurrentInfo(int lotCode) {
         String url = UPSTREAM_BASE + "/api/lottery_code/getLotteryInfo?lotCode=" + lotCode
@@ -70,7 +79,9 @@ public class LotteryService {
     }
 
     /**
-     * Fetch paginated lottery history list from upstream.
+     * Fetch paginated lottery history list with smart caching strategy.
+     * Page 1: cached 5 seconds (frequent updates)
+     * Other pages: cached 15 minutes (historical data, stable)
      *
      * @param lotCode  lottery code
      * @param pageNo   page number (1-based)
@@ -78,8 +89,36 @@ public class LotteryService {
      * @param date     optional filter date in YYYY-MM-DD
      * @return mapped LotteryListResponse
      */
-    @SuppressWarnings("unchecked")
     public LotteryListResponse getHistoryList(int lotCode, int pageNo, int pageSize, String date) {
+        if (pageNo <= 1) {
+            return self.getHistoryListFirstPage(lotCode, pageSize, date);
+        }
+        return self.getHistoryListOtherPages(lotCode, pageNo, pageSize, date);
+    }
+
+    /**
+     * First page cache: 5 second TTL for latest draw results.
+     */
+    @Cacheable(value = "lotteryListFirstPage",
+        key = "#lotCode + ':' + #pageSize + ':' + (#date != null ? #date : 'all')")
+    public LotteryListResponse getHistoryListFirstPage(int lotCode, int pageSize, String date) {
+        return fetchHistoryFromUpstream(lotCode, 1, pageSize, date);
+    }
+
+    /**
+     * Other pages cache: 15 minute TTL for historical data.
+     */
+    @Cacheable(value = "lotteryListOtherPages",
+        key = "#lotCode + ':' + #pageNo + ':' + #pageSize + ':' + (#date != null ? #date : 'all')")
+    public LotteryListResponse getHistoryListOtherPages(int lotCode, int pageNo, int pageSize, String date) {
+        return fetchHistoryFromUpstream(lotCode, pageNo, pageSize, date);
+    }
+
+    /**
+     * Fetch history list from upstream API.
+     */
+    @SuppressWarnings("unchecked")
+    private LotteryListResponse fetchHistoryFromUpstream(int lotCode, int pageNo, int pageSize, String date) {
         String url = UriComponentsBuilder
                 .fromHttpUrl(UPSTREAM_BASE + "/api/lottery_code/getLotteryList")
                 .queryParam("lotCode", lotCode)
@@ -132,6 +171,7 @@ public class LotteryService {
     /**
      * Fetch available lotteries from the upstream allLottery endpoint.
      */
+    @Cacheable(value = "lotteryGames", unless = "#result == null || #result.isEmpty()")
     @SuppressWarnings("unchecked")
     public List<LotteryGameOption> getAvailableGames() {
         String url = UPSTREAM_BASE + "/api/lottery_code/allLottery?t=" + System.currentTimeMillis();

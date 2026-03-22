@@ -4,6 +4,7 @@
 .draw-results {
   display: block;
   width: 100%;
+  min-width: 0;
   margin: 0;
   padding: 0;
   box-sizing: border-box;
@@ -16,26 +17,46 @@
   min-height: 803px;
   border: 1px solid var(--bw-border-color, #efba84);
   background: #fff;
-  overflow: hidden;
+  overflow: visible;
   box-sizing: border-box;
 }
 
-/* Toolbar: bg-3, height 40px, padding 20px left/right */
-.toolbar {
+/* Toolbar: bg-primary4 gradient background, height 40px, padding 20px left/right */
+/* Sticky positioning for AU10 so toolbar stays visible when scrolling */
+/* Use specific selector to ensure background overrides any inherited styles */
+.draw-results-card > .toolbar {
   display: flex;
   align-items: center;
   height: 40px;
   line-height: 40px;
   padding-left: 20px;
   padding-right: 20px;
-  border-bottom: 1px solid var(--el-border-color, #efba84);
-  background: var(--bw-bg-3, #e1f5fc);
+  border-bottom: 1px solid var(--bw-border-color, #efba84);
+  /* bg-primary4: gradient background from --bw-bg-4 CSS variable */
+  background: var(--bw-bg-4, linear-gradient(to bottom, #e0efff 0%, #b7ddff 100%));
+  /* mb10: 10px spacing between toolbar and table per design spec */
+  margin-bottom: 10px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
-/* Game selector: 120px width */
+/* Game selector: 120x26 per design spec */
 .game-select {
   width: 120px;
   flex-shrink: 0;
+}
+
+/* Game selector height: 26px */
+.game-select :deep(.el-input__wrapper) {
+  height: 26px !important;
+  line-height: 26px !important;
+  padding: 0 8px !important;
+}
+
+.game-select :deep(.el-input__inner) {
+  height: 26px !important;
+  line-height: 26px !important;
 }
 
 /* Toolbar title: 16px bold, margin-left 20px */
@@ -50,19 +71,79 @@
   flex: 1;
 }
 
-/* Date picker: 130px width, right aligned via ml-auto effect from spacer */
+/* Date picker: 130x24 per design spec */
 .date-picker {
   width: 130px;
+  height: 24px;
   flex-shrink: 0;
 }
 
-/* Table container: expanded width to accommodate new columns, left-aligned with 32px inset */
+/* Date picker height: 24px, border, radius per design spec */
+.date-picker :deep(.el-input__wrapper) {
+  height: 24px !important;
+  line-height: 24px !important;
+  padding: 0 8px !important;
+  border-radius: 0 !important;
+  border-color: #abb2c5 !important;
+}
+
+.date-picker :deep(.el-input__inner) {
+  height: 24px !important;
+  line-height: 24px !important;
+  font-size: 13px !important;
+}
+
+/* Table container: base styles, 32px margin on top and bottom */
+/* PC28 default: fixed 700px width */
+/* No border here - el-table provides its own border */
 .table-shell {
-  width: 1000px;
-  margin: 32px 0 0 32px;
-  overflow: hidden;
+  width: 700px;
+  margin: 32px 0 32px 32px;
   box-sizing: border-box;
-  border: 1px solid var(--bw-border-color, #efba84);
+}
+
+/* Table width for SSC games: fixed 900px width */
+/* Columns: 70 + 170 + 208 + 150 + 60*5 = 898px + borders */
+.table-shell--ssc {
+  width: 900px;
+}
+
+/* AU10 table header height: 54px total for multi-level header */
+/* NOTE: The actual header styling is in DrawResults.vue scoped styles with :deep() */
+/* These are backup fallback rules without scoped penetration */
+
+/* Element Plus table customization - hide extra borders */
+.results-table.el-table--border::before,
+.results-table.el-table--border::after {
+  display: none;
+}
+
+.results-table.el-table--border .el-table__inner-wrapper {
+  border: none;
+}
+
+.results-table table.el-table__body,
+.results-table table.el-table__header {
+  table-layout: auto;
+}
+
+.results-table .el-table__header-wrapper th.el-table__cell {
+  height: 40px;
+  padding: 0;
+  background: var(--bw-table-header-bg-color, linear-gradient(to bottom, #fff 0%, #fff1e4 100%));
+}
+
+.results-table .el-table__row td.el-table__cell {
+  height: 30px;
+  max-height: 30px;
+  padding: 0;
+}
+
+.results-table .el-table__body .cell {
+  line-height: 30px;
+  height: 30px;
+  padding: 0 8px;
+  overflow: hidden;
 }
 
 /* Table: fills 700px container width, no outer border (table-shell provides it) */
@@ -78,49 +159,63 @@
   font-weight: bold;
 }
 
-/* Ball list container */
+/* Ball list container: center horizontally and vertically in cell */
 .ball-list {
   display: flex;
   justify-content: center;
   align-items: center;
+  height: 30px;
+  width: 100%;
 }
 
-/* Ball PNG image: 26px size, 3px margin */
+/* Ball PNG image: 25px size to fit 30px row height, 2px margin */
 .ball-img {
-  width: 26px;
-  height: 26px;
-  margin-left: 3px;
-  margin-right: 3px;
+  width: 25px;
+  height: 25px;
+  margin-left: 2px;
+  margin-right: 2px;
   object-fit: contain;
 }
 
-/* Summary row: flex layout with 3 cells */
+/* Summary row: flex layout with 3 cells, full height to extend borders */
 .summary-row {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   justify-content: center;
-  line-height: 30px;
+  height: 30px;
   font-size: 14px;
 }
 
-/* Summary cell: equal width, centered text */
+/* Summary cell: equal width, centered text, full height */
 .summary-cell {
   flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   text-align: center;
+  height: 30px;
 }
 
-/* Border between summary cells (except last) */
+/* Border between summary cells (except last) - thin 1px line */
 .summary-cell--border {
   border-right: 1px solid var(--bw-border-color, #efba84);
 }
 
-/* Calculation result cell: centered text with standard height */
+/* Calculation result cell: centered text with 30px height */
 .calc-cell {
   display: flex;
   align-items: center;
   justify-content: center;
+  height: 30px;
   line-height: 30px;
   font-size: 14px;
+}
+
+/* Smaller header text for nested column sub-headers */
+.header-text-sm {
+  color: #000;
+  font-size: 12px;
+  font-weight: bold;
 }
 
 /* Dragon/Tiger color classes */
@@ -128,14 +223,39 @@
   color: red;
 }
 
+.color-blue {
+  color: blue;
+}
+
 .color-green {
   color: green;
 }
 
-/* Pagination container: inside table-shell, no extra margin */
+/* Legacy dragon-tiger-row for non-AU10 games - kept for backward compatibility */
+.dragon-tiger-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 30px;
+  width: 100%;
+}
+
+.dragon-tiger-item {
+  width: 40px;
+  text-align: center;
+  font-size: 14px;
+  line-height: 30px;
+  border-right: 1px solid #ebeef5;
+}
+
+.dragon-tiger-item:last-child {
+  border-right: none;
+}
+
+/* Pagination container: inside table-shell, centered horizontally */
 .pagination-container {
   display: flex;
-  justify-content: flex-start;
+  justify-content: center;
   width: 100%;
   padding: 8px 4px;
   box-sizing: border-box;
@@ -143,7 +263,7 @@
 
 /* Responsive styles */
 @media (max-width: 900px) {
-  .toolbar {
+  .draw-results-card > .toolbar {
     flex-wrap: wrap;
     height: auto;
     padding: 8px 12px;

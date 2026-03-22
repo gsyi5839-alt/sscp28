@@ -18,7 +18,7 @@
   --bw-header-bg-opacity: rgba(53, 28, 12, .6);
   --bw-header-color-hover-selected: #f8bb00;
   --bw-default-color: #351c0c;
-  --bw-linear-bg: linear-gradient(to bottom, #a6744d 0%, #351c0c 100%);
+  --bw-linear-bg: linear-gradient(to bottom, #ab6939 0%, #3a1c04 100%);
   --bw-form-item-label-bg-color: #fff1e4;
   --bw-table-header-bg-color: #fff1e4 linear-gradient(to bottom, #fff 0%, #fff1e4 100%);
   --bw-bg-3: #fff7ef;
@@ -39,7 +39,19 @@
   --el-color-danger-light-8: #fde2e2;
   --el-color-danger-light-9: #fef0f0;
   --el-color-danger-dark-2: #c45656;
+  /* Element Plus date picker width override */
+  --el-date-editor-width: 130px;
   --pc28-cell-bg: #f2eae0;
+  /* Element Plus base font size and component size variables */
+  --el-font-size-extra-large: 20px;
+  --el-font-size-large: 18px;
+  --el-font-size-medium: 16px;
+  --el-font-size-base: 14px;
+  --el-font-size-small: 13px;
+  --el-font-size-extra-small: 12px;
+  --el-component-size-large: 40px;
+  --el-component-size: 32px;
+  --el-component-size-small: 24px;
 }
 
 html.red {

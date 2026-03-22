@@ -11,7 +11,7 @@ import systemClosedBg from '@/assets/通用/bg.png'
 
 const route = useRoute()
 
-// ─── 公告弹窗 ────────────────────────────────────────────────────────────────
+// ─── Announcement Dialog ────────────────────────────────────────────────────────────────
 const NOTICE_SHOWN_KEY = 'bw-notice-shown-session'
 const showNoticeDialog = ref(false)
 const showNoticeList = ref(false)
@@ -22,7 +22,7 @@ const handleCloseNotice = () => {
   sessionStorage.setItem(NOTICE_SHOWN_KEY, 'true')
 }
 
-// ─── 内嵌公告列表 ──────────────────────────────────────────────────────────────
+// ─── Embedded Announcement List ──────────────────────────────────────────────────────────────
 const activeNoticeTab = ref('特别通知')
 const noticeTabItems = [
   { key: '特别通知', label: '特别通知' },
@@ -49,27 +49,27 @@ const noticeListData: Record<string, Array<{ id: number; time: string; content: 
 const currentNoticeList = computed(() => noticeListData[activeNoticeTab.value] || [])
 const onNoticeTabClick = (key: string) => { activeNoticeTab.value = key }
 
-// ─── 开奖 API 数据 ────────────────────────────────────────────────────────────
-/** 当前彩种 code，720 = 加拿大PC28 */
+// ─── Lottery API Data ────────────────────────────────────────────────────────────
+/** Current lottery code, 720 = Canada PC28 */
 const LOT_CODE = 720
 
-/** 上一期开奖：期号 */
+/** Previous draw: issue number */
 const preDrawIssue = ref('--')
-/** 上一期开奖：三个球号码 [b1, b2, b3] */
+/** Previous draw: three ball numbers [b1, b2, b3] */
 const preDrawBalls = ref<number[]>([0, 0, 0])
-/** 上一期开奖：和值 */
+/** Previous draw: sum value */
 const preDrawSum = ref(0)
 
-/** 当前期（下期）期号 */
+/** Current draw (next) issue number */
 const drawIssue = ref('--')
-/** 距离封盘倒计时字符串 HH:MM:SS */
+/** Countdown to sealing time HH:MM:SS */
 const sealCountdown = ref('--:--:--')
-/** 距离开奖倒计时字符串 HH:MM:SS */
+/** Countdown to draw time HH:MM:SS */
 const drawCountdown = ref('--:--:--')
-/** 是否处于开奖中状态（倒计时已过，等待新期数据） */
+/** Whether in drawing state (countdown passed, waiting for new period data) */
 const isDrawing = ref(false)
 
-/** 系统封盘时间状态（中国时间每天 06:00-07:00） */
+/** System closed status (China time daily 06:00-07:00) */
 const currentTime = ref(new Date())
 const isSystemClosed = computed(() => {
   // Convert to China time (UTC+8)
@@ -78,20 +78,20 @@ const isSystemClosed = computed(() => {
   return chinaHour >= 6 && chinaHour < 7
 })
 
-/** 历史统计：最近30期和值列表（来自 API） */
+/** Historical stats: last 30 periods sum values (from API) */
 const historyNums = ref<number[]>([])
 
 let countdownTimer: ReturnType<typeof setInterval> | null = null
-/** 是否正在执行自动刷新（防止重复请求） */
+/** Whether auto-refresh is in progress (prevent duplicate requests) */
 let isFetching = false
 
-/** drawTime 目标时间戳（ms，UTC） */
+/** drawTime target timestamp (ms, UTC) */
 let drawTimestamp = 0
-/** sealTime = drawTime - 10s（封盘提前10秒） */
+/** sealTime = drawTime - 10s (seal 10s before draw) */
 let sealTimestamp = 0
-/** 当前已知的期号，用于检测新期是否到来 */
+/** Currently known issue number, used to detect new period arrival */
 let currentDrawIssue = ''
-/** 当前已知的上一期开奖期号 */
+/** Currently known previous draw issue number */
 let currentPreDrawIssue = ''
 const lastBallRef = ref<HTMLImageElement | null>(null)
 const countdownRef = ref<HTMLDivElement | null>(null)
@@ -264,7 +264,7 @@ onUnmounted(() => {
   stopRecentDialogDrag()
 })
 
-/* ============ 两面长龙排行（基于开奖历史） ============ */
+/* ============ Two-Side Dragon Leaderboard (based on draw history) ============ */
 const historyIssues = ref<any[]>([])
 
 const parseBalls = (code: string | null | undefined): number[] | null => {
@@ -331,7 +331,7 @@ const dragonList = computed(() => {
 })
 
 const sumOdds = [
-  // From /root/sscp28/设计元素.md: "和值 0-27 赔率"
+  // From /root/sscp28/design.md: "Sum value 0-27 odds"
   { num: 0, odd: '850' },
   { num: 1, odd: '280' },
   { num: 2, odd: '135' },
@@ -362,7 +362,7 @@ const sumOdds = [
   { num: 27, odd: '850' },
 ]
 
-// /root/sscp28/设计元素.md provides the measured size of odds text:
+// /root/sscp28/design.md provides the measured size of odds text:
 // - 3 digits (e.g. 850/280/135): 24.06 x 30
 // - 2 digits (e.g. 85/46/38/21/15/13): 16.05 x 30
 // - decimals (e.g. 33.7/26.2/17.2/12.6/13.7): 27.77 x 30
@@ -375,7 +375,7 @@ const sumOddTextStyle = (odd: string) => {
   return { width, height: '30px', lineHeight: '30px' }
 }
 
-// /root/sscp28/设计元素.md provides the measured size of two-side odds text:
+// /root/sscp28/design.md provides the measured size of two-side odds text:
 // - 2.15 / 17.5: 27.77 x 30
 // - 4.3: 19.75 x 30
 const twoSideOddTextStyle = (odd: string) => {
@@ -385,7 +385,7 @@ const twoSideOddTextStyle = (odd: string) => {
   return { width, height: '30px', lineHeight: '30px' }
 }
 
-// /root/sscp28/设计元素.md provides the measured size of "色波" odds text:
+// /root/sscp28/design.md provides the measured size of "color wave" odds text:
 // - 3: 8.03 x 30
 const colorOddTextStyle = (odd: string) => {
   const v = String(odd ?? '')
@@ -394,7 +394,7 @@ const colorOddTextStyle = (odd: string) => {
   return { width, height: '30px', lineHeight: '30px' }
 }
 
-// /root/sscp28/设计元素.md provides the measured size of "豹子/顺子/对子/半顺/杂六" odds text:
+// /root/sscp28/design.md provides the measured size of pattern odds text:
 // - 65 / 12: 16.05 x 30
 // - 2.6 / 2.4: 19.75 x 30
 // - 2.05: 27.77 x 30
@@ -504,7 +504,7 @@ const summarySize = computed(() =>
 const summaryParity = computed(() =>
   buildRoadColumns(historyIssues.value.map((issue: any) => {
     const label = issue?.parityLabel
-    // Skip tie results ('和') — sum=27 in PC28 is neither 单 nor 双
+    // Skip tie results ('Tie') — sum=27 in PC28 is neither Odd nor Even
     if (label && label !== '和') return String(label)
     const sum = getIssueSum(issue)
     if (sum == null || sum === 27) return ''
@@ -514,7 +514,7 @@ const summaryParity = computed(() =>
 
 const activeSummaryKey = ref<SummaryKey>('sum')
 const quickMode = ref<QuickMode>('normal')
-// Active betting tab: 'twoSide' = 两面盘, 'balls' = 1-3球
+// Active betting tab: 'twoSide' = two-side panel, 'balls' = 1-3 balls panel
 const activeBetTab = ref<'twoSide' | 'balls'>('twoSide')
 // Active content view: 'game' = default game panel, 'drawResults' = lottery results
 const activeContentView = ref<'game' | 'drawResults'>('game')
@@ -524,7 +524,7 @@ const centerContentClasses = computed(() => ({
 const mainWrapperClasses = computed(() => ({
   'main-wrapper--draw-results': activeContentView.value === 'drawResults'
 }))
-// 当切换游戏标签时，自动返回游戏内容
+// When switching game tabs, automatically return to game content
 watch(activeBetTab, () => {
   showNoticeList.value = false
   activeContentView.value = 'game'
@@ -546,9 +546,9 @@ watch(
   },
   { immediate: true }
 )
-// Ball amounts for 1-3球 panel: flat map with key "${colIdx}_${ballKey}" (e.g. "0_3", "1_大")
+// Ball amounts for 1-3 balls panel: flat map with key "${colIdx}_${ballKey}" (e.g. "0_3", "1_Big")
 const ballAmounts = ref<Record<string, string>>({})
-// 1-3球选中状态
+// 1-3 balls selection state
 const selectedBallKeys = ref<Set<string>>(new Set())
 const activeBallKey = ref<string | null>(null)
 const selectedSumNums = ref<Set<number>>(new Set())
@@ -589,7 +589,12 @@ const toggleSumSelect = (num: number) => {
     selectedSumNums.value = next
     return
   }
-  activeSumNum.value = num
+  // Normal mode: toggle selection
+  if (activeSumNum.value === num) {
+    activeSumNum.value = null
+  } else {
+    activeSumNum.value = num
+  }
 }
 
 const ensureSumSelected = (num: number) => {
@@ -613,7 +618,12 @@ const toggleTwoSideSelect = (key: string) => {
     selectedTwoSideKeys.value = next
     return
   }
-  activeTwoSideKey.value = key
+  // Normal mode: toggle selection
+  if (activeTwoSideKey.value === key) {
+    activeTwoSideKey.value = null
+  } else {
+    activeTwoSideKey.value = key
+  }
 }
 
 const ensureTwoSideSelected = (key: string) => {
@@ -637,7 +647,12 @@ const toggleColorSelect = (key: string) => {
     selectedColorKeys.value = next
     return
   }
-  activeColorKey.value = key
+  // Normal mode: toggle selection
+  if (activeColorKey.value === key) {
+    activeColorKey.value = null
+  } else {
+    activeColorKey.value = key
+  }
 }
 
 const ensureColorSelected = (key: string) => {
@@ -661,7 +676,12 @@ const togglePatternSelect = (key: string) => {
     selectedPatternKeys.value = next
     return
   }
-  activePatternKey.value = key
+  // Normal mode: toggle selection
+  if (activePatternKey.value === key) {
+    activePatternKey.value = null
+  } else {
+    activePatternKey.value = key
+  }
 }
 
 const ensurePatternSelected = (key: string) => {
@@ -674,7 +694,7 @@ const isPatternSelected = (key: string) => {
   return (amount && amount.trim() !== '') || activePatternKey.value === key
 }
 
-// 1-3球选中状态函数
+// 1-3 balls selection state functions
 const toggleBallSelect = (key: string) => {
   if (quickMode.value === 'quick') {
     const next = new Set(selectedBallKeys.value)
@@ -686,7 +706,12 @@ const toggleBallSelect = (key: string) => {
     selectedBallKeys.value = next
     return
   }
-  activeBallKey.value = key
+  // Normal mode: toggle selection
+  if (activeBallKey.value === key) {
+    activeBallKey.value = null
+  } else {
+    activeBallKey.value = key
+  }
 }
 
 const ensureBallSelected = (key: string) => {
@@ -715,7 +740,7 @@ const onExplainClick = () => {
 // Display-only label near the issue number (switching is handled by GameHeader sub-nav).
 const activeBetTabLabel = computed(() => (activeBetTab.value === 'balls' ? '1-3球' : '两面盘'))
 
-// ─── 最近开奖弹窗 ──────────────────────────────────────────────────────────────
+// ─── Recent Draws Dialog ──────────────────────────────────────────────────────────────
 interface RecentDialogRow {
   issue: string
   time: string
@@ -1241,21 +1266,24 @@ const getBallSrc = (num: number) => {
         </div>
         <!-- 右侧：公告 + 长龙排行（公告列表显示时或开奖结果页面时隐藏） -->
         <div v-if="!showNoticeList && activeContentView === 'game'" class="right-sidebar">
-          <!-- 公告标题 -->
+          <!-- 公告标题 - 固定不滚动 -->
           <div class="announce-header">
             <span class="announce-title">公告</span>
             <span class="more-link">更多</span>
           </div>
-          <!-- 公告内容 -->
-          <div class="announce-body">
-            <p>尊敬的会员您好，当心市场冒充老BW这类骗局，请认准本系统(18118bw.com,18118bw.cc)开奖网(bw128.cc)</p>
-          </div>
-          <!-- 两面长龙排行 -->
-          <div class="dragon-header">两面长龙排行</div>
-          <div class="dragon-list">
-            <div v-for="item in dragonList" :key="item.label" class="dragon-row">
-              <span class="dragon-label">{{ item.label }}</span>
-              <span class="dragon-value">{{ item.value }}</span>
+          <!-- 可滚动内容区域 -->
+          <div class="right-sidebar-scroll">
+            <!-- 公告内容 -->
+            <div class="announce-body">
+              <p>尊敬的会员您好，当心市场冒充老BW这类骗局，请认准本系统(18118bw.com,18118bw.cc)开奖网(bw128.cc)</p>
+            </div>
+            <!-- 两面长龙排行 -->
+            <div class="dragon-header">两面长龙排行</div>
+            <div class="dragon-list">
+              <div v-for="item in dragonList" :key="item.label" class="dragon-row">
+                <span class="dragon-label">{{ item.label }}</span>
+                <span class="dragon-value">{{ item.value }}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -1422,21 +1450,21 @@ const getBallSrc = (num: number) => {
   box-sizing: border-box;
 }
 
-/* 三栏 flex 布局 —— 不强制 min-height，高度由内容决定 */
+/* Three-column flex layout —— no forced min-height, height determined by content */
 .main-body {
   display: flex;
   align-items: flex-start;
   width: 100%;
 }
 
-/* ==================== 中间内容区域 ==================== */
+/* ==================== Center Content Area ==================== */
 .center-content {
   flex: 0 0 720px;
   width: 720px;
-  min-height: 500px; /* 中间内容区合理最小高度，后续有真实内容后可去除 */
+  min-height: 500px; /* Reasonable min-height for center content area, can be removed after real content is added */
   border-left: none;
   border-right: none;
-  /* PC28 表格背景色 - 继承主题变量 (--pc28-cell-bg) */
+  /* PC28 table background color - inherit theme variable (--pc28-cell-bg) */
 }
 
 /* Draw results mode: center-content expands to fill available space */
@@ -1446,6 +1474,8 @@ const getBallSrc = (num: number) => {
   width: auto !important;
   min-width: 0;
   max-width: none;
+  overflow-x: auto;
+  overflow-y: visible;
 }
 
 /* Draw results view container - ensure full width inheritance */
@@ -1453,6 +1483,9 @@ const getBallSrc = (num: number) => {
   display: block;
   width: 100%;
   box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+  overflow: visible;
 }
 
 .placeholder {
@@ -1503,7 +1536,7 @@ const getBallSrc = (num: number) => {
 
 .issue-left--bottom,
 .issue-right--bottom {
-  /* Match screenshot: move the "期 + 盘面" label and countdown line up a bit. */
+  /* Match screenshot: move the "Period + Panel" label and countdown line up a bit. */
   position: relative;
   top: -7px;
 }
@@ -1591,7 +1624,6 @@ const getBallSrc = (num: number) => {
   border: 1px solid var(--bw-border-color, #efba84);
   border-top: none;
   border-bottom: none;
-  background: var(--pc28-cell-bg, #f2eae0);
   box-sizing: border-box;
   font-size: 12px;
   gap: 6px;
@@ -1888,7 +1920,8 @@ const getBallSrc = (num: number) => {
   color: #000;
   border: 1px solid var(--bw-border-color, #efba84);
   border-bottom: none;
-  background: var(--pc28-cell-bg, #f2eae0);
+  /* bg-primary4 maps to --bw-bg-3 per design spec */
+  background: var(--bw-bg-3, #fff7ef);
   margin: 0;
   box-sizing: border-box;
 }
@@ -1898,7 +1931,7 @@ const getBallSrc = (num: number) => {
   border-bottom: none;
   border-left: 1px solid var(--bw-border-color, #efba84);
   border-right: 1px solid var(--bw-border-color, #efba84);
-  background: var(--pc28-cell-bg, #f2eae0);
+  background: var(--bw-bg-3, #fff7ef);
 }
 
 .color-title {
@@ -1906,7 +1939,7 @@ const getBallSrc = (num: number) => {
   border-bottom: none;
   border-left: 1px solid var(--bw-border-color, #efba84);
   border-right: 1px solid var(--bw-border-color, #efba84);
-  background: var(--pc28-cell-bg, #f2eae0);
+  background: var(--bw-bg-3, #fff7ef);
 }
 
 .sum-grid {
@@ -1931,7 +1964,7 @@ const getBallSrc = (num: number) => {
   display: flex;
   height: 30px;
   line-height: 30px;
-  background: var(--pc28-cell-bg, #f2eae0);
+  background: var(--bw-table-header-bg-color);
   border-bottom: 1px solid var(--bw-border-color, #efba84);
 }
 
@@ -1939,7 +1972,7 @@ const getBallSrc = (num: number) => {
   flex: 1;
   text-align: center;
   border-right: 1px solid var(--bw-border-color, #efba84);
-  background: var(--pc28-cell-bg, #f2eae0);
+  background: var(--bw-table-header-bg-color);
   box-sizing: border-box;
 }
 
@@ -1967,26 +2000,23 @@ const getBallSrc = (num: number) => {
   height: 30px;
   line-height: 30px;
   border-bottom: 1px solid var(--bw-border-color, #efba84);
-  background: var(--pc28-cell-bg, #f2eae0);
+  cursor: pointer;
 }
 
-.sum-row {
-  cursor: pointer;
+.sum-row:hover {
+  background: var(--bw-header-color, #be9d76);
 }
 
 .sum-col .sum-row:last-child {
   border-bottom: none;
 }
 
-.sum-row:hover .sum-cell,
-.sum-row:focus-within .sum-cell {
-  background: var(--bw-header-color, #be9d76);
-}
+
 
 .sum-row-selected .sum-cell,
 .sum-row-selected:hover .sum-cell,
 .sum-row-selected:focus-within .sum-cell {
-  background: #ffc214;
+  background: #ffc214 !important;
 }
 
 .sum-cell {
@@ -1997,7 +2027,6 @@ const getBallSrc = (num: number) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--pc28-cell-bg, #f2eae0);
 }
 
 .sum-cell:nth-child(1) {
@@ -2066,6 +2095,7 @@ const getBallSrc = (num: number) => {
   height: 30px;
   line-height: 30px;
   border-bottom: 1px solid var(--bw-border-color, #efba84);
+  box-sizing: border-box;
 }
 
 .two-side-row:last-child {
@@ -2082,10 +2112,16 @@ const getBallSrc = (num: number) => {
   cursor: pointer;
 }
 
-.two-side-item:hover,
-.two-side-item:focus-within {
+.two-side-item:hover {
   background: var(--bw-header-color, #be9d76);
 }
+
+.two-side-item:hover .label,
+.two-side-item:hover .input-box {
+  background: transparent;
+}
+
+
 
 .two-side-item:last-child {
   border-right: none;
@@ -2096,13 +2132,15 @@ const getBallSrc = (num: number) => {
   height: 30px;
   line-height: 30px;
   text-align: center;
-  background: var(--bw-form-item-label-bg-color, #fff1e4);
   color: #000;
   border-right: 1px solid var(--bw-border-color, #efba84);
   box-sizing: border-box;
   display: inline-block;
   font-size: 13px;
+  background: var(--bw-form-item-label-bg-color, #fff1e4);
 }
+
+/* Vertical separator is handled by item border-right, no extra left border needed */
 
 .two-side-item:hover .label,
 .two-side-item:focus-within .label {
@@ -2121,6 +2159,7 @@ const getBallSrc = (num: number) => {
   justify-content: center;
   /* Odds digits: slightly bold, but not heavy like <b> default. */
   font-weight: 500;
+  background: transparent;
 }
 
 .two-side-odd-text {
@@ -2135,6 +2174,12 @@ const getBallSrc = (num: number) => {
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
+}
+
+/* On hover/focus, keep input-box background transparent */
+.two-side-item:hover .input-box,
+.two-side-item:focus-within .input-box {
+  background: transparent;
 }
 
 .color-grid,
@@ -2156,8 +2201,7 @@ const getBallSrc = (num: number) => {
   cursor: pointer;
 }
 
-.color-item:hover,
-.color-item:focus-within {
+.color-item:hover {
   background: var(--bw-header-color, #be9d76);
 }
 
@@ -2200,6 +2244,7 @@ const getBallSrc = (num: number) => {
   justify-content: center;
   /* Odds digits: slightly bold, but not heavy like <b> default. */
   font-weight: 500;
+  background: transparent;
 }
 
 .color-odd-text {
@@ -2223,7 +2268,8 @@ const getBallSrc = (num: number) => {
   border-bottom: none;
   border-left: 1px solid var(--bw-border-color, #efba84);
   border-right: 1px solid var(--bw-border-color, #efba84);
-  background: var(--bw-form-item-label-bg-color, #fff1e4);
+  /* bg-primary4 maps to --bw-bg-3 per design spec */
+  background: var(--bw-bg-3, #fff7ef);
 }
 
 .pattern-item {
@@ -2234,6 +2280,10 @@ const getBallSrc = (num: number) => {
   border-right: 1px solid var(--bw-border-color, #efba84);
   box-sizing: border-box;
   cursor: pointer;
+}
+
+.pattern-item:hover {
+  background: var(--bw-header-color, #be9d76);
 }
 
 .bet-item-selected,
@@ -2254,10 +2304,7 @@ const getBallSrc = (num: number) => {
   background: #ffc214;
 }
 
-.pattern-item:hover,
-.pattern-item:focus-within {
-  background: var(--bw-header-color, #be9d76);
-}
+
 
 .pattern-item:last-child {
   border-right: none;
@@ -2272,6 +2319,7 @@ const getBallSrc = (num: number) => {
   font-weight: 700;
   font-size: 12px;
   box-sizing: border-box;
+  background: transparent;
 }
 
 .pattern-item .odd {
@@ -2286,6 +2334,7 @@ const getBallSrc = (num: number) => {
   justify-content: center;
   /* Odds digits: slightly bold, but not heavy like <b> default. */
   font-weight: 500;
+  background: transparent;
 }
 
 .pattern-odd-text {
@@ -2413,7 +2462,6 @@ const getBallSrc = (num: number) => {
   box-sizing: border-box;
   border: 1px solid var(--bw-border-color, #efba84);
   border-top: none;
-  background: var(--pc28-cell-bg, #f2eae0);
   /* Force clip all overflow */
   overflow: hidden;
   overflow: clip;
@@ -2553,16 +2601,58 @@ const getBallSrc = (num: number) => {
   padding: 1px 0;
 }
 
-/* ==================== 右侧公告栏 ==================== */
+/* ==================== Right Announcement Sidebar ==================== */
+/* Right sidebar with sticky positioning to stay below .menus navigation bar */
 .right-sidebar {
   width: 160px;
   flex-shrink: 0;
   margin-left: 10px;
-  /* Align top with game-panel top border (game-panel has margin-top: 5px) */
-  margin-top: 5px;
+  /* Sticky positioning: stays fixed below the header (70px) + menus bar (31px) = 101px */
+  /* Plus 5px top margin for alignment with game-panel */
+  position: sticky;
+  top: 106px; /* 70px header + 31px menus + 5px margin */
+  align-self: flex-start; /* Required for sticky to work in flex container */
+  display: flex;
+  flex-direction: column;
+  /* Ensure scrollbar area does not overflow above .menus */
+  max-height: calc(100vh - 106px); /* viewport height minus sticky top position */
 }
 
-/* 公告标题行 */
+/* Scrollable content area - scrollbar does not exceed title */
+/* Scrollable content area - scrollbar must not exceed above .menus navigation bar */
+.right-sidebar-scroll {
+  /* Custom scrollbar styling - Firefox uses thin (closest to 9px), Chrome uses ::-webkit-scrollbar for exact 9px */
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: #a6744d #f5f5f5;
+  /* Dynamic height: fills remaining space within sticky container */
+  /* Subtracts announce-header height (~26px) from available space */
+  flex: 1;
+  max-height: calc(100vh - 132px); /* 106px sticky top + ~26px announce header */
+}
+
+/* Webkit scrollbar styles for Chrome/Safari/Edge */
+.right-sidebar-scroll::-webkit-scrollbar {
+  width: 9px;
+}
+
+.right-sidebar-scroll::-webkit-scrollbar-track {
+  background: #f5f5f5;
+  border-radius: 4px;
+}
+
+.right-sidebar-scroll::-webkit-scrollbar-thumb {
+  background: linear-gradient(to bottom, #a6744d 0%, #351c0c 100%);
+  border-radius: 4px;
+  border: 1px solid #efba84;
+}
+
+.right-sidebar-scroll::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(to bottom, #c0845c 0%, #4a2a18 100%);
+}
+
+/* Announcement title row */
 .announce-header {
   height: 45px;
   line-height: 45px;
@@ -2594,7 +2684,7 @@ const getBallSrc = (num: number) => {
   text-decoration: underline;
 }
 
-/* 公告内容 */
+/* Announcement content */
 .announce-body {
   padding: 10px;
   width: 160px;
@@ -2615,7 +2705,7 @@ const getBallSrc = (num: number) => {
   margin: 0;
 }
 
-/* 两面长龙排行标题 */
+/* Two-side dragon leaderboard title */
 .dragon-header {
   height: 45px;
   line-height: 45px;
@@ -2627,7 +2717,7 @@ const getBallSrc = (num: number) => {
   border-bottom: 1px solid var(--bw-border-color, #efba84);
 }
 
-/* 长龙列表 */
+/* Dragon list */
 .dragon-list {
   padding: 0;
   border: 1px solid var(--bw-border-color, #efba84);
@@ -2667,8 +2757,8 @@ const getBallSrc = (num: number) => {
   box-sizing: border-box;
 }
 
-/* ==================== 底部滚动公告栏 ==================== */
-/* margin-top: auto 配合 page 的 flex-column，始终推到页面最底部 */
+/* ==================== Bottom Scrolling Announcement Bar ==================== */
+/* margin-top: auto works with page's flex-column, always push to bottom */
 .footer-bar {
   position: relative;
   z-index: 100;
@@ -2728,7 +2818,7 @@ const getBallSrc = (num: number) => {
   text-decoration: underline;
 }
 
-/* ==================== 下注 tab 按钮 ==================== */
+/* ==================== Betting Tab Buttons ==================== */
 .bet-tab {
   cursor: pointer;
   color: blue;
@@ -2754,7 +2844,7 @@ const getBallSrc = (num: number) => {
   border: none !important;
 }
 
-/* ==================== 1-3球 面板 ==================== */
+/* ==================== 1-3 Balls Panel ==================== */
 .balls-panel {
   width: 720px;
 }
@@ -2763,7 +2853,6 @@ const getBallSrc = (num: number) => {
   width: 720px;
   display: flex;
   border: 1px solid var(--bw-border-color, #efba84);
-  background: var(--pc28-cell-bg, #f2eae0);
   box-sizing: border-box;
 }
 
@@ -2797,18 +2886,16 @@ const getBallSrc = (num: number) => {
   line-height: 30px;
   border-top: 1px solid var(--bw-border-color, #efba84);
   cursor: pointer;
-  background: var(--pc28-cell-bg, #f2eae0);
   box-sizing: border-box;
 }
 
-.balls-row:hover .balls-ball-cell,
-.balls-row:hover .balls-odd-cell,
-.balls-row:hover .balls-input-cell,
-.balls-row:hover .balls-label-cell {
+.balls-row:hover {
   background: var(--bw-header-color, #be9d76);
 }
 
-/* 1-3球选中状态 - 黄色背景 */
+
+
+/* 1-3 balls selected state - yellow background */
 .balls-row-selected .balls-ball-cell,
 .balls-row-selected .balls-odd-cell,
 .balls-row-selected .balls-input-cell,
@@ -2828,7 +2915,6 @@ const getBallSrc = (num: number) => {
   align-items: center;
   justify-content: center;
   border-right: 1px solid var(--bw-border-color, #efba84);
-  background: var(--pc28-cell-bg, #f2eae0);
   box-sizing: border-box;
 }
 
@@ -2844,7 +2930,6 @@ const getBallSrc = (num: number) => {
   align-items: center;
   justify-content: center;
   border-right: 1px solid var(--bw-border-color, #efba84);
-  background: var(--pc28-cell-bg, #f2eae0);
   box-sizing: border-box;
 }
 
@@ -2859,7 +2944,6 @@ const getBallSrc = (num: number) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--pc28-cell-bg, #f2eae0);
   box-sizing: border-box;
 }
 
@@ -2875,7 +2959,7 @@ const getBallSrc = (num: number) => {
   box-sizing: border-box;
 }
 
-/* Two-side label cell (大/小/单/双) with warm background */
+/* Two-side label cell (Big/Small/Odd/Even) */
 .balls-label-cell {
   width: 60px;
   flex: 0 0 60px;
@@ -2884,11 +2968,11 @@ const getBallSrc = (num: number) => {
   justify-content: center;
   border-right: 1px solid var(--bw-border-color, #efba84);
   font-weight: bold;
-  background: var(--pc28-cell-bg, #f2eae0);
+  background: var(--bw-form-item-label-bg-color, #fff1e4);
   box-sizing: border-box;
 }
 
-/* ─── 内嵌公告列表样式 ─────────────────────────────────────────────────────── */
+/* ─── Embedded Announcement List Styles ─────────────────────────────────────────────────────── */
 .notice-list-panel {
   width: 600px;
   min-height: 247px;
@@ -2985,7 +3069,7 @@ const getBallSrc = (num: number) => {
   font-size: 14px;
 }
 
-/* 滚动条 */
+/* Scrollbar */
 .notice-list-body::-webkit-scrollbar {
   width: 6px;
 }
@@ -3003,7 +3087,7 @@ const getBallSrc = (num: number) => {
   background: #999;
 }
 
-/* ============ 系统封盘遮罩层（每天 06:00-07:00） ============ */
+/* ============ System Closed Overlay (daily 06:00-07:00) ============ */
 .system-closed-overlay {
   position: absolute;
   top: 0;
@@ -3023,7 +3107,7 @@ const getBallSrc = (num: number) => {
   opacity: 0.9;
 }
 
-/* 确保 game-panel 有相对定位以便遮罩层定位 */
+/* Ensure game-panel has relative positioning for overlay positioning */
 .game-panel {
   position: relative;
 }

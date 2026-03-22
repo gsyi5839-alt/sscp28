@@ -19,7 +19,7 @@ public class LotteryGameOption {
     /** Lottery code, e.g. 720 */
     private Integer lotCode;
 
-    /** Lottery name, e.g. "加拿大pc28" */
+    /** Lottery name, e.g. "Canada PC28" */
     private String lotName;
 
     /** Upstream lottery type category */

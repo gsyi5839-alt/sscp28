@@ -76,7 +76,7 @@ public class AuthController {
         if (!captchaValid) {
             logger.warn("Captcha validation failed - User: {}", request.getUsername());
             return ResponseEntity.badRequest()
-                    .body(ApiResponse.error(400, "验证码错误或已过期，请点击验证码图片刷新"));
+                    .body(ApiResponse.error(400, "Captcha incorrect or expired, please click the captcha image to refresh"));
         }
 
         // First probe user status: if account is disabled by "initial password not changed" mechanism, guide to forced password change endpoint
@@ -227,7 +227,7 @@ public class AuthController {
         if (!captchaValid) {
             logger.warn("Captcha validation failed");
             return ResponseEntity.badRequest()
-                    .body(ApiResponse.error(400, "验证码错误或已过期，请点击验证码图片刷新"));
+                    .body(ApiResponse.error(400, "Captcha incorrect or expired, please click the captcha image to refresh"));
         }
 
         User user = userService.findByUsername(request.getUsername());

@@ -1,5 +1,6 @@
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
+import { useCacheStore } from '../stores/cache'
 
 const api = axios.create({
   // Prefer build-time configuration; otherwise default to same-domain /api (production uses Nginx reverse proxy, local dev uses Vite proxy)
@@ -104,15 +105,23 @@ export const passwordApi = {
 
 // Lottery API - proxies upstream bw1284.cc lottery data
 export const lotteryApi = {
-  /** Get current issue info: latest result + next draw countdown */
+  /** Get current issue info: backend caches for 5s, no frontend cache needed */
   getInfo: (lotCode = 720) =>
     api.get('/public/lottery/info', { params: { lotCode, t: Date.now() } }),
 
-  /** Get upstream lottery catalog */
-  getGames: () =>
-    api.get('/public/lottery/games', { params: { t: Date.now() } }),
+  /** Get upstream lottery catalog (cached 1h on backend, 1h on frontend) */
+  getGames: async () => {
+    const cache = useCacheStore()
+    const cacheKey = 'lottery:games'
+    const cached = cache.get(cacheKey)
+    if (cached) return cached
+    
+    const res = await api.get('/public/lottery/games', { params: { t: Date.now() } })
+    cache.set(cacheKey, res, 3600000) // Cache for 1 hour
+    return res
+  },
 
-  /** Get paginated lottery history list */
+  /** Get paginated lottery history list (no frontend cache - backend has smart caching) */
   getList: (lotCode = 720, pageNo = 1, pageSize = 30, date?: string | null) =>
     api.get('/public/lottery/list', { params: { lotCode, pageNo, pageSize, date, t: Date.now() } }),
 }

@@ -35,7 +35,7 @@ public class LotteryInfoResponse {
     /** Lottery code, e.g. 720 */
     private Integer lotCode;
 
-    /** Lottery name, e.g. "加拿大pc28" */
+    /** Lottery name, e.g. "Canada PC28" */
     private String lotName;
 
     /** Sum value of the previous draw (attr1) */
@@ -50,6 +50,6 @@ public class LotteryInfoResponse {
     /** Combined size+parity label (attr4) */
     private String sizeParity;
 
-    /** Pattern label - 豹子/顺子/对子/杂六/半顺 (attr5) */
+    /** Pattern label - Leopard/Straight/Pair/Misc/Half-Straight (attr5) */
     private String patternLabel;
 }

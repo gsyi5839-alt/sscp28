@@ -1,0 +1,399 @@
+/* DrawResultsAU10.css - AU10 (Australian Lucky 10) specific styles */
+/* Extracted from DrawResults.css to keep file under 500 lines */
+
+/* ========== AU10 Racing Ball Image Size (25x25px) ========== */
+.au10-results-table .ball-img {
+  width: 25px;
+  height: 25px;
+  display: inline-block;
+  margin: 0 2px;
+}
+
+/* ========== Racing Ball CSS Classes (AU10) ========== */
+/* Legacy CSS circle balls - kept for backward compatibility */
+.ball2 {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 12px;
+  font-weight: bold;
+  line-height: 1;
+  margin: 0 3px;
+}
+
+/* Ball colors matching racing ball images */
+.ball2.n1 { background: #fecb02; } /* Yellow */
+.ball2.n2 { background: #3469ce; } /* Blue */
+.ball2.n3 { background: #4a4a4a; } /* Dark Gray */
+.ball2.n4 { background: #f6830f; } /* Orange */
+.ball2.n5 { background: #45c4f2; } /* Light Blue */
+.ball2.n6 { background: #8a2be2; } /* Purple */
+.ball2.n7 { background: #a0a0a0; } /* Gray */
+.ball2.n8 { background: #ff3b30; } /* Red */
+.ball2.n9 { background: #870e12; } /* Dark Red */
+.ball2.n10 { background: #2e8b2e; } /* Green */
+
+/* ========== Utility Classes (uno-* matching reference) ========== */
+.uno-flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.uno-flex-y-center {
+  display: flex;
+  align-items: center;
+}
+
+.uno-b-1 {
+  border: 1px solid var(--bw-border-color, #8ccdf7);
+}
+
+.uno-b-r {
+  border-right: 1px solid var(--bw-border-color, #8ccdf7);
+}
+
+.uno-b-b {
+  border-bottom: 1px solid var(--bw-border-color, #8ccdf7);
+}
+
+.b-r-none {
+  border-right: none !important;
+}
+
+.b-l-none {
+  border-left: none !important;
+}
+
+.b-b-none {
+  border-bottom: none !important;
+}
+
+/* AU10 NiuNiu inner cell: h-30 line-height-30 */
+.h-30 {
+  height: 30px;
+}
+
+.line-height-30 {
+  line-height: 30px;
+}
+
+/* AU10: Table container with 30px padding, responsive width for screen adaptation */
+/* Columns use proportional widths to auto-fit available space */
+.table-shell--au10 {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  margin: 0;
+  padding: 30px;
+  box-sizing: border-box;
+  overflow: visible;
+}
+
+/* AU10 table header background - per design: --bw-table-header-bg-color */
+/* linear-gradient(to bottom, #fff 0%, #fff1e4 100%) - light gradient */
+.au10-results-table .el-table__header-wrapper th.el-table__cell {
+  background: var(--bw-table-header-bg-color, linear-gradient(to bottom, #fff 0%, #fff1e4 100%)) !important;
+}
+
+/* AU10 table outer border frame - complete rectangular border around table */
+.au10-results-table {
+  border: 1px solid var(--bw-border-color, #EFBA84) !important;
+  border-bottom: none !important; /* Pagination will provide bottom border */
+}
+
+/* AU10 body table: ensure border-collapse separate so borders show between columns */
+.au10-results-table .el-table__body-wrapper table {
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+}
+
+/* AU10 table vertical column borders - matching reference design */
+.au10-results-table .el-table__body-wrapper td.el-table__cell {
+  border-right: 1px solid var(--bw-border-color, #EFBA84) !important;
+}
+
+/* AU10 header table: ensure border-collapse separate so borders show between columns */
+.au10-results-table .el-table__header-wrapper table {
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+}
+
+/* AU10 header vertical borders between columns - use higher specificity */
+.au10-results-table .el-table__header-wrapper th.el-table__cell {
+  border-right: 1px solid var(--bw-border-color, #EFBA84) !important;
+  border-bottom: 1px solid var(--bw-border-color, #EFBA84) !important;
+}
+
+/* AU10 header .cell inside th needs transparent background to not cover parent border */
+.au10-results-table .el-table__header-wrapper th.el-table__cell .cell {
+  background: transparent !important;
+}
+
+/* Remove right border from last column to avoid double border with table outer border */
+.au10-results-table .el-table__header-wrapper th.el-table__cell:last-child,
+.au10-results-table .el-table__body-wrapper td.el-table__cell:last-child {
+  border-right: none !important;
+}
+
+/* AU10 table header text color - black for light background */
+.au10-results-table .el-table__header-wrapper th.el-table__cell .cell {
+  color: var(--el-text-color-regular, #000) !important;
+}
+
+/* AU10: Container wrapper - no horizontal scroll, table adapts to screen */
+.au10-scroll-container {
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  overflow-x: hidden;
+  overflow-y: visible;
+  scrollbar-width: none;          /* Firefox */
+  -ms-overflow-style: none;       /* IE/Edge */
+}
+
+/* Hide native scrollbar for Chrome/Safari/Opera */
+.au10-scroll-container::-webkit-scrollbar {
+  display: none;
+}
+
+/* AU10: Hide Element Plus table internal horizontal scrollbar */
+.au10-scroll-container .el-scrollbar__bar.is-horizontal {
+  display: none !important;
+}
+
+.au10-scroll-container .el-table__body-wrapper .el-scrollbar__bar.is-horizontal {
+  display: none !important;
+}
+
+/* AU10 multi-level header: 54px total (27px per row) */
+/* Total header height: 27px (main) + 27px (sub) = 54px */
+
+/* AU10 results table specific styles */
+/* Add border-top to header wrapper for complete header frame */
+/* All borders must be exactly 1px - no bold/thick lines */
+.au10-results-table .el-table__header-wrapper {
+  height: 54px !important;
+  overflow: hidden;
+  border-top: 1px solid var(--bw-border-color, #EFBA84) !important;
+}
+
+/* Header bottom border rule moved to .table-shell--au10 selector below for consistency */
+
+.au10-results-table .el-table__header-wrapper table {
+  height: 54px !important;
+}
+
+.au10-results-table .el-table__header-wrapper th.el-table__cell {
+  height: 54px !important;
+  padding: 0 !important;
+}
+
+/* Standard columns header: single row 54px */
+.au10-results-table .el-table__header-wrapper th.el-table__cell .cell {
+  height: 54px !important;
+  line-height: 54px !important;
+  padding: 0 4px !important;
+}
+
+/* NiuNiu column header: two rows 27px each - target by column index (last column) */
+.au10-results-table .el-table__header-wrapper th.el-table__cell:last-child {
+  height: 54px !important;
+  padding: 0 !important;
+}
+
+.au10-results-table .el-table__header-wrapper th.el-table__cell:last-child .cell {
+  height: 54px !important;
+  line-height: normal !important;
+  padding: 0 !important;
+}
+
+/* AU10: Force border on niuniu sub-columns */
+.table-shell--au10 .niuniu-sub-column {
+  border-right: 1px solid var(--bw-border-color, #ebeef5) !important;
+}
+
+.table-shell--au10 .niuniu-sub-column:last-child {
+  border-right: none !important;
+}
+
+/* AU10: NiuNiu cell text center and full display */
+.niuniu-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 31px;
+  width: 100%;
+  text-align: center;
+}
+
+.niuniu-cell span {
+  display: inline-block;
+  text-align: center;
+}
+
+/* AU10: Table internal layout - uses fixed table-layout for precise column widths */
+.table-shell--au10 .el-table {
+  width: 100% !important;
+}
+
+/* Header bottom border: added to body-wrapper top to avoid overflow:hidden clipping on header-wrapper */
+.table-shell--au10 .el-table__body-wrapper {
+  overflow: visible !important;
+  border-top: 1px solid var(--bw-border-color, #EFBA84) !important;
+}
+
+.table-shell--au10 table.el-table__body,
+.table-shell--au10 table.el-table__header {
+  table-layout: fixed !important;
+  width: 100% !important;
+}
+
+/* AU10 BaoDou (宝斗) column: header uses standard gradient, body cells use light blue */
+/* Header cell: ensure gradient background fills entire cell */
+.au10-results-table .el-table__header-wrapper th.el-table__cell.baodou-column {
+  background: var(--bw-table-header-bg-color, linear-gradient(to bottom, #fff 0%, #fff1e4 100%)) !important;
+}
+
+.au10-results-table .el-table__header-wrapper th.el-table__cell.baodou-column .cell {
+  background: transparent !important;
+}
+
+/* Body cells: light blue background */
+.au10-results-table .el-table__body-wrapper td.el-table__cell.baodou-column {
+  background-color: var(--bw-form-item-label-bg-color, #e0f1ff) !important;
+}
+
+/* AU10 BaoDou cell background for data rows - 39x26 spec */
+.baodou-cell {
+  background-color: var(--bw-form-item-label-bg-color, #e0f1ff);
+  height: 26px;
+  line-height: 26px;
+}
+
+/* AU10 summary row (冠亚合) with 3 subdivisions */
+.au10-summary-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 30px;
+  line-height: 30px;
+  font-size: 14px;
+}
+
+.au10-summary-row > div {
+  flex: 1;
+  text-align: center;
+}
+
+.au10-summary-row > div.uno-b-r {
+  border-right: 1px solid var(--bw-border-color, #8ccdf7);
+}
+
+/* AU10 1-5 Dragon/Tiger row */
+.au10-dragon-tiger-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 30px;
+  line-height: 30px;
+  font-size: 14px;
+}
+
+.au10-dragon-tiger-row > div {
+  flex: 1;
+  text-align: center;
+}
+
+.au10-dragon-tiger-row > div.uno-b-r {
+  border-right: 1px solid var(--bw-border-color, #8ccdf7);
+}
+
+/* AU10 NiuNiu header container: two rows, total 54px */
+.au10-niuniu-header-container {
+  display: flex;
+  flex-direction: column;
+  height: 54px;
+  width: 100%;
+}
+
+/* NiuNiu main header: 27px height */
+.au10-niuniu-main-header {
+  height: 27px;
+  line-height: 27px;
+  font-size: 14px;
+  font-weight: bold;
+  text-align: center;
+  color: var(--el-text-color-regular, #000);
+  border-bottom: 1px solid var(--bw-border-color, #8ccdf7);
+  box-sizing: border-box;
+}
+
+/* NiuNiu sub-header row: 27px height, 6 items */
+.au10-niuniu-sub-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 27px;
+  width: 100%;
+}
+
+/* NiuNiu sub-header items: 239px total / 6 = ~40px each */
+.au10-niuniu-sub-item {
+  flex: 1;
+  height: 27px;
+  line-height: 27px;
+  font-size: 12px;
+  font-weight: bold;
+  text-align: center;
+  color: var(--el-text-color-regular, #000);
+  border-right: 1px solid var(--bw-border-color, #8ccdf7);
+  box-sizing: border-box;
+}
+
+.au10-niuniu-sub-item:last-child {
+  border-right: none;
+}
+
+/* AU10 NiuNiu cell row: 6 cells matching sub-header */
+.au10-niuniu-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 30px;
+  font-size: 14px;
+  width: 100%;
+}
+
+/* NiuNiu cell: 6 equal columns */
+.au10-niuniu-cell {
+  flex: 1;
+  height: 30px;
+  line-height: 30px;
+  text-align: center;
+  border-right: 1px solid var(--bw-border-color, #8ccdf7);
+  box-sizing: border-box;
+}
+
+.au10-niuniu-cell:last-child {
+  border-right: none;
+}
+
+/* AU10: Center pagination within the table content area */
+/* Continues the border frame from table - left, right, bottom borders */
+.table-shell--au10 .pagination-container {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  padding: 12px 0;
+  box-sizing: border-box;
+  border-left: 1px solid var(--bw-border-color, #EFBA84);
+  border-right: 1px solid var(--bw-border-color, #EFBA84);
+  border-bottom: 1px solid var(--bw-border-color, #EFBA84);
+}

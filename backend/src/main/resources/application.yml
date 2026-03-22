@@ -7,6 +7,10 @@ spring:
   application:
     name: bcbbs-backend
   
+  # Cache Configuration
+  cache:
+    type: caffeine
+  
   # Database Configuration
   datasource:
     url: jdbc:mysql://localhost:3306/xie080886?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai&createDatabaseIfNotExist=true
@@ -58,7 +62,7 @@ logging:
       max-history: 30
       total-size-cap: 2GB
 
-# 启用404异常抛出，便于全局异常处理器捕获
+# Enable 404 exception throwing for global exception handler to catch
 spring.mvc:
   throw-exception-if-no-handler-found: true
 

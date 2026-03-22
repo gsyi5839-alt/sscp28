@@ -4,6 +4,7 @@ import com.bcbbs.backend.dto.LineResponse;
 import com.bcbbs.backend.entity.AccessLine;
 import com.bcbbs.backend.repository.AccessLineRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -17,6 +18,7 @@ public class AccessLineService {
     /**
      * Load active lines by type in display order.
      */
+    @Cacheable(value = "accessLines", key = "#type.name()")
     public List<LineResponse> getActiveLines(AccessLine.LineType type) {
         return accessLineRepository.findByTypeAndActiveTrueOrderBySortOrderAsc(type)
                 .stream()

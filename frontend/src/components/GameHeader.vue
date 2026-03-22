@@ -6,17 +6,17 @@ import logoImg from '@/assets/通用/logo.png'
 
 // Props for controlling header behavior
 const props = defineProps<{
-  hideSubNav?: boolean  // Hide the sub-nav (两面盘 | 1-3球) on certain pages like BetStatus
+  hideSubNav?: boolean  // Hide the sub-nav (Two-Side | 1-3 Balls) on certain pages like BetStatus
 }>()
 
-// Expose the "盘面" selection (两面盘 / 1-3球) to the parent page (GameHome)
+// Expose the "Panel" selection (Two-Side / 1-3 Balls) to the parent page (GameHome)
 // so clicking the header sub-nav can switch the actual betting panel.
 const betTab = defineModel<'twoSide' | 'balls'>('betTab', { default: 'twoSide' })
 
 // Expose content view state for switching between game panel and draw results
 const contentView = defineModel<'game' | 'drawResults'>('contentView', { default: 'game' })
 
-/* ============ 类型 ============ */
+/* ============ Types ============ */
 interface NavItem { key: string; label: string }
 interface GameItem { key: string; label: string; badge?: 'new' | 'hot' }
 interface SubNavItem { key: string; label: string }
@@ -25,7 +25,7 @@ const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
 
-/* ============ 顶部导航 ============ */
+/* ============ Top Navigation ============ */
 const topNav: NavItem[] = [
   { key: 'betStatus', label: '下注状况' },
   { key: 'accountHistory', label: '账户历史' },
@@ -36,7 +36,7 @@ const topNav: NavItem[] = [
   { key: 'logout', label: '退出登录' },
 ]
 
-/* ============ 游戏导航 ============ */
+/* ============ Game Navigation ============ */
 const gameNav: GameItem[] = [
   { key: 'caPc28', label: '加拿大pc28', badge: 'new' },
   { key: 'caSsc', label: '加拿大时时彩', badge: 'new' },
@@ -46,7 +46,7 @@ const gameNav: GameItem[] = [
   { key: 'happySsc', label: '欢乐时时彩', badge: 'hot' },
 ]
 
-/* ============ 更多游戏下拉 ============ */
+/* ============ More Games Dropdown ============ */
 const moreGames: GameItem[] = [
   { key: 'luckyPlane', label: '幸运飞艇' },
   { key: 'speedRacing', label: '极速赛车' },
@@ -56,13 +56,13 @@ const moreGames: GameItem[] = [
   { key: 'lottery10', label: '体彩乐透10' },
 ]
 
-/* ============ 子导航（menus 栏） ============ */
+/* ============ Sub Navigation (menus bar) ============ */
 const subNav: SubNavItem[] = [
   { key: 'twoSides', label: '两面盘' },
   { key: 'ball13', label: '1-3球' },
 ]
 
-/* ============ 主题色 ============ */
+/* ============ Theme Colors ============ */
 type ThemeKey = 'red' | 'green' | 'cyan' | 'blue' | 'brown'
 
 const themeColors: Array<{ key: ThemeKey; color: string }> = [
@@ -73,9 +73,9 @@ const themeColors: Array<{ key: ThemeKey; color: string }> = [
   { key: 'brown', color: '#be9d76' },
 ]
 
-/* ============ 状态 ============ */
+/* ============ State ============ */
 const activeGameKey = ref('caPc28')
-const activeTheme = ref<ThemeKey>('brown') // 默认棕色主题
+const activeTheme = ref<ThemeKey>('brown') // Default brown theme
 const THEME_STORAGE_KEY = 'bw-member-active-theme-name'
 const THEME_CLASS_LIST: ThemeKey[] = ['red', 'green', 'cyan', 'blue', 'brown']
 
@@ -90,7 +90,16 @@ const applyTheme = (theme: ThemeKey) => {
   localStorage.setItem(THEME_STORAGE_KEY, theme)
 }
 
-/* ============ 事件处理 ============ */
+/* ============ Helper Functions ============ */
+// Check if a top navigation item is currently active
+const isTopItemActive = (key: string): boolean => {
+  if (key === 'betStatus' && route.name === 'betStatus') return true
+  if (key === 'accountHistory' && route.name === 'accountHistory') return true
+  if (key === 'drawResults' && contentView.value === 'drawResults') return true
+  return false
+}
+
+/* ============ Event Handlers ============ */
 const onTopClick = async (key: string) => {
   if (key === 'logout') {
     authStore.logout()
@@ -199,7 +208,11 @@ onMounted(() => {
           <!-- 顶部功能导航 -->
           <div class="top-nav">
             <template v-for="(item, idx) in topNav" :key="item.key">
-              <span class="top-item" @click="onTopClick(item.key)">
+              <span
+                class="top-item"
+                :class="{ active: isTopItemActive(item.key) }"
+                @click="onTopClick(item.key)"
+              >
                 {{ item.label }}
               </span>
               <span v-if="idx !== topNav.length - 1" class="sep">|</span>
@@ -285,8 +298,11 @@ onMounted(() => {
 </template>
 
 <style scoped>
-/* ========================= 整体容器 ========================= */
+/* ========================= Overall Container ========================= */
 .header-container {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
   width: 100%;
   /* Removed min-width: 1418px to prevent horizontal overflow causing colored bars on the right side */
   /* Use max-width and overflow-x to contain content without forcing viewport expansion */
@@ -296,12 +312,15 @@ onMounted(() => {
   font-weight: 700;
 }
 
-/* ========================= 主导航 (70px) ========================= */
+/* ========================= Main Navigation (92px) ========================= */
 .header {
   position: relative;
-  height: 70px;
+  height: 92px;
   width: 100%;
-  background: var(--bw-linear-bg, linear-gradient(to bottom, #a6744d 0%, #351c0c 100%));
+  /* Background image from design + gradient overlay for theme compatibility */
+  background: 
+    var(--bw-linear-bg, linear-gradient(to bottom, rgba(166, 116, 77, 0.85) 0%, rgba(53, 28, 12, 0.85) 100%)),
+    url('https://d1yospiq4404cv.cloudfront.net/member/static/header_01-dc11df90.jpg') repeat-x center top;
   border-bottom: 1px solid var(--bw-border-color, #efba84);
   box-shadow: inset 0 1px 0 rgba(255, 197, 138, 0.55), inset 0 -1px 0 rgba(0, 0, 0, 0.3);
   overflow: hidden;
@@ -322,7 +341,7 @@ onMounted(() => {
   z-index: 1;
   width: 100%;
   max-width: none;
-  height: 70px;
+  height: 92px;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -330,7 +349,7 @@ onMounted(() => {
   box-sizing: border-box;
 }
 
-/* ---------- 第一行：Logo + 顶部导航 ---------- */
+/* ---------- Row 1: Logo + Top Navigation ---------- */
 .row-top {
   display: flex;
   align-items: center;
@@ -344,9 +363,9 @@ onMounted(() => {
   position: relative;
   display: flex;
   align-items: center;
-  flex: 0 0 220px;
-  width: 220px;
-  min-width: 220px;
+  flex: 0 0 240px;
+  width: 240px;
+  min-width: 240px;
   height: 30px;
   margin-right: 0;
 }
@@ -378,6 +397,7 @@ onMounted(() => {
   white-space: nowrap;
   height: 30px;
   line-height: 30px;
+  margin-top: -20px; /* Move top navigation up by 20px */
 }
 
 .top-item {
@@ -403,6 +423,10 @@ onMounted(() => {
   color: #fcff00;
 }
 
+.top-item.active {
+  color: #fcff00 !important;
+}
+
 .sep {
   display: inline-block;
   height: 22px;
@@ -413,14 +437,16 @@ onMounted(() => {
   font-size: 13px;
 }
 
-/* ---------- 第二行：游戏导航 ---------- */
+/* ---------- Row 2: Game Navigation ---------- */
 .row-games {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 0;
   height: 22px;
   line-height: 22px;
-  padding-left: 220px;
+  padding-left: 240px;
+  margin-top: -13px; /* Move game navigation row up by 13px */
+  margin-bottom: 13px; /* Bottom spacing for game navigation row */
 }
 
 .game-item {
@@ -433,7 +459,9 @@ onMounted(() => {
   font-weight: 400;
   cursor: pointer;
   user-select: none;
-  color: #ffffff;
+  margin: 0;
+  padding: 0;
+  color: #ffffff; /* White text for game items */
   background: var(--bw-linear-bg, linear-gradient(to bottom, #a6744d 0%, #351c0c 100%));
   border: 1px solid var(--bw-border-color, #efba84);
   box-sizing: border-box;
@@ -445,10 +473,10 @@ onMounted(() => {
 }
 
 .game-item.active {
-  color: #fcff00;
+  color: rgb(252, 255, 0); /* Yellow text for active game item */
 }
 
-/* "新" 角标 */
+/* "New" badge */
 .game-item.is-new::after {
   content: '';
   position: absolute;
@@ -460,7 +488,7 @@ onMounted(() => {
   pointer-events: none;
 }
 
-/* "热" 角标 */
+/* "Hot" badge */
 .game-item.is-hot::after {
   content: '';
   position: absolute;
@@ -472,7 +500,7 @@ onMounted(() => {
   pointer-events: none;
 }
 
-/* ========================= 子导航栏 menus (31px) ========================= */
+/* ========================= Sub Navigation menus (31px) ========================= */
 .menus {
   height: 31px;
   width: 100%;
@@ -483,7 +511,7 @@ onMounted(() => {
   align-items: center;
 }
 
-/* ---------- 主题色圆点 ---------- */
+/* ---------- Theme color dots ---------- */
 .theme-colors {
   display: flex;
   align-items: center;
@@ -507,7 +535,7 @@ onMounted(() => {
   box-shadow: 0 0 3px rgba(0,0,0,0.3);
 }
 
-/* ---------- 子导航项 ---------- */
+/* ---------- Sub navigation items ---------- */
 .menus-center {
   flex: 1;
 }
@@ -556,7 +584,7 @@ onMounted(() => {
   font-weight: 700;
 }
 
-/* ========================= 更多游戏下拉项 ========================= */
+/* ========================= More Games Dropdown ========================= */
 .more-game-item {
   width: 100px;
   height: 22px;

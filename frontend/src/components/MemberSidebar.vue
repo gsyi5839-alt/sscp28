@@ -4,17 +4,17 @@ import { useAuthStore } from '../stores/auth'
 
 const authStore = useAuthStore()
 
-/* ============ 会员信息 ============ */
+/* ============ Member Info ============ */
 const username = computed(() => authStore.user?.username || 'ww12506')
 const panelType = computed(() => 'A盘')
 
-/* ============ 额度信息（后续接 API） ============ */
+/* ============ Credit Info (API integration pending) ============ */
 const creditLimit = computed(() => 0)
 const availableCredit = computed(() => 0)
 const betAmount = computed(() => 0)
 const frozenAmount = computed(() => 0)
 
-/* ============ 左侧游戏快捷入口 ============ */
+/* ============ Left Side Game Quick Access ============ */
 const sideGames = [
   { key: 'bw128', label: 'BW128开奖网', url: 'https://bw1283.cc/#/home' },
   { key: 'caPc28', label: '加拿大PC28', url: 'https://bw1284.cc/#/detail/1725113792562?lotCode=720' },
@@ -24,7 +24,7 @@ const sideGames = [
 ]
 
 const onGameClick = (url: string) => {
-  // 在新标签页中打开游戏链接
+  // Open game link in new tab
   window.open(url, '_blank')
 }
 </script>
@@ -82,7 +82,7 @@ const onGameClick = (url: string) => {
   margin-top: 5px;
 }
 
-/* 统一内容宽度（与设计 184px 一致） */
+/* Uniform content width (consistent with design 184px) */
 .sidebar-title,
 .username,
 .info-list,
@@ -92,8 +92,8 @@ const onGameClick = (url: string) => {
   box-sizing: border-box;
 }
 
-/* ========== 标题：会员信息 ========== */
-/* 原版：uno-b-b color-[#fff] font-400 text-center h45 line-height-45 gradient-bg3 */
+/* ========== Title: Member Info ========== */
+/* Original: uno-b-b color-[#fff] font-400 text-center h45 line-height-45 gradient-bg3 */
 .sidebar-title {
   height: 45px;
   line-height: 45px;
@@ -101,14 +101,14 @@ const onGameClick = (url: string) => {
   color: #fff;
   font-weight: 400;
   font-size: 13px;
-  /* 原版 .uno-b-b：border-bottom 1px solid var(--bw-border-color, #efba84) */
+  /* Original .uno-b-b: border-bottom 1px solid var(--bw-border-color, #efba84) */
   border-bottom: 1px solid var(--bw-border-color, #efba84);
-  /* 原版 gradient-bg3 = --bw-linear-bg */
+  /* Original gradient-bg3 = --bw-linear-bg */
   background: var(--bw-linear-bg, linear-gradient(to bottom, #a6744d 0%, #351c0c 100%));
 }
 
-/* ========== 用户名 ========== */
-/* 原版：uno-b-b font-400 color-[red] text-center h32 line-height-32 */
+/* ========== Username ========== */
+/* Original: uno-b-b font-400 color-[red] text-center h32 line-height-32 */
 .username {
   height: 32px;
   line-height: 32px;
@@ -116,15 +116,15 @@ const onGameClick = (url: string) => {
   color: red;
   font-weight: 400;
   font-size: 13px;
-  /* 原版 .uno-b-b：border-bottom 1px solid var(--bw-border-color, #efba84) */
+  /* Original .uno-b-b: border-bottom 1px solid var(--bw-border-color, #efba84) */
   border-bottom: 1px solid var(--bw-border-color, #efba84);
   border-left: 1px solid var(--bw-border-color, #efba84);
   border-right: 1px solid var(--bw-border-color, #efba84);
 }
 
-/* ========== 额度信息（表格样式） ========== */
-/* 原版边框色：--bw-border-color: #EFBA84 */
-/* 不需要 border-top，.username 的 border-bottom 已提供上边线 */
+/* ========== Credit Info (table style) ========== */
+/* Original border color: --bw-border-color: #EFBA84 */
+/* No border-top needed, .username's border-bottom provides top border */
 .info-list {
   padding: 0;
   border-left: 1px solid var(--bw-border-color, #efba84);
@@ -147,14 +147,14 @@ const onGameClick = (url: string) => {
   font-weight: 400;
   flex-shrink: 0;
   text-align: center;
-  /* 原版：border-right: 1px solid var(--bw-border-color, #efba84) */
+  /* Original: border-right: 1px solid var(--bw-border-color, #efba84) */
   border-right: 1px solid var(--bw-border-color, #efba84);
   height: 100%;
   display: flex;
   align-items: center;
   justify-content: flex-end;
   padding-right: 0;
-  /* 原版：background-color: var(--bw-form-item-label-bg-color) = var(--bw-form-item-label-bg-color, #fff1e4) */
+  /* Original: background-color: var(--bw-form-item-label-bg-color) = var(--bw-form-item-label-bg-color, #fff1e4) */
   background-color: var(--bw-form-item-label-bg-color, #fff1e4);
 }
 
@@ -165,8 +165,8 @@ const onGameClick = (url: string) => {
   font-size: 12px;
 }
 
-/* ========== 游戏快捷按钮 ========== */
-/* 原版：el-button--primary el-button--large block w100% mb10 */
+/* ========== Game Quick Access Buttons ========== */
+/* Original: el-button--primary el-button--large block w100% mb10 */
 .game-buttons {
   padding: 5px 0;
   display: flex;
@@ -184,7 +184,7 @@ const onGameClick = (url: string) => {
   text-align: center !important;
   justify-content: center !important;
   padding: 0 !important;
-  /* 原版按钮背景色 var(--el-color-primary, #5c2e0d)（深棕色） */
+  /* Original button background color var(--el-color-primary, #5c2e0d) (dark brown) */
   --el-button-bg-color: var(--el-color-primary, #5c2e0d) !important;
   --el-button-border-color: var(--el-color-primary, #5c2e0d) !important;
   --el-button-hover-bg-color: var(--el-color-primary-light-3, rgba(92, 46, 13, 0.9)) !important;
