@@ -1,13 +1,14 @@
 <script setup lang="ts">
 // Account History Page - displays transaction records for last two weeks
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import GameHeader from '../components/GameHeader.vue'
 import MemberSidebar from '../components/MemberSidebar.vue'
+import { accountApi } from '@/api/index'
 
 const router = useRouter()
 
-// Data interface for account history record
+// Data interface for account history record (matches backend AccountHistoryResponse)
 interface HistoryRecord {
   date: string
   weekday: string
@@ -16,106 +17,52 @@ interface HistoryRecord {
   validAmount: number
   rebate: number
   winLoss: number
+  settlementStatus?: string
 }
 
-// Table data arrays - will be populated by API
+// Table data arrays - populated by API
 const lastWeekData = ref<HistoryRecord[]>([])
 const thisWeekData = ref<HistoryRecord[]>([])
+const loading = ref(false)
 
-// TODO: fetch data from API
-
-// Weekday mapping
-const weekdayMap = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
-
-// Format date as YYYY-MM-DD
-const formatDate = (date: Date): string => {
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
+/**
+ * Fetch last two weeks account history from backend API.
+ * Backend returns 14 days: first 7 = last week, last 7 = this week.
+ */
+const fetchHistory = async () => {
+  loading.value = true
+  try {
+    const res = await accountApi.getHistory() as any
+    if (res?.code === 200 && Array.isArray(res.data)) {
+      const allData: HistoryRecord[] = res.data.map((item: any) => ({
+        date: item.date,
+        weekday: item.weekday,
+        orderCount: item.orderCount ?? 0,
+        betAmount: Number(item.betAmount) || 0,
+        validAmount: Number(item.validAmount) || 0,
+        rebate: Number(item.rebate) || 0,
+        winLoss: Number(item.winLoss) || 0,
+        settlementStatus: item.settlementStatus
+      }))
+      // Backend returns 14 days ordered: last week Monday..Sunday, this week Monday..Sunday
+      lastWeekData.value = allData.slice(0, 7)
+      thisWeekData.value = allData.slice(7, 14)
+    }
+  } catch (err) {
+    console.error('Failed to fetch account history:', err)
+  } finally {
+    loading.value = false
+  }
 }
 
-// Get weekday name from date
-const getWeekday = (date: Date): string => {
-  return weekdayMap[date.getDay()] ?? ''
-}
-
-// Compute last week dates (Monday to Sunday)
-const lastWeekDates = computed(() => {
-  const today = new Date()
-  const currentDay = today.getDay() || 7 // Convert Sunday from 0 to 7
-  
-  // Last week Monday
-  const lastMonday = new Date(today)
-  lastMonday.setDate(today.getDate() - currentDay - 6)
-  
-  const dates: { date: string; weekday: string }[] = []
-  for (let i = 0; i < 7; i++) {
-    const d = new Date(lastMonday)
-    d.setDate(lastMonday.getDate() + i)
-    dates.push({
-      date: formatDate(d),
-      weekday: getWeekday(d)
-    })
-  }
-  return dates
-})
-
-// Compute this week dates (Monday to Sunday)
-const thisWeekDates = computed(() => {
-  const today = new Date()
-  const currentDay = today.getDay() || 7 // Convert Sunday from 0 to 7
-  
-  // This week Monday
-  const thisMonday = new Date(today)
-  thisMonday.setDate(today.getDate() - currentDay + 1)
-  
-  const dates: { date: string; weekday: string }[] = []
-  for (let i = 0; i < 7; i++) {
-    const d = new Date(thisMonday)
-    d.setDate(thisMonday.getDate() + i)
-    dates.push({
-      date: formatDate(d),
-      weekday: getWeekday(d)
-    })
-  }
-  return dates
-})
-
-// Generate table data with dates (using API data or zeros)
-const lastWeekTableData = computed(() => {
-  return lastWeekDates.value.map((dateInfo, index) => {
-    const record = lastWeekData.value[index]
-    return {
-      date: dateInfo.date,
-      weekday: dateInfo.weekday,
-      orderCount: record?.orderCount ?? 0,
-      betAmount: record?.betAmount ?? 0,
-      validAmount: record?.validAmount ?? 0,
-      rebate: record?.rebate ?? 0,
-      winLoss: record?.winLoss ?? 0
-    }
-  })
-})
-
-const thisWeekTableData = computed(() => {
-  return thisWeekDates.value.map((dateInfo, index) => {
-    const record = thisWeekData.value[index]
-    return {
-      date: dateInfo.date,
-      weekday: dateInfo.weekday,
-      orderCount: record?.orderCount ?? 0,
-      betAmount: record?.betAmount ?? 0,
-      validAmount: record?.validAmount ?? 0,
-      rebate: record?.rebate ?? 0,
-      winLoss: record?.winLoss ?? 0
-    }
-  })
+// Fetch data on component mount
+onMounted(() => {
+  fetchHistory()
 })
 
 // Summary method for last week table
 const getLastWeekSummary = () => {
-  const data = lastWeekTableData.value
+  const data = lastWeekData.value
   return [
 '上周总计:',
     String(data.reduce((sum, item) => sum + item.orderCount, 0)),
@@ -128,7 +75,7 @@ const getLastWeekSummary = () => {
 
 // Summary method for this week table
 const getThisWeekSummary = () => {
-  const data = thisWeekTableData.value
+  const data = thisWeekData.value
   return [
 '本周总计:',
     String(data.reduce((sum, item) => sum + item.orderCount, 0)),
@@ -164,7 +111,7 @@ const onMoreClick = () => {
           <!-- Last week table -->
           <div class="table-wrapper">
             <el-table
-              :data="lastWeekTableData"
+              :data="lastWeekData"
               border
               show-summary
               :summary-method="getLastWeekSummary"
@@ -215,7 +162,7 @@ const onMoreClick = () => {
           <!-- This week table -->
           <div class="table-wrapper this-week-table">
             <el-table
-              :data="thisWeekTableData"
+              :data="thisWeekData"
               border
               show-summary
               :summary-method="getThisWeekSummary"

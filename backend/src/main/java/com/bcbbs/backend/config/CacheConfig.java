@@ -66,6 +66,14 @@ public class CacheConfig {
                 .maximumSize(5)
                 .recordStats()
                 .build());
+
+        // Notices: rarely changes, cache 6 hours
+        cacheManager.registerCustomCache("notices",
+            Caffeine.newBuilder()
+                .expireAfterWrite(6, TimeUnit.HOURS)
+                .maximumSize(1)
+                .recordStats()
+                .build());
         
         return cacheManager;
     }

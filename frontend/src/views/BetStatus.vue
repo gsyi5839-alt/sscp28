@@ -1,9 +1,10 @@
 <script setup lang="ts">
 // Bet Status Page - displays unsettled bet records
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import GameHeader from '../components/GameHeader.vue'
 import MemberSidebar from '../components/MemberSidebar.vue'
+import { betApi } from '@/api/index'
 
 const router = useRouter()
 
@@ -19,13 +20,47 @@ interface BetRecord {
   canWin: number
 }
 
-// Table data - empty array, will be populated by API
+// Table data - populated by API
 const tableData = ref<BetRecord[]>([])
+const loading = ref(false)
 
 // Pagination state
 const currentPage = ref(1)
 const pageSize = ref(20)
 const total = ref(0)
+
+/**
+ * Fetch unsettled bet records from backend API.
+ * Supports pagination via page and size parameters.
+ */
+const fetchData = async () => {
+  loading.value = true
+  try {
+    const res = await betApi.getUnsettled(currentPage.value, pageSize.value) as any
+    if (res?.code === 200 && res.data) {
+      tableData.value = (res.data.list || []).map((item: any) => ({
+        orderNo: item.orderNo,
+        time: item.time,
+        type: item.type,
+        playMethod: item.playMethod,
+        handicap: item.handicap || '',
+        betAmount: Number(item.betAmount) || 0,
+        rebate: Number(item.rebate) || 0,
+        canWin: Number(item.canWin) || 0
+      }))
+      total.value = res.data.total || 0
+    }
+  } catch (err) {
+    console.error('Failed to fetch unsettled bets:', err)
+  } finally {
+    loading.value = false
+  }
+}
+
+// Fetch data on component mount
+onMounted(() => {
+  fetchData()
+})
 
 // Summary computed values
 const summaryData = computed(() => ({
@@ -37,12 +72,13 @@ const summaryData = computed(() => ({
 // Pagination handlers
 const handleSizeChange = (val: number) => {
   pageSize.value = val
-  // TODO: fetch data from API
+  currentPage.value = 1 // Reset to first page when page size changes
+  fetchData()
 }
 
 const handleCurrentChange = (val: number) => {
   currentPage.value = val
-  // TODO: fetch data from API
+  fetchData()
 }
 
 // Table footer summary method

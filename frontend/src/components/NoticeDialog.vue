@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import noticeHeaderIcon from '@/assets/公告/notice-header-red.svg'
+import { noticeApi } from '@/api/index'
 
 // Props
 interface Props {
@@ -26,51 +27,45 @@ const menuItems = [
   { key: '站点通知', label: '站点通知' }
 ]
 
-// Mock notice data (should be fetched from backend API in real project)
-const noticeData = {
-  '特别通知': [
-    {
-      id: 1,
-      title: '特别通知',
-      content: '尊敬的会员您好，当心市场冒充老BW这类骗局，请认准本系统(18118bw.com,18118bw.cc)开奖网(bw128.cc)',
-      createTime: '2026-02-06'
-    },
-    {
-      id: 2,
-      title: '系统维护通知',
-      content: '为了给您提供更好的服务体验，系统将于今晚23:00-24:00进行维护升级，期间可能无法访问，请您谅解。',
-      createTime: '2026-02-05'
-    }
-  ],
-  '通知': [
-    {
-      id: 3,
-      title: '重要通知',
-      content: '请各位会员注意保管好自己的账号密码，不要向任何人透露您的账户信息。',
-      createTime: '2026-02-04'
-    }
-  ],
-  '安全通知': [
-    {
-      id: 4,
-      title: '账户安全提示',
-      content: '为了保障您的账户安全，建议定期修改密码，并开启双重验证。',
-      createTime: '2026-02-03'
-    }
-  ],
-  '站点通知': [
-    {
-      id: 5,
-      title: '站点公告',
-      content: '欢迎访问本站，祝您使用愉快！',
-      createTime: '2026-02-02'
-    }
-  ]
+// Notice data fetched from backend API, grouped by category
+interface NoticeItem {
+  id: number
+  category: string
+  title: string
+  content: string
+  createTime: string
 }
+const noticeData = ref<Record<string, NoticeItem[]>>({})
+const loading = ref(false)
+
+/**
+ * Fetch notices from backend API.
+ * Called when dialog becomes visible.
+ */
+const fetchNotices = async () => {
+  loading.value = true
+  try {
+    const res = await noticeApi.getNotices() as any
+    if (res?.code === 200 && res.data) {
+      noticeData.value = res.data
+    }
+  } catch (err) {
+    console.error('Failed to fetch notices:', err)
+  } finally {
+    loading.value = false
+  }
+}
+
+// Fetch notices when dialog becomes visible
+watch(() => props.visible, (newVal) => {
+  if (newVal) {
+    fetchNotices()
+  }
+})
 
 // Notice list for current menu
 const currentNotices = computed(() => {
-  return noticeData[activeMenu.value as keyof typeof noticeData] || []
+  return noticeData.value[activeMenu.value] || []
 })
 
 // Currently displayed notice index

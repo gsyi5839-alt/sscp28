@@ -3,11 +3,13 @@ package com.bcbbs.backend.controller;
 import com.bcbbs.backend.dto.ApiResponse;
 import com.bcbbs.backend.dto.CaptchaResponse;
 import com.bcbbs.backend.dto.LineResponse;
+import com.bcbbs.backend.dto.NoticeResponse;
 import com.bcbbs.backend.dto.SearchItemResponse;
 import com.bcbbs.backend.dto.SearchPageResponse;
 import com.bcbbs.backend.entity.AccessLine;
 import com.bcbbs.backend.service.AccessLineService;
 import com.bcbbs.backend.service.CaptchaService;
+import com.bcbbs.backend.service.NoticeService;
 import com.bcbbs.backend.service.SearchService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -19,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/public")
@@ -28,6 +31,7 @@ public class PublicController {
     private final AccessLineService accessLineService;
     private final SearchService searchService;
     private final CaptchaService captchaService;
+    private final NoticeService noticeService;
 
     /**
      * Search items by keyword.
@@ -84,6 +88,15 @@ public class PublicController {
     @GetMapping("/captcha")
     public ResponseEntity<ApiResponse<CaptchaResponse>> captcha() {
         return ResponseEntity.ok(ApiResponse.success(captchaService.createCaptcha()));
+    }
+
+    /**
+     * Get all enabled notices grouped by category.
+     * Returns a map where keys are category names and values are lists of notices.
+     */
+    @GetMapping("/notices")
+    public ResponseEntity<ApiResponse<Map<String, List<NoticeResponse>>>> getNotices() {
+        return ResponseEntity.ok(ApiResponse.success(noticeService.getAllNoticesGrouped()));
     }
 }
 

@@ -103,6 +103,35 @@ export const passwordApi = {
     api.post('/auth/change-password', data)
 }
 
+// Notice API - public announcements
+export const noticeApi = {
+  /** Get all notices grouped by category (cached 6h on backend) */
+  getNotices: () =>
+    api.get('/public/notices', { params: { t: Date.now() } })
+}
+
+// Account History API - requires JWT authentication
+export const accountApi = {
+  /** Get last two weeks account history (14 days) */
+  getHistory: () =>
+    api.get('/account/history'),
+
+  /** Query account history by date range */
+  queryHistory: (data: { startDate?: string; endDate?: string; dates?: string[] }) =>
+    api.post('/account/history/query', data),
+
+  /** Get settlement report for a specific date */
+  getSettlementReport: (data: { date: string }) =>
+    api.post('/account/settlement/report', data)
+}
+
+// Bet Record API - requires JWT authentication
+export const betApi = {
+  /** Get paginated unsettled bet records */
+  getUnsettled: (page = 1, size = 20) =>
+    api.get('/bet/unsettled', { params: { page, size } })
+}
+
 // Lottery API - proxies upstream bw1284.cc lottery data
 export const lotteryApi = {
   /** Get current issue info: backend caches for 5s, no frontend cache needed */
