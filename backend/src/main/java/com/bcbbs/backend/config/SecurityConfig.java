@@ -49,6 +49,7 @@ public class SecurityConfig {
                         "/api/auth/force-change-password"
                 ).permitAll()
                 .requestMatchers("/api/public/**").permitAll()
+                .requestMatchers("/api/log/frontend/**").permitAll()
                 .anyRequest().authenticated()
             )
             .sessionManagement(session -> session

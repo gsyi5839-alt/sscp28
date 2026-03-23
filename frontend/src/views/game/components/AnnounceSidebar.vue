@@ -1,0 +1,128 @@
+<script setup lang="ts">
+import DragonLeaderboard from './DragonLeaderboard.vue'
+import type { DragonItem } from '../composables/useDragonLeaderboard'
+import type { PropType } from 'vue'
+
+defineProps({
+  dragonList: {
+    type: Array as PropType<DragonItem[]>,
+    required: true
+  }
+})
+
+const emit = defineEmits<{
+  'moreClick': []
+}>()
+</script>
+
+<template>
+  <div class="right-sidebar">
+    <!-- Announce header - fixed -->
+    <div class="announce-header">
+      <span class="announce-title">公告</span>
+      <span class="more-link" @click="$emit('moreClick')">更多</span>
+    </div>
+    <!-- Scrollable content -->
+    <div class="right-sidebar-scroll">
+      <!-- Announce content -->
+      <div class="announce-body">
+        <p>尊敬的会员您好，当心市场冒充老BW这类骗局，请认准本系统(18118bw.com,18118bw.cc)开奖网(bw128.cc)</p>
+      </div>
+      <!-- Dragon leaderboard -->
+      <DragonLeaderboard :dragon-list="dragonList" />
+    </div>
+  </div>
+</template>
+
+<style scoped>
+.right-sidebar {
+  width: 160px;
+  flex-shrink: 0;
+  margin-left: 10px;
+  position: sticky;
+  top: 106px;
+  align-self: flex-start;
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 106px);
+}
+
+.right-sidebar-scroll {
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: #a6744d #f5f5f5;
+  flex: 1;
+  max-height: calc(100vh - 132px);
+}
+
+.right-sidebar-scroll::-webkit-scrollbar {
+  width: 9px;
+}
+
+.right-sidebar-scroll::-webkit-scrollbar-track {
+  background: #f5f5f5;
+  border-radius: 4px;
+}
+
+.right-sidebar-scroll::-webkit-scrollbar-thumb {
+  background: linear-gradient(to bottom, #a6744d 0%, #351c0c 100%);
+  border-radius: 4px;
+  border: 1px solid #efba84;
+}
+
+.right-sidebar-scroll::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(to bottom, #c0845c 0%, #4a2a18 100%);
+}
+
+.announce-header {
+  height: 45px;
+  line-height: 45px;
+  padding: 0 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--bw-border-color, #efba84);
+  background: var(--bw-linear-bg, linear-gradient(to bottom, #a6744d 0%, #351c0c 100%));
+  color: #fff;
+  font-weight: 400;
+  font-size: 13px;
+}
+
+.announce-title {
+  font-size: 13px;
+  font-weight: 400;
+  color: #fff;
+}
+
+.more-link {
+  font-size: 13px;
+  font-weight: 400;
+  color: #fff;
+  cursor: pointer;
+}
+
+.more-link:hover {
+  text-decoration: underline;
+}
+
+.announce-body {
+  padding: 10px;
+  width: 160px;
+  height: 177px;
+  font-size: 13px;
+  line-height: 26px;
+  color: #000;
+  border: 1px solid var(--bw-border-color, #efba84);
+  border-top: none;
+  box-sizing: border-box;
+  overflow: hidden;
+  text-align: left;
+  word-break: break-word;
+  white-space: normal;
+}
+
+.announce-body p {
+  margin: 0;
+}
+</style>

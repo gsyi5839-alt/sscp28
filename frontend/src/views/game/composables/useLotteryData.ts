@@ -1,0 +1,207 @@
+/**
+ * Lottery data management composable
+ * Handles fetching lottery info, countdown timers, and history data
+ */
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { lotteryApi } from '../../../api/index'
+import { HISTORY_LIST_SIZE } from '../constants/odds'
+
+const LOT_CODE = 720 // Canada PC28
+
+export function useLotteryData() {
+  // Previous draw data
+  const preDrawIssue = ref('--')
+  const preDrawBalls = ref<number[]>([0, 0, 0])
+  const preDrawSum = ref(0)
+
+  // Current draw data
+  const drawIssue = ref('--')
+  const sealCountdown = ref('--:--:--')
+  const drawCountdown = ref('--:--:--')
+  const isDrawing = ref(false)
+
+  // System closed status (China time daily 06:00-07:00)
+  const currentTime = ref(new Date())
+  const isSystemClosed = computed(() => {
+    const now = currentTime.value
+    const chinaHour = (now.getUTCHours() + 8) % 24
+    return chinaHour >= 6 && chinaHour < 7
+  })
+
+  // History data
+  const historyIssues = ref<any[]>([])
+  const historyNums = ref<number[]>([])
+
+  // Internal state
+  let countdownTimer: ReturnType<typeof setInterval> | null = null
+  let historyPollTimer: ReturnType<typeof setInterval> | null = null
+  let isFetching = false
+  let drawTimestamp = 0
+  let sealTimestamp = 0
+  let currentDrawIssue = ''
+  let currentPreDrawIssue = ''
+
+  // Check if betting is sealed
+  const isSealed = computed(() => {
+    return sealCountdown.value === '00:00:00' || sealCountdown.value.startsWith('-')
+  })
+
+  // Helper functions
+  const parseTimestamp = (str: string | null | undefined): number => {
+    if (!str) return 0
+    return new Date(str.replace(' ', 'T') + '+08:00').getTime()
+  }
+
+  const fmtCountdown = (diffMs: number): string => {
+    if (diffMs <= 0) return '00:00:00'
+    const totalSec = Math.floor(diffMs / 1000)
+    const h = Math.floor(totalSec / 3600)
+    const m = Math.floor((totalSec % 3600) / 60)
+    const s = totalSec % 60
+    const pad = (n: number) => String(n).padStart(2, '0')
+    return `${pad(h)}:${pad(m)}:${pad(s)}`
+  }
+
+  // Fetch lottery info from API
+  const fetchLotteryInfo = async () => {
+    if (isFetching) return
+    isFetching = true
+    try {
+      const res: any = await lotteryApi.getInfo(LOT_CODE)
+      if (res?.code === 200 && res?.data) {
+        const d = res.data
+        const newIssue = d.drawIssue || ''
+
+        // Previous draw result
+        const newPreDrawIssue = d.preDrawIssue || ''
+        preDrawIssue.value = newPreDrawIssue || '--'
+        if (d.preDrawCode) {
+          preDrawBalls.value = d.preDrawCode.split(',').map(Number)
+          preDrawSum.value = preDrawBalls.value.reduce((a: number, b: number) => a + b, 0)
+        }
+
+        // Current draw period
+        drawIssue.value = newIssue
+        drawTimestamp = parseTimestamp(d.drawTime)
+        sealTimestamp = drawTimestamp - 10 * 1000
+
+        // New period detection
+        if (newIssue && newIssue !== currentDrawIssue) {
+          currentDrawIssue = newIssue
+          isDrawing.value = false
+          fetchHistoryList()
+        }
+
+        // New result detection
+        if (newPreDrawIssue && newPreDrawIssue !== currentPreDrawIssue) {
+          currentPreDrawIssue = newPreDrawIssue
+          fetchHistoryList()
+        }
+      }
+    } catch (_e) {
+      // fail silently
+    } finally {
+      isFetching = false
+    }
+  }
+
+  // Fetch history list
+  const fetchHistoryList = async () => {
+    try {
+      const res: any = await lotteryApi.getList(LOT_CODE, 1, HISTORY_LIST_SIZE)
+      if (res?.code === 200 && res?.data?.list) {
+        const rawList = res.data.list || []
+        const sortedList = [...rawList].sort((a: any, b: any) => {
+          const ai = Number(a?.preDrawIssue)
+          const bi = Number(b?.preDrawIssue)
+          if (Number.isFinite(ai) && Number.isFinite(bi)) return bi - ai
+          return String(b?.preDrawIssue || '').localeCompare(String(a?.preDrawIssue || ''))
+        })
+        historyIssues.value = sortedList
+        historyNums.value = sortedList.map((item: any) => Number(item.sumValue)).filter((n: number) => !isNaN(n))
+      }
+    } catch (_e) {
+      // fail silently
+    }
+  }
+
+  // Countdown ticker
+  const tickCountdown = () => {
+    const now = Date.now()
+    const drawDiff = drawTimestamp - now
+    const sealDiff = sealTimestamp - now
+
+    currentTime.value = new Date()
+
+    if (drawDiff <= 0 && drawTimestamp > 0) {
+      isDrawing.value = true
+      drawCountdown.value = '00:00:00'
+      sealCountdown.value = '00:00:00'
+      fetchLotteryInfo()
+    } else {
+      isDrawing.value = false
+      drawCountdown.value = fmtCountdown(drawDiff)
+      sealCountdown.value = fmtCountdown(sealDiff)
+    }
+  }
+
+  // Parse balls from code string
+  const parseBalls = (code: string | null | undefined): number[] | null => {
+    if (!code) return null
+    const nums = code.split(',').map(Number).filter(n => !isNaN(n))
+    if (nums.length < 3) return null
+    return nums.slice(0, 3)
+  }
+
+  // Get issue data helper
+  const getIssueData = (issue: any) => {
+    const balls = parseBalls(issue?.preDrawCode)
+    if (!balls) return null
+    const sum = Number(issue?.sumValue)
+    const sumValue = Number.isFinite(sum) ? sum : balls.reduce((a, b) => a + b, 0)
+    return { balls, sum: sumValue }
+  }
+
+  // Get issue sum helper
+  const getIssueSum = (issue: any): number | null => {
+    const rawSum = Number(issue?.sumValue)
+    if (Number.isFinite(rawSum)) return rawSum
+    const balls = parseBalls(issue?.preDrawCode)
+    if (!balls) return null
+    return balls.reduce((a, b) => a + b, 0)
+  }
+
+  // Lifecycle
+  onMounted(() => {
+    fetchLotteryInfo()
+    fetchHistoryList()
+    countdownTimer = setInterval(tickCountdown, 1000)
+    historyPollTimer = setInterval(fetchHistoryList, 5000)
+  })
+
+  onUnmounted(() => {
+    if (countdownTimer) clearInterval(countdownTimer)
+    if (historyPollTimer) clearInterval(historyPollTimer)
+  })
+
+  return {
+    // State
+    preDrawIssue,
+    preDrawBalls,
+    preDrawSum,
+    drawIssue,
+    sealCountdown,
+    drawCountdown,
+    isDrawing,
+    isSystemClosed,
+    historyIssues,
+    historyNums,
+    isSealed,
+    // Methods
+    parseBalls,
+    getIssueData,
+    getIssueSum,
+    fetchLotteryInfo,
+    fetchHistoryList,
+  }
+}

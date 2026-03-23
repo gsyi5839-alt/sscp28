@@ -81,9 +81,9 @@ const isRacingType = computed(() => {
 })
 
 // Check if current game is AU10 or Happy Racing type (full racing table with 7 columns)
-// Includes: AU Lucky 10 (797), Happy Racing (763), Lucky Airship (765)
+// Includes: AU Lucky 10 (797), Happy Racing (763), Lucky Airship (765), Speed Racing (768)
 const isAU10Type = computed(() => {
-  return selectedLotCode.value === 797 || selectedLotCode.value === 763 || selectedLotCode.value === 765
+  return selectedLotCode.value === 797 || selectedLotCode.value === 763 || selectedLotCode.value === 765 || selectedLotCode.value === 768
 })
 
 // Check if current game has extended columns (any non-PC28 type)

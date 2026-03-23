@@ -95,7 +95,8 @@ const router = createRouter({
       name: 'accountHistory',
       component: () => import('../views/AccountHistory.vue'),
       meta: { requiresAuth: true }
-    }
+    },
+
   ]
 })
 
