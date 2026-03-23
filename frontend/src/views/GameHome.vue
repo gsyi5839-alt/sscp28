@@ -31,6 +31,7 @@ import {
 } from './game/constants/odds'
 import { getBallSrc, sumOddTextStyle, twoSideOddTextStyle, colorOddTextStyle, patternOddTextStyle } from './game/composables/useOddsStyles'
 import { NOTICE_SHOWN_KEY } from './game/constants/notices'
+import { getGameConfig, DEFAULT_GAME_KEY } from '@/utils/gameConfig'
 
 const route = useRoute()
 
@@ -46,6 +47,14 @@ const handleCloseNotice = () => {
 // ─── Tab States ─────────────────────────────────────────────────────────────────────────
 const activeBetTab = ref<'twoSide' | 'balls'>('twoSide')
 const activeContentView = ref<'game' | 'drawResults'>('game')
+
+// ─── Active Game Selection ───────────────────────────────────────────────────────────────
+// Synced with GameHeader via v-model:activeGameKey
+const activeGameKey = ref(DEFAULT_GAME_KEY)
+
+// Compute lotCode and gameName from the active game key
+const activeLotCode = computed(() => getGameConfig(activeGameKey.value).lotCode)
+const activeGameName = computed(() => getGameConfig(activeGameKey.value).gameName)
 
 const activeBetTabLabel = computed(() => (activeBetTab.value === 'balls' ? '1-3球' : '两面盘'))
 
@@ -81,6 +90,8 @@ watch(
 )
 
 // ─── Lottery Data ───────────────────────────────────────────────────────────────────────
+// Pass reactive lotCode ref so data refetches automatically when game switches
+const lotCodeRef = computed(() => activeLotCode.value)
 const {
   preDrawIssue,
   preDrawBalls,
@@ -96,7 +107,7 @@ const {
   getIssueSum,
   fetchLotteryInfo,
   fetchHistoryList,
-} = useLotteryData()
+} = useLotteryData(lotCodeRef)
 
 // Handle refresh when clicking game name
 const handleRefresh = async () => {
@@ -195,7 +206,7 @@ onUnmounted(() => {
 
 <template>
   <div class="page">
-    <GameHeader v-model:betTab="activeBetTab" v-model:contentView="activeContentView" />
+    <GameHeader v-model:betTab="activeBetTab" v-model:contentView="activeContentView" v-model:activeGameKey="activeGameKey" />
 
     <div class="main-wrapper" :class="mainWrapperClasses">
       <div class="main-body">
@@ -219,7 +230,7 @@ onUnmounted(() => {
             <!-- Lottery header with countdown -->
             <LotteryHeader
               ref="lotteryHeaderRef"
-              game-name="加拿大pc28"
+              :game-name="activeGameName"
               :pre-draw-issue="preDrawIssue"
               :pre-draw-balls="preDrawBalls"
               :pre-draw-sum="preDrawSum"
@@ -412,7 +423,7 @@ onUnmounted(() => {
     <RecentDrawsDialog
       v-model:show="showRecentDialog"
       v-model:recent-tab="recentTab"
-      game-name="加拿大pc28"
+      :game-name="activeGameName"
       :recent-dialog-rows="recentDialogRows"
       :recent-dialog-style="recentDialogStyle"
       @close="closeRecentDialog"

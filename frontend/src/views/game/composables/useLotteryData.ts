@@ -2,13 +2,17 @@
  * Lottery data management composable
  * Handles fetching lottery info, countdown timers, and history data
  */
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, type Ref } from 'vue'
 import { lotteryApi } from '../../../api/index'
 import { HISTORY_LIST_SIZE } from '../constants/odds'
 
-const LOT_CODE = 720 // Canada PC28
-
-export function useLotteryData() {
+/**
+ * Lottery data management composable.
+ * Accepts a reactive lotCode ref to support dynamic game switching.
+ *
+ * @param lotCodeRef reactive ref holding the current game's lottery code
+ */
+export function useLotteryData(lotCodeRef: Ref<number>) {
   // Previous draw data
   const preDrawIssue = ref('--')
   const preDrawBalls = ref<number[]>([0, 0, 0])
@@ -67,7 +71,7 @@ export function useLotteryData() {
     if (isFetching) return
     isFetching = true
     try {
-      const res: any = await lotteryApi.getInfo(LOT_CODE)
+      const res: any = await lotteryApi.getInfo(lotCodeRef.value)
       if (res?.code === 200 && res?.data) {
         const d = res.data
         const newIssue = d.drawIssue || ''
@@ -108,7 +112,7 @@ export function useLotteryData() {
   // Fetch history list
   const fetchHistoryList = async () => {
     try {
-      const res: any = await lotteryApi.getList(LOT_CODE, 1, HISTORY_LIST_SIZE)
+      const res: any = await lotteryApi.getList(lotCodeRef.value, 1, HISTORY_LIST_SIZE)
       if (res?.code === 200 && res?.data?.list) {
         const rawList = res.data.list || []
         const sortedList = [...rawList].sort((a: any, b: any) => {
@@ -182,6 +186,29 @@ export function useLotteryData() {
   onUnmounted(() => {
     if (countdownTimer) clearInterval(countdownTimer)
     if (historyPollTimer) clearInterval(historyPollTimer)
+  })
+
+  // Watch for lotCode changes to reload data for the new game
+  watch(lotCodeRef, () => {
+    // Reset all state for the new game
+    preDrawIssue.value = '--'
+    preDrawBalls.value = [0, 0, 0]
+    preDrawSum.value = 0
+    drawIssue.value = '--'
+    sealCountdown.value = '--:--:--'
+    drawCountdown.value = '--:--:--'
+    isDrawing.value = false
+    historyIssues.value = []
+    historyNums.value = []
+    drawTimestamp = 0
+    sealTimestamp = 0
+    currentDrawIssue = ''
+    currentPreDrawIssue = ''
+    isFetching = false
+
+    // Fetch data for the new game immediately
+    fetchLotteryInfo()
+    fetchHistoryList()
   })
 
   return {

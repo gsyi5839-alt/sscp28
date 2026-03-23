@@ -102,6 +102,15 @@ Frontend `stores/cache.ts` provides TTL-based caching (e.g., lottery games cache
 
 **Backend**: `backend/target/backend-0.0.1-SNAPSHOT.jar` run with `nohup`.
 
+**Backend Deployment with Process Manager**:
+When using a process manager (e.g., pm2) to manage the backend service, you **MUST** follow this sequence:
+1. **Stop** the managed process before building: `pm2 stop <app-name>`
+2. **Build** the JAR: `mvn clean package`
+3. **Deploy** the new JAR
+4. **Start** the managed process after deployment: `pm2 start <app-name>` (or `pm2 restart <app-name>`)
+
+This prevents file locking issues and ensures a clean deployment.
+
 **Nginx**: SPA `try_files` → `/index.html`, API proxy `/api/` → `127.0.0.1:8080`, static caching (30d images, 12h JS/CSS), index.html has `no-cache` headers.
 
 ### Database

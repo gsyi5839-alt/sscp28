@@ -28,6 +28,9 @@ const betTab = defineModel<'twoSide' | 'balls'>('betTab', { default: 'twoSide' }
 // Expose content view state for switching between game panel and draw results
 const contentView = defineModel<'game' | 'drawResults'>('contentView', { default: 'game' })
 
+// Expose active game key to parent so GameHome can load the correct lottery data
+const activeGameKey = defineModel<string>('activeGameKey', { default: 'caPc28' })
+
 /* ============ 类型 ============ */
 interface NavItem { key: string; label: string }
 interface GameItem { key: string; label: string; badge?: 'new' | 'hot' }
@@ -104,7 +107,6 @@ const themeHeaderBgMap: Record<ThemeKey, string> = {
 }
 
 /* ============ 状态 ============ */
-const activeGameKey = ref('caPc28')
 const activeTheme = ref<ThemeKey>('brown') // Default brown theme
 const THEME_STORAGE_KEY = 'bw-member-active-theme-name'
 const THEME_CLASS_LIST: ThemeKey[] = ['red', 'green', 'cyan', 'blue', 'brown']
