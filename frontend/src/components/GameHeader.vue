@@ -3,6 +3,18 @@ import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import logoImg from '@/assets/通用/logo.png'
+// Game tab background images for each theme
+import gameTabBgBrown from '@/assets/顶部导航栏背景图/棕.png'
+import gameTabBgRed from '@/assets/顶部导航栏背景图/紫.png'
+import gameTabBgGreen from '@/assets/顶部导航栏背景图/绿.png'
+import gameTabBgCyan from '@/assets/顶部导航栏背景图/青.png'
+import gameTabBgBlue from '@/assets/顶部导航栏背景图/蓝.png'
+// Header bar background images for each theme
+import headerBgBrown from '@/assets/顶部导航栏背景图/顶部导航栏-棕.png'
+import headerBgRed from '@/assets/顶部导航栏背景图/顶部导航栏-紫.png'
+import headerBgGreen from '@/assets/顶部导航栏背景图/顶部导航栏-绿.png'
+import headerBgCyan from '@/assets/顶部导航栏背景图/顶部导航栏背景-青.png'
+import headerBgBlue from '@/assets/顶部导航栏背景图/导航栏背景-蓝.png'
 
 // Props: hideSubNav allows pages like BetStatus/AccountHistory to hide the sub navigation bar
 const props = defineProps<{
@@ -73,9 +85,27 @@ const themeColors: Array<{ key: ThemeKey; color: string }> = [
   { key: 'brown', color: '#be9d76' },
 ]
 
+// Map theme keys to their game tab background images
+const themeGameTabBgMap: Record<ThemeKey, string> = {
+  brown: gameTabBgBrown,
+  red: gameTabBgRed,
+  green: gameTabBgGreen,
+  cyan: gameTabBgCyan,
+  blue: gameTabBgBlue,
+}
+
+// Map theme keys to their header bar background images
+const themeHeaderBgMap: Record<ThemeKey, string> = {
+  brown: headerBgBrown,
+  red: headerBgRed,
+  green: headerBgGreen,
+  cyan: headerBgCyan,
+  blue: headerBgBlue,
+}
+
 /* ============ 状态 ============ */
 const activeGameKey = ref('caPc28')
-const activeTheme = ref<ThemeKey>('brown') // 默认棕色主题
+const activeTheme = ref<ThemeKey>('brown') // Default brown theme
 const THEME_STORAGE_KEY = 'bw-member-active-theme-name'
 const THEME_CLASS_LIST: ThemeKey[] = ['red', 'green', 'cyan', 'blue', 'brown']
 
@@ -179,13 +209,20 @@ onMounted(() => {
   const nextTheme: ThemeKey = isThemeKey(saved) ? saved : 'brown'
   activeTheme.value = nextTheme
   applyTheme(nextTheme)
+
+  // Preload all theme background images to prevent lag when switching
+  const allImages = [...Object.values(themeHeaderBgMap), ...Object.values(themeGameTabBgMap)]
+  allImages.forEach(src => {
+    const img = new Image()
+    img.src = src
+  })
 })
 </script>
 
 <template>
   <div class="header-container">
     <!-- ====== 主导航区域 (70px) ====== -->
-    <div class="header">
+    <div class="header" :style="{ backgroundImage: `url(${themeHeaderBgMap[activeTheme]})` }">
       <div class="header-inner">
         <!-- 第一行：Logo + 顶部导航 -->
         <div class="row-top">
@@ -222,6 +259,7 @@ onMounted(() => {
               'is-new': item.badge === 'new',
               'is-hot': item.badge === 'hot',
             }"
+            :style="{ backgroundImage: `url(${themeGameTabBgMap[activeTheme]})` }"
             @click="onGameClick(item.key)"
           >
             {{ item.label }}
@@ -235,13 +273,14 @@ onMounted(() => {
             popper-class="more-games-popover"
           >
             <template #reference>
-              <div class="game-item">更多游戏</div>
+              <div class="game-item" :style="{ backgroundImage: `url(${themeGameTabBgMap[activeTheme]})` }">更多游戏</div>
             </template>
             <div
               v-for="(mg, idx) in moreGames"
               :key="mg.key"
               class="more-game-item"
               :class="{ 'mb5': idx !== moreGames.length - 1 }"
+              :style="{ backgroundImage: `url(${themeGameTabBgMap[activeTheme]})` }"
               @click="onMoreGameClick(mg.key)"
             >
               {{ mg.label }}
@@ -301,9 +340,8 @@ onMounted(() => {
   position: relative;
   height: 70px;
   width: 100%;
-  background: var(--bw-linear-bg, linear-gradient(to bottom, #a6744d 0%, #351c0c 100%));
-  border-bottom: 1px solid var(--bw-border-color, #efba84);
-  box-shadow: inset 0 1px 0 rgba(255, 197, 138, 0.55), inset 0 -1px 0 rgba(0, 0, 0, 0.3);
+  background: no-repeat center / cover;
+  border-bottom: none;
   overflow: hidden;
 }
 
@@ -337,7 +375,7 @@ onMounted(() => {
   height: 30px;
   line-height: 30px;
   margin-bottom: 4px;
-  margin-top: 9px;
+  margin-top: -1px;
 }
 
 .brand {
@@ -435,8 +473,10 @@ onMounted(() => {
   cursor: pointer;
   user-select: none;
   color: #ffffff;
-  background: var(--bw-linear-bg, linear-gradient(to bottom, #a6744d 0%, #351c0c 100%));
-  border: 1px solid var(--bw-border-color, #efba84);
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  background-position: center;
+  border: none;
   box-sizing: border-box;
   transition: color 0.15s;
 }
@@ -567,8 +607,10 @@ onMounted(() => {
   font-weight: 400;
   color: #ffffff;
   cursor: pointer;
-  background: var(--bw-linear-bg, linear-gradient(to bottom, #a6744d 0%, #351c0c 100%));
-  border: 1px solid var(--bw-border-color, #efba84);
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  background-position: center;
+  border: none;
   box-sizing: border-box;
   transition: color 0.15s;
 }
