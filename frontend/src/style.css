@@ -265,14 +265,14 @@ a:hover {
 /* ========== 更多游戏下拉弹窗样式 ========== */
 .more-games-popover.el-popover,
 .more-games-popover.el-popper {
-  background: var(--bw-header-bg-opacity, rgba(53, 28, 12, 0.95)) !important;
+  background: var(--el-color-primary-dark-2, #5c2e0d) !important;
   border: 1px solid var(--bw-border-color, #efba84) !important;
   border-radius: 4px !important;
   padding: 10px 12px !important;
   min-width: 124px !important;
 }
 .more-games-popover .el-popper__arrow::before {
-  background: var(--bw-header-bg-opacity, rgba(53, 28, 12, 0.95)) !important;
+  background: var(--el-color-primary-dark-2, #5c2e0d) !important;
   border-color: var(--bw-border-color, #efba84) !important;
 }
 
