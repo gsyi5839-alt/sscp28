@@ -11,8 +11,8 @@ export interface RecentDialogRow {
   time: string
   balls: number[]
   sum: number
-  size: '大' | '小'
-  parity: '单' | '双'
+  size: '大' | '小' | '和'
+  parity: '单' | '双' | '和'
   sizeParity: string
   misc: '豹子' | '顺子' | '对子' | '半顺' | '杂六'
 }
@@ -23,7 +23,8 @@ const RECENT_DIALOG_HEIGHT = 338
 export function useRecentDraws(
   historyIssues: { value: any[] },
   parseBalls: (code: string | null | undefined) => number[] | null,
-  getIssueSum: (issue: any) => number | null
+  getIssueSum: (issue: any) => number | null,
+  gameCategory?: { value: string }
 ) {
   const showRecentDialog = ref(false)
   const recentTab = ref<RecentTab>('number')
@@ -85,8 +86,10 @@ export function useRecentDraws(
         if (!balls) return null
         const sum = getIssueSum(issue)
         if (sum == null) return null
-        const size: '大' | '小' = sum >= 14 ? '大' : '小'
-        const parity: '单' | '双' = sum % 2 === 0 ? '双' : '单'
+        // PC28: sum 13/14 = 和, >=15 = 大, <=12 = 小; SSC: sum >= 23 = 大, <=22 = 小
+        const isPC28 = !gameCategory || gameCategory.value === 'pc28'
+        const size: '大' | '小' | '和' = isPC28 && (sum === 13 || sum === 14) ? '和' : (isPC28 ? (sum >= 15 ? '大' : '小') : (sum >= 23 ? '大' : '小'))
+        const parity: '单' | '双' | '和' = isPC28 && (sum === 13 || sum === 14) ? '和' : (sum % 2 === 0 ? '双' : '单')
         return {
           issue: String(issue?.preDrawIssue ?? '--'),
           time: getIssueTimeLabel(issue?.preDrawTime),
@@ -149,7 +152,7 @@ export function useRecentDraws(
     event.preventDefault()
   }
 
-  const getTagColorClass = (label: '大' | '小' | '单' | '双') =>
+  const getTagColorClass = (label: '大' | '小' | '单' | '双' | '和') =>
     label === '大' || label === '双' ? 'recent-pill--orange' : 'recent-pill--blue'
 
   return {

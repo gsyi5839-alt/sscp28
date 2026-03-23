@@ -42,8 +42,9 @@ const ballLabels = ['大', '小', '单', '双']
           <div class="balls-ball-cell">
             <img :src="getBallSrc(n - 1)" class="ball-img balls-ball-img" :alt="String(n - 1)" />
           </div>
-          <div class="balls-odd-cell"><b class="text-red">9.9</b></div>
-          <div class="balls-input-cell">
+          <div class="balls-odd-cell"><b class="text-red">{{ isSealed ? '--' : '9.7' }}</b></div>
+          <!-- Input area: only render in normal mode to avoid empty flex space in quick mode -->
+          <div v-if="quickMode === 'normal'" class="balls-input-cell">
             <input
               :value="ballAmounts[`${colIdx}_${n - 1}`]"
               @input="$emit('update:ballAmounts', { ...ballAmounts, [`${colIdx}_${n - 1}`]: ($event.target as HTMLInputElement).value })"
@@ -64,8 +65,9 @@ const ballLabels = ['大', '小', '单', '双']
           @click="$emit('toggleBall', `${colIdx}_${label}`)"
         >
           <div class="balls-label-cell">{{ label }}</div>
-          <div class="balls-odd-cell"><b class="text-red">1.9776</b></div>
-          <div class="balls-input-cell">
+          <div class="balls-odd-cell"><b class="text-red">{{ isSealed ? '--' : '1.7776' }}</b></div>
+          <!-- Input area: only render in normal mode -->
+          <div v-if="quickMode === 'normal'" class="balls-input-cell">
             <input
               :value="ballAmounts[`${colIdx}_${label}`]"
               @input="$emit('update:ballAmounts', { ...ballAmounts, [`${colIdx}_${label}`]: ($event.target as HTMLInputElement).value })"

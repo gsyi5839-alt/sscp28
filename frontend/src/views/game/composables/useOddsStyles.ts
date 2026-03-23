@@ -39,9 +39,15 @@ export const patternOddTextStyle = (odd: string) => {
   return { width, height: '30px', lineHeight: '30px' }
 }
 
-// Get ball image source
+// Get ball image source (PC28: ball_cols_split, 0-27)
 export const getBallSrc = (num: number) => {
   const safe = Math.max(0, Math.min(27, num))
   const name = String(safe).padStart(2, '0')
   return new URL(`../../../assets/游戏/ball_cols_split/ball_${name}.png`, import.meta.url).href
+}
+
+// Get blue ball image source (SSC: ball_blue_split, 0-9, 26x26)
+export const getBlueBallSrc = (num: number) => {
+  const safe = Math.max(0, Math.min(9, num))
+  return new URL(`../../../assets/游戏/ball_blue_split/ball_${safe}.png`, import.meta.url).href
 }

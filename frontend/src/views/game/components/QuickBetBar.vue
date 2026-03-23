@@ -69,10 +69,10 @@ const onExplainClick = () => {
   align-items: center;
   justify-content: center;
   border: 1px solid var(--bw-border-color, #efba84);
-  border-top: none;
   border-bottom: none;
+  background: var(--bw-bg-3, #fff7ef);
   box-sizing: border-box;
-  font-size: 12px;
+  font-size: 13px;
   gap: 6px;
 }
 

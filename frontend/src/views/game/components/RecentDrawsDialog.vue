@@ -130,9 +130,9 @@ const getTagColorClass = (label: '大' | '小' | '单' | '双') =>
                 </div>
                 <div v-else class="recent-misc-row">
                   <div class="recent-misc-item">{{ row.sum }}</div>
-                  <div class="recent-misc-item">{{ row.size }}</div>
-                  <div class="recent-misc-item">{{ row.parity }}</div>
-                  <div class="recent-misc-item">{{ row.sizeParity }}</div>
+                  <div class="recent-misc-item" :style="{ color: row.size === '大' ? 'red' : '' }">{{ row.size }}</div>
+                  <div class="recent-misc-item" :style="{ color: row.parity === '双' ? 'red' : '' }">{{ row.parity }}</div>
+                  <div class="recent-misc-item" :style="{ color: row.sizeParity === '大双' ? 'red' : '' }">{{ row.sizeParity }}</div>
                   <div class="recent-misc-item">{{ row.misc }}</div>
                 </div>
               </td>

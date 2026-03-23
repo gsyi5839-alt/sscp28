@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import logoImg from '@/assets/通用/logo.png'
+import { getSubNavForGame } from '@/utils/gameSubNav'
 // Game tab background images for each theme
 import gameTabBgBrown from '@/assets/顶部导航栏背景图/棕.png'
 import gameTabBgRed from '@/assets/顶部导航栏背景图/紫.png'
@@ -21,9 +22,9 @@ const props = defineProps<{
   hideSubNav?: boolean
 }>()
 
-// Expose the "盘面" selection (两面盘 / 1-3球) to the parent page (GameHome)
-// so clicking the header sub-nav can switch the actual betting panel.
-const betTab = defineModel<'twoSide' | 'balls'>('betTab', { default: 'twoSide' })
+// Expose the "盘面" selection to the parent page (GameHome)
+// Sub-nav key is passed directly (e.g., 'twoSide', 'balls', 'ball1', 'niuNiu', etc.)
+const betTab = defineModel<string>('betTab', { default: 'twoSide' })
 
 // Expose content view state for switching between game panel and draw results
 const contentView = defineModel<'game' | 'drawResults'>('contentView', { default: 'game' })
@@ -34,7 +35,6 @@ const activeGameKey = defineModel<string>('activeGameKey', { default: 'caPc28' }
 /* ============ 类型 ============ */
 interface NavItem { key: string; label: string }
 interface GameItem { key: string; label: string; badge?: 'new' | 'hot' }
-interface SubNavItem { key: string; label: string }
 
 const route = useRoute()
 const router = useRouter()
@@ -71,11 +71,8 @@ const moreGames: GameItem[] = [
   { key: 'lottery10', label: '体彩乐透10' },
 ]
 
-/* ============ 子导航（menus 栏） ============ */
-const subNav: SubNavItem[] = [
-  { key: 'twoSides', label: '两面盘' },
-  { key: 'ball13', label: '1-3球' },
-]
+/* ============ 子导航（动态，根据游戏类型切换） ============ */
+const subNav = computed(() => getSubNavForGame(activeGameKey.value))
 
 /* ============ 主题色 ============ */
 type ThemeKey = 'red' | 'green' | 'cyan' | 'blue' | 'brown'
@@ -190,15 +187,9 @@ const onMoreGameClick = (key: string) => {
 }
 
 const onSubNavClick = (key: string) => {
-  // Map header sub-nav keys to actual betting tab values used in GameHome.
-  // twoSides -> twoSide, ball13 -> balls
-  const newTab = key === 'twoSides' ? 'twoSide' : 'balls'
+  // Directly pass the sub-nav key as the betTab value to GameHome
   contentView.value = 'game'
-  if (router.currentRoute.value.name === 'gameHome') {
-    betTab.value = newTab
-    return
-  }
-  betTab.value = newTab
+  betTab.value = key
 }
 
 const onThemeClick = (key: ThemeKey) => {
@@ -312,10 +303,7 @@ onMounted(() => {
           <template v-for="(item, idx) in subNav" :key="item.key">
             <span
               class="sub-item"
-              :class="{
-                active: (betTab === 'twoSide' ? 'twoSides' : 'ball13') === item.key,
-                'sub-item-ball13': item.key === 'ball13'
-              }"
+              :class="{ active: betTab === item.key }"
               @click="onSubNavClick(item.key)"
             >
               {{ item.label }}

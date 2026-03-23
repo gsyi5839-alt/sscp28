@@ -86,6 +86,11 @@ const isAU10Type = computed(() => {
   return selectedLotCode.value === 797 || selectedLotCode.value === 763 || selectedLotCode.value === 765 || selectedLotCode.value === 768
 })
 
+// Check if current game is PC28 type (not SSC, not Racing, not AU10)
+const isPC28Type = computed(() => {
+  return !isSSCType.value && !isRacingType.value && !isAU10Type.value
+})
+
 // Check if current game has extended columns (any non-PC28 type)
 const hasExtendedColumns = computed(() => {
   return isSSCType.value || isRacingType.value
@@ -181,6 +186,38 @@ const getBallImageUrl = (num: number): string => {
     const padded = String(num).padStart(2, '0')
     return new URL(`../assets/游戏/ball_cols_split/ball_${padded}.png`, import.meta.url).href
   }
+}
+
+// PC28: compute corrected size/parity labels with 和 for sum 13/14
+const getPC28SizeLabel = (row: LotteryItem) => {
+  if (!isPC28Type.value) return row.sizeLabel || '--'
+  const sum = parseInt(row.sumValue, 10)
+  if (isNaN(sum)) return row.sizeLabel || '--'
+  if (sum === 13 || sum === 14) return '和'
+  return sum >= 15 ? '大' : '小'
+}
+
+const getPC28ParityLabel = (row: LotteryItem) => {
+  if (!isPC28Type.value) return row.parityLabel || '--'
+  const sum = parseInt(row.sumValue, 10)
+  if (isNaN(sum)) return row.parityLabel || '--'
+  if (sum === 13 || sum === 14) return '和'
+  return sum % 2 === 0 ? '双' : '单'
+}
+
+// PC28: compute combination label (大双/大单/小双/小单/和)
+const getPC28Combination = (row: LotteryItem) => {
+  const size = getPC28SizeLabel(row)
+  const parity = getPC28ParityLabel(row)
+  if (size === '和' || parity === '和') return '和'
+  return `${size}${parity}`
+}
+
+// PC28: compute pattern from 3 ball numbers
+const getPC28Pattern = (row: LotteryItem) => {
+  const balls = parseNumbers(row.preDrawCode)
+  if (balls.length !== 3) return '--'
+  return calcThreePattern(balls)
 }
 
 // Pagination handlers
@@ -328,14 +365,18 @@ onMounted(async () => {
             </template>
           </el-table-column>
 
-          <!-- Summary column -->
-          <el-table-column :label="summaryLabel" align="center" width="150">
+          <!-- Summary column: PC28 shows 5 sub-cells, others show 3 -->
+          <el-table-column :label="summaryLabel" align="center" :width="isPC28Type ? 250 : 150">
             <template #header><b class="header-text">{{ summaryLabel }}</b></template>
             <template #default="{ row }">
               <div class="summary-row">
                 <div class="summary-cell summary-cell--border">{{ row.sumValue || '--' }}</div>
-                <div class="summary-cell summary-cell--border" :style="{ color: row.sizeLabel === '大' ? 'red' : '' }">{{ row.sizeLabel || '--' }}</div>
-                <div class="summary-cell" :style="{ color: row.parityLabel === '双' ? 'red' : '' }">{{ row.parityLabel || '--' }}</div>
+                <div class="summary-cell summary-cell--border" :style="{ color: getPC28SizeLabel(row) === '大' ? 'red' : '' }">{{ getPC28SizeLabel(row) }}</div>
+                <div class="summary-cell" :class="{ 'summary-cell--border': isPC28Type }" :style="{ color: getPC28ParityLabel(row) === '双' ? 'red' : '' }">{{ getPC28ParityLabel(row) }}</div>
+                <template v-if="isPC28Type">
+                  <div class="summary-cell summary-cell--border" :style="{ color: getPC28Combination(row) === '大双' ? 'red' : '' }">{{ getPC28Combination(row) }}</div>
+                  <div class="summary-cell">{{ getPC28Pattern(row) }}</div>
+                </template>
               </div>
             </template>
           </el-table-column>

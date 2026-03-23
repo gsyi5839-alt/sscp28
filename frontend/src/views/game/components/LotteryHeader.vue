@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, nextTick, watch } from 'vue'
-import { getBallSrc } from '../composables/useOddsStyles'
+import { getBallSrc, getBlueBallSrc } from '../composables/useOddsStyles'
+import type { GameCategory } from '@/utils/gameSubNav'
 
 interface Props {
   gameName: string
@@ -12,6 +13,8 @@ interface Props {
   drawCountdown: string
   isDrawing: boolean
   activeBetTabLabel: string
+  /** Game category determines ball display style */
+  gameCategory: GameCategory
 }
 
 const props = defineProps<Props>()
@@ -49,12 +52,13 @@ defineExpose({ updateCountdownPosition })
     <div class="issue-row issue-row-top">
       <div class="issue-left">
         <span class="text-blue mr10 game-name-clickable" @click="onGameNameClick" title="点击刷新">{{ gameName }}</span>
-        <span class="text-red">今日输赢：0</span>
+        <span class="text-red mr10">今日输赢：<b class="win-amount">0</b></span>
       </div>
       <div class="issue-right">
         <b class="text-green mr10">{{ preDrawIssue }}</b>
         <span>期开奖：</span>
-        <template v-if="preDrawBalls.length === 3">
+        <!-- PC28: 3 balls + sum (ball1 + ball2 + ball3 = sum) -->
+        <template v-if="gameCategory === 'pc28' && preDrawBalls.length === 3">
           <img class="ball-img" :src="getBallSrc(preDrawBalls[0]!)" :alt="String(preDrawBalls[0])" />
           <span class="symbol">+</span>
           <img class="ball-img" :src="getBallSrc(preDrawBalls[1]!)" :alt="String(preDrawBalls[1])" />
@@ -62,6 +66,17 @@ defineExpose({ updateCountdownPosition })
           <img class="ball-img" :src="getBallSrc(preDrawBalls[2]!)" :alt="String(preDrawBalls[2])" />
           <span class="symbol">=</span>
           <img ref="lastBallRef" class="ball-img" :src="getBallSrc(preDrawSum)" :alt="String(preDrawSum)" />
+        </template>
+        <!-- SSC: 5 blue balls side by side (no sum) -->
+        <template v-else-if="gameCategory === 'ssc'">
+          <img
+            v-for="(ball, idx) in preDrawBalls"
+            :key="idx"
+            class="ball-img-blue"
+            :src="getBlueBallSrc(ball)"
+            :alt="String(ball)"
+            :ref="(el) => { if (idx === preDrawBalls.length - 1) lastBallRef = el as HTMLImageElement }"
+          />
         </template>
       </div>
     </div>
@@ -182,6 +197,14 @@ defineExpose({ updateCountdownPosition })
   display: inline-block;
 }
 
+/* SSC blue balls: 26x26, no gap symbol */
+.ball-img-blue {
+  width: 26px;
+  height: 26px;
+  margin-left: 2px;
+  display: inline-block;
+}
+
 .symbol {
   margin: 0 6px;
   font-size: 12px;
@@ -238,5 +261,13 @@ defineExpose({ updateCountdownPosition })
 .game-name-clickable {
   cursor: pointer;
   user-select: none;
+}
+
+/* Win amount: bold 13px badge matching original design (bg-[#fff] b-rd-3 font-size-13) */
+.win-amount {
+  font-size: 13px;
+  background: #fff;
+  border-radius: 3px;
+  padding: 0 4px;
 }
 </style>

@@ -15,6 +15,7 @@ import AnnounceSidebar from './game/components/AnnounceSidebar.vue'
 import RecentDrawsDialog from './game/components/RecentDrawsDialog.vue'
 import FooterBar from './game/components/FooterBar.vue'
 import NoticeSection from './game/components/NoticeSection.vue'
+import SscTwoSidePanel from './game/components/ssc/SscTwoSidePanel.vue'
 
 // Composables
 import { useLotteryData } from './game/composables/useLotteryData'
@@ -32,6 +33,7 @@ import {
 import { getBallSrc, sumOddTextStyle, twoSideOddTextStyle, colorOddTextStyle, patternOddTextStyle } from './game/composables/useOddsStyles'
 import { NOTICE_SHOWN_KEY } from './game/constants/notices'
 import { getGameConfig, DEFAULT_GAME_KEY } from '@/utils/gameConfig'
+import { getSubNavForGame, getGameCategory } from '@/utils/gameSubNav'
 
 const route = useRoute()
 
@@ -45,7 +47,7 @@ const handleCloseNotice = () => {
 }
 
 // ─── Tab States ─────────────────────────────────────────────────────────────────────────
-const activeBetTab = ref<'twoSide' | 'balls'>('twoSide')
+const activeBetTab = ref<string>('twoSide')
 const activeContentView = ref<'game' | 'drawResults'>('game')
 
 // ─── Active Game Selection ───────────────────────────────────────────────────────────────
@@ -55,8 +57,14 @@ const activeGameKey = ref(DEFAULT_GAME_KEY)
 // Compute lotCode and gameName from the active game key
 const activeLotCode = computed(() => getGameConfig(activeGameKey.value).lotCode)
 const activeGameName = computed(() => getGameConfig(activeGameKey.value).gameName)
+const activeGameCategory = computed(() => getGameCategory(activeGameKey.value))
 
-const activeBetTabLabel = computed(() => (activeBetTab.value === 'balls' ? '1-3球' : '两面盘'))
+const activeBetTabLabel = computed(() => {
+  // Find the matching sub-nav label for the current bet tab
+  const subNavItems = getSubNavForGame(activeGameKey.value)
+  const found = subNavItems.find(item => item.key === activeBetTab.value)
+  return found ? found.label : '两面盘'
+})
 
 const centerContentClasses = computed(() => ({
   'center-content--wide': activeContentView.value === 'drawResults'
@@ -70,6 +78,11 @@ const mainWrapperClasses = computed(() => ({
 watch(activeBetTab, () => {
   showNoticeList.value = false
   activeContentView.value = 'game'
+})
+
+// Reset bet tab to default when switching games
+watch(activeGameKey, () => {
+  activeBetTab.value = 'twoSide'
 })
 
 watch(activeContentView, (view) => {
@@ -145,7 +158,8 @@ const { dragonList } = useDragonLeaderboard(historyIssues)
 // ─── Summary Road ───────────────────────────────────────────────────────────────────────
 const { summaryTabs, activeSummaryKey, activeSummaryValues, onSummaryTabClick } = useSummaryRoad(
   historyIssues,
-  getIssueSum
+  getIssueSum,
+  activeGameCategory
 )
 
 // ─── Recent Draws Dialog ────────────────────────────────────────────────────────────────
@@ -159,7 +173,7 @@ const {
   onTitleMouseDown,
   stopDrag,
   clampOnResize,
-} = useRecentDraws(historyIssues, parseBalls, getIssueSum)
+} = useRecentDraws(historyIssues, parseBalls, getIssueSum, activeGameCategory)
 
 // ─── Lifecycle ──────────────────────────────────────────────────────────────────────────
 onMounted(() => {
@@ -169,7 +183,7 @@ onMounted(() => {
 
   // Handle tab parameter from URL
   const tabFromQuery = route.query.tab as string
-  if (tabFromQuery === 'twoSide' || tabFromQuery === 'balls') {
+  if (tabFromQuery) {
     activeBetTab.value = tabFromQuery
   }
   if (route.query.view === 'drawResults') {
@@ -239,6 +253,7 @@ onUnmounted(() => {
               :draw-countdown="drawCountdown"
               :is-drawing="isDrawing"
               :active-bet-tab-label="activeBetTabLabel"
+              :game-category="activeGameCategory"
               @refresh="handleRefresh"
             />
 
@@ -249,8 +264,8 @@ onUnmounted(() => {
               @recent="openRecentDialog(() => { showNoticeDialog = false })"
             />
 
-            <!-- Two-side betting panel -->
-            <div v-show="activeBetTab === 'twoSide'">
+            <!-- Two-side betting panel: PC28 version -->
+            <div v-show="activeBetTab === 'twoSide' && activeGameCategory === 'pc28'">
               <!-- Sum values -->
               <h5 class="section-title">和值</h5>
               <div class="sum-grid" :class="{ 'sum-grid--quick': quickMode === 'quick' }">
@@ -374,7 +389,14 @@ onUnmounted(() => {
               </div>
             </div>
 
-            <!-- 1-3 balls betting panel -->
+            <!-- Two-side betting panel: SSC version (加拿大时时彩 etc.) -->
+            <SscTwoSidePanel
+              v-show="activeBetTab === 'twoSide' && activeGameCategory === 'ssc'"
+              :is-sealed="isSealed"
+              :quick-mode="quickMode"
+            />
+
+            <!-- 1-3 balls betting panel (PC28 only) -->
             <BettingBalls
               v-show="activeBetTab === 'balls'"
               :is-sealed="isSealed"
