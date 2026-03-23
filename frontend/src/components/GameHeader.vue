@@ -4,28 +4,28 @@ import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import logoImg from '@/assets/通用/logo.png'
 
-// Props for controlling header behavior
+// Props: hideSubNav allows pages like BetStatus/AccountHistory to hide the sub navigation bar
 const props = defineProps<{
-  hideSubNav?: boolean  // Hide the sub-nav (Two-Side | 1-3 Balls) on certain pages like BetStatus
+  hideSubNav?: boolean
 }>()
 
-// Expose the "Panel" selection (Two-Side / 1-3 Balls) to the parent page (GameHome)
+// Expose the "盘面" selection (两面盘 / 1-3球) to the parent page (GameHome)
 // so clicking the header sub-nav can switch the actual betting panel.
 const betTab = defineModel<'twoSide' | 'balls'>('betTab', { default: 'twoSide' })
 
 // Expose content view state for switching between game panel and draw results
 const contentView = defineModel<'game' | 'drawResults'>('contentView', { default: 'game' })
 
-/* ============ Types ============ */
+/* ============ 类型 ============ */
 interface NavItem { key: string; label: string }
 interface GameItem { key: string; label: string; badge?: 'new' | 'hot' }
 interface SubNavItem { key: string; label: string }
 
-const router = useRouter()
 const route = useRoute()
+const router = useRouter()
 const authStore = useAuthStore()
 
-/* ============ Top Navigation ============ */
+/* ============ 顶部导航 ============ */
 const topNav: NavItem[] = [
   { key: 'betStatus', label: '下注状况' },
   { key: 'accountHistory', label: '账户历史' },
@@ -36,7 +36,7 @@ const topNav: NavItem[] = [
   { key: 'logout', label: '退出登录' },
 ]
 
-/* ============ Game Navigation ============ */
+/* ============ 游戏导航 ============ */
 const gameNav: GameItem[] = [
   { key: 'caPc28', label: '加拿大pc28', badge: 'new' },
   { key: 'caSsc', label: '加拿大时时彩', badge: 'new' },
@@ -46,7 +46,7 @@ const gameNav: GameItem[] = [
   { key: 'happySsc', label: '欢乐时时彩', badge: 'hot' },
 ]
 
-/* ============ More Games Dropdown ============ */
+/* ============ 更多游戏下拉 ============ */
 const moreGames: GameItem[] = [
   { key: 'luckyPlane', label: '幸运飞艇' },
   { key: 'speedRacing', label: '极速赛车' },
@@ -56,13 +56,13 @@ const moreGames: GameItem[] = [
   { key: 'lottery10', label: '体彩乐透10' },
 ]
 
-/* ============ Sub Navigation (menus bar) ============ */
+/* ============ 子导航（menus 栏） ============ */
 const subNav: SubNavItem[] = [
   { key: 'twoSides', label: '两面盘' },
   { key: 'ball13', label: '1-3球' },
 ]
 
-/* ============ Theme Colors ============ */
+/* ============ 主题色 ============ */
 type ThemeKey = 'red' | 'green' | 'cyan' | 'blue' | 'brown'
 
 const themeColors: Array<{ key: ThemeKey; color: string }> = [
@@ -73,9 +73,9 @@ const themeColors: Array<{ key: ThemeKey; color: string }> = [
   { key: 'brown', color: '#be9d76' },
 ]
 
-/* ============ State ============ */
+/* ============ 状态 ============ */
 const activeGameKey = ref('caPc28')
-const activeTheme = ref<ThemeKey>('brown') // Default brown theme
+const activeTheme = ref<ThemeKey>('brown') // 默认棕色主题
 const THEME_STORAGE_KEY = 'bw-member-active-theme-name'
 const THEME_CLASS_LIST: ThemeKey[] = ['red', 'green', 'cyan', 'blue', 'brown']
 
@@ -99,7 +99,7 @@ const isTopItemActive = (key: string): boolean => {
   return false
 }
 
-/* ============ Event Handlers ============ */
+/* ============ 事件处理 ============ */
 const onTopClick = async (key: string) => {
   if (key === 'logout') {
     authStore.logout()
@@ -131,7 +131,6 @@ const onGameClick = (key: string) => {
   activeGameKey.value = key
   // Reset to game view when switching games
   contentView.value = 'game'
-  // If not on GameHome page, navigate to it
   if (router.currentRoute.value.name !== 'gameHome') {
     router.push({ name: 'gameHome' })
     return
@@ -147,7 +146,6 @@ const onMoreGameClick = (key: string) => {
   activeGameKey.value = key
   // Reset to game view when switching games
   contentView.value = 'game'
-  // If not on GameHome page, navigate to it
   if (router.currentRoute.value.name !== 'gameHome') {
     router.push({ name: 'gameHome' })
     return
@@ -164,19 +162,11 @@ const onSubNavClick = (key: string) => {
   // twoSides -> twoSide, ball13 -> balls
   const newTab = key === 'twoSides' ? 'twoSide' : 'balls'
   contentView.value = 'game'
-  
-  // If on GameHome page, just switch the tab
   if (router.currentRoute.value.name === 'gameHome') {
     betTab.value = newTab
-    if (route.query.view) {
-      const nextQuery = { ...route.query }
-      delete nextQuery.view
-      router.replace({ name: 'gameHome', query: nextQuery })
-    }
-  } else {
-    // On other pages (e.g. BetStatus), navigate to GameHome with the tab parameter
-    router.push({ name: 'gameHome', query: { tab: newTab } })
+    return
   }
+  betTab.value = newTab
 }
 
 const onThemeClick = (key: ThemeKey) => {
@@ -245,7 +235,7 @@ onMounted(() => {
             popper-class="more-games-popover"
           >
             <template #reference>
-              <div class="game-item more-games-btn">更多游戏</div>
+              <div class="game-item">更多游戏</div>
             </template>
             <div
               v-for="(mg, idx) in moreGames"
@@ -275,7 +265,7 @@ onMounted(() => {
         />
       </div>
 
-      <!-- 子导航项 - 可通过 hideSubNav prop 隐藏 -->
+      <!-- 子导航项 - can be hidden via hideSubNav prop -->
       <div v-if="!props.hideSubNav" class="menus-center">
         <div class="sub-nav">
           <template v-for="(item, idx) in subNav" :key="item.key">
@@ -298,29 +288,20 @@ onMounted(() => {
 </template>
 
 <style scoped>
-/* ========================= Overall Container ========================= */
+/* ========================= 整体容器 ========================= */
 .header-container {
-  position: sticky;
-  top: 0;
-  z-index: 1000;
   width: 100%;
-  /* Removed min-width: 1418px to prevent horizontal overflow causing colored bars on the right side */
-  /* Use max-width and overflow-x to contain content without forcing viewport expansion */
-  max-width: 100vw;
-  overflow-x: hidden;
+  min-width: 1418px;
   color: #ffffff;
   font-weight: 700;
 }
 
-/* ========================= Main Navigation (92px) ========================= */
+/* ========================= 主导航 (70px) ========================= */
 .header {
   position: relative;
-  height: 92px;
+  height: 70px;
   width: 100%;
-  /* Background image from design + gradient overlay for theme compatibility */
-  background: 
-    var(--bw-linear-bg, linear-gradient(to bottom, rgba(166, 116, 77, 0.85) 0%, rgba(53, 28, 12, 0.85) 100%)),
-    url('https://d1yospiq4404cv.cloudfront.net/member/static/header_01-dc11df90.jpg') repeat-x center top;
+  background: var(--bw-linear-bg, linear-gradient(to bottom, #a6744d 0%, #351c0c 100%));
   border-bottom: 1px solid var(--bw-border-color, #efba84);
   box-shadow: inset 0 1px 0 rgba(255, 197, 138, 0.55), inset 0 -1px 0 rgba(0, 0, 0, 0.3);
   overflow: hidden;
@@ -341,7 +322,7 @@ onMounted(() => {
   z-index: 1;
   width: 100%;
   max-width: none;
-  height: 92px;
+  height: 70px;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -349,7 +330,7 @@ onMounted(() => {
   box-sizing: border-box;
 }
 
-/* ---------- Row 1: Logo + Top Navigation ---------- */
+/* ---------- 第一行：Logo + 顶部导航 ---------- */
 .row-top {
   display: flex;
   align-items: center;
@@ -357,16 +338,15 @@ onMounted(() => {
   line-height: 30px;
   margin-bottom: 4px;
   margin-top: 9px;
-  margin-left: -19px;
 }
 
 .brand {
   position: relative;
   display: flex;
   align-items: center;
-  flex: 0 0 240px;
-  width: 240px;
-  min-width: 240px;
+  flex: 0 0 220px;
+  width: 220px;
+  min-width: 220px;
   height: 30px;
   margin-right: 0;
 }
@@ -385,7 +365,7 @@ onMounted(() => {
   left: 95px;
   top: 12px;
   font-size: 24px;
-  color: #f8bb00;
+  color: var(--bw-header-color, #be9d76);
   line-height: 1;
   white-space: nowrap;
 }
@@ -398,7 +378,6 @@ onMounted(() => {
   white-space: nowrap;
   height: 30px;
   line-height: 30px;
-  margin-top: -20px; /* Move top navigation up by 20px */
 }
 
 .top-item {
@@ -420,12 +399,9 @@ onMounted(() => {
   transition: color 0.15s;
 }
 
-.top-item:hover {
-  color: #fcff00;
-}
-
+.top-item:hover,
 .top-item.active {
-  color: #fcff00 !important;
+  color: #fcff00;
 }
 
 .sep {
@@ -438,16 +414,14 @@ onMounted(() => {
   font-size: 13px;
 }
 
-/* ---------- Row 2: Game Navigation ---------- */
+/* ---------- 第二行：游戏导航 ---------- */
 .row-games {
   display: flex;
   align-items: center;
   gap: 6px;
   height: 22px;
   line-height: 22px;
-  padding-left: 221px;
-  margin-top: -13px; /* Move game navigation row up by 13px */
-  margin-bottom: 13px; /* Bottom spacing for game navigation row */
+  padding-left: 220px;
 }
 
 .game-item {
@@ -460,20 +434,11 @@ onMounted(() => {
   font-weight: 400;
   cursor: pointer;
   user-select: none;
-  margin: 0;
-  padding: 0;
-  color: #ffffff; /* White text for game items */
+  color: #ffffff;
   background: var(--bw-linear-bg, linear-gradient(to bottom, #a6744d 0%, #351c0c 100%));
   border: 1px solid var(--bw-border-color, #efba84);
   box-sizing: border-box;
   transition: color 0.15s;
-  overflow: visible;
-  white-space: nowrap;
-}
-
-.more-games-btn {
-  width: 100px;
-  height: 22px;
 }
 
 .game-item:hover {
@@ -481,10 +446,10 @@ onMounted(() => {
 }
 
 .game-item.active {
-  color: rgb(252, 255, 0); /* Yellow text for active game item */
+  color: #fcff00;
 }
 
-/* "New" badge */
+/* "新" 角标 */
 .game-item.is-new::after {
   content: '';
   position: absolute;
@@ -496,7 +461,7 @@ onMounted(() => {
   pointer-events: none;
 }
 
-/* "Hot" badge */
+/* "热" 角标 */
 .game-item.is-hot::after {
   content: '';
   position: absolute;
@@ -508,7 +473,7 @@ onMounted(() => {
   pointer-events: none;
 }
 
-/* ========================= Sub Navigation menus (31px) ========================= */
+/* ========================= 子导航栏 menus (31px) ========================= */
 .menus {
   height: 31px;
   width: 100%;
@@ -519,11 +484,11 @@ onMounted(() => {
   align-items: center;
 }
 
-/* ---------- Theme color dots ---------- */
+/* ---------- 主题色圆点 ---------- */
 .theme-colors {
   display: flex;
   align-items: center;
-  padding-left: 21px;
+  padding-left: 40px;
   margin-right: 65px;
 }
 
@@ -543,7 +508,7 @@ onMounted(() => {
   box-shadow: 0 0 3px rgba(0,0,0,0.3);
 }
 
-/* ---------- Sub navigation items ---------- */
+/* ---------- 子导航项 ---------- */
 .menus-center {
   flex: 1;
 }
@@ -592,7 +557,7 @@ onMounted(() => {
   font-weight: 700;
 }
 
-/* ========================= More Games Dropdown ========================= */
+/* ========================= 更多游戏下拉项 ========================= */
 .more-game-item {
   width: 100px;
   height: 22px;
