@@ -1,7 +1,9 @@
 <script setup lang="ts">
+import { ref, onMounted } from 'vue'
 import DragonLeaderboard from './DragonLeaderboard.vue'
 import type { DragonItem } from '../composables/useDragonLeaderboard'
 import type { PropType } from 'vue'
+import { noticeApi } from '@/api/index'
 
 defineProps({
   dragonList: {
@@ -13,6 +15,31 @@ defineProps({
 const emit = defineEmits<{
   'moreClick': []
 }>()
+
+// Latest announce content fetched from API
+const announceText = ref('')
+
+/**
+ * Fetch the latest notice from backend API.
+ * Displays the first item from '特别通知' category.
+ */
+const fetchLatestNotice = async () => {
+  try {
+    const res = await noticeApi.getNotices() as any
+    if (res?.code === 200 && res.data) {
+      const specialNotices = res.data['特别通知'] || []
+      if (specialNotices.length > 0) {
+        announceText.value = specialNotices[0].content
+      }
+    }
+  } catch (_e) {
+    // Silently handle fetch errors
+  }
+}
+
+onMounted(() => {
+  fetchLatestNotice()
+})
 </script>
 
 <template>
@@ -26,7 +53,7 @@ const emit = defineEmits<{
     <div class="right-sidebar-scroll">
       <!-- Announce content -->
       <div class="announce-body">
-        <p>尊敬的会员您好，当心市场冒充老BW这类骗局，请认准本系统(18118bw.com,18118bw.cc)开奖网(bw128.cc)</p>
+        <p>{{ announceText }}</p>
       </div>
       <!-- Dragon leaderboard -->
       <DragonLeaderboard :dragon-list="dragonList" />
@@ -109,7 +136,7 @@ const emit = defineEmits<{
 .announce-body {
   padding: 10px;
   width: 160px;
-  height: 177px;
+  min-height: 50px;
   font-size: 13px;
   line-height: 26px;
   color: #000;

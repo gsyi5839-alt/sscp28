@@ -36,8 +36,13 @@ export function useLotteryData(lotCodeRef: Ref<number>) {
   const historyIssues = ref<any[]>([])
   const historyNums = ref<number[]>([])
 
+  // Polling interval matching original system design (4 seconds)
+  const INFO_POLL_INTERVAL = 4000
+  const HISTORY_POLL_INTERVAL = 5000
+
   // Internal state
   let countdownTimer: ReturnType<typeof setInterval> | null = null
+  let infoPollTimer: ReturnType<typeof setInterval> | null = null
   let historyPollTimer: ReturnType<typeof setInterval> | null = null
   let isFetching = false
   let drawTimestamp = 0
@@ -129,7 +134,7 @@ export function useLotteryData(lotCodeRef: Ref<number>) {
     }
   }
 
-  // Countdown ticker
+  // Countdown ticker (runs every 1s for smooth UI countdown)
   const tickCountdown = () => {
     const now = Date.now()
     const drawDiff = drawTimestamp - now
@@ -138,10 +143,10 @@ export function useLotteryData(lotCodeRef: Ref<number>) {
     currentTime.value = new Date()
 
     if (drawDiff <= 0 && drawTimestamp > 0) {
+      // Draw time reached: show loading animation
       isDrawing.value = true
       drawCountdown.value = '00:00:00'
       sealCountdown.value = '00:00:00'
-      fetchLotteryInfo()
     } else {
       isDrawing.value = false
       drawCountdown.value = fmtCountdown(drawDiff)
@@ -179,12 +184,17 @@ export function useLotteryData(lotCodeRef: Ref<number>) {
   onMounted(() => {
     fetchLotteryInfo()
     fetchHistoryList()
+    // 1s ticker for smooth countdown display
     countdownTimer = setInterval(tickCountdown, 1000)
-    historyPollTimer = setInterval(fetchHistoryList, 5000)
+    // 4s info polling matching original system design
+    infoPollTimer = setInterval(fetchLotteryInfo, INFO_POLL_INTERVAL)
+    // 5s history polling
+    historyPollTimer = setInterval(fetchHistoryList, HISTORY_POLL_INTERVAL)
   })
 
   onUnmounted(() => {
     if (countdownTimer) clearInterval(countdownTimer)
+    if (infoPollTimer) clearInterval(infoPollTimer)
     if (historyPollTimer) clearInterval(historyPollTimer)
   })
 

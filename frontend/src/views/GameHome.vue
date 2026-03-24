@@ -202,10 +202,7 @@ onUnmounted(() => {
 })
 
 // ─── Window Resize Handler ──────────────────────────────────────────────────────────────
-const lotteryHeaderRef = ref<InstanceType<typeof LotteryHeader> | null>(null)
-
 const handleWindowResize = () => {
-  lotteryHeaderRef.value?.updateCountdownPosition()
   clampOnResize()
 }
 
@@ -243,7 +240,6 @@ onUnmounted(() => {
 
             <!-- Lottery header with countdown -->
             <LotteryHeader
-              ref="lotteryHeaderRef"
               :game-name="activeGameName"
               :pre-draw-issue="preDrawIssue"
               :pre-draw-balls="preDrawBalls"

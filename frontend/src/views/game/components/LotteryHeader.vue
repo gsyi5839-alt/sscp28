@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, nextTick, watch } from 'vue'
 import { getBallSrc, getBlueBallSrc } from '../composables/useOddsStyles'
 import type { GameCategory } from '@/utils/gameSubNav'
+// Loading animation for draw-in-progress state (original design: 55x11 gif)
+import loadingGif from '@/assets/游戏/loading.gif'
 
 interface Props {
   gameName: string
@@ -25,26 +26,6 @@ const emit = defineEmits<{
 const onGameNameClick = () => {
   emit('refresh')
 }
-
-const lastBallRef = ref<HTMLImageElement | null>(null)
-const countdownRef = ref<HTMLDivElement | null>(null)
-const countdownShift = ref(0)
-const COUNTDOWN_EXTRA_SHIFT = -452
-
-const updateCountdownPosition = () => {
-  const ballEl = lastBallRef.value
-  const countEl = countdownRef.value
-  if (!ballEl || !countEl) return
-  const ballRect = ballEl.getBoundingClientRect()
-  const naturalLeft = countEl.getBoundingClientRect().left - countdownShift.value
-  countdownShift.value = Math.round(ballRect.left - naturalLeft) + COUNTDOWN_EXTRA_SHIFT
-}
-
-watch(() => props.preDrawBalls, () => {
-  nextTick(updateCountdownPosition)
-}, { immediate: true })
-
-defineExpose({ updateCountdownPosition })
 </script>
 
 <template>
@@ -65,7 +46,7 @@ defineExpose({ updateCountdownPosition })
           <span class="symbol">+</span>
           <img class="ball-img" :src="getBallSrc(preDrawBalls[2]!)" :alt="String(preDrawBalls[2])" />
           <span class="symbol">=</span>
-          <img ref="lastBallRef" class="ball-img" :src="getBallSrc(preDrawSum)" :alt="String(preDrawSum)" />
+          <img class="ball-img" :src="getBallSrc(preDrawSum)" :alt="String(preDrawSum)" />
         </template>
         <!-- SSC: 5 blue balls side by side (no sum) -->
         <template v-else-if="gameCategory === 'ssc'">
@@ -75,7 +56,6 @@ defineExpose({ updateCountdownPosition })
             class="ball-img-blue"
             :src="getBlueBallSrc(ball)"
             :alt="String(ball)"
-            :ref="(el) => { if (idx === preDrawBalls.length - 1) lastBallRef = el as HTMLImageElement }"
           />
         </template>
       </div>
@@ -87,31 +67,22 @@ defineExpose({ updateCountdownPosition })
         <span class="ml10">期</span>
         <span class="bet-tab ml10 bet-tab-active bet-tab--display">{{ activeBetTabLabel }}</span>
       </div>
-      <div class="issue-right issue-right--bottom">
-        <template v-if="isDrawing">
-          <span class="text-red ml40" style="font-weight:bold;">正在开奖...</span>
-        </template>
-        <template v-else>
-          <div
-            ref="countdownRef"
-            class="countdown-group"
-            :style="{ transform: `translateX(${countdownShift}px)` }"
-          >
-            <span class="ml40">距离封盘:</span>
-            <b class="time-box time-red ml5">{{ sealCountdown.split(':')[0] }}</b>
-            <span class="time-sep">:</span>
-            <b class="time-box time-red">{{ sealCountdown.split(':')[1] }}</b>
-            <span class="time-sep">:</span>
-            <b class="time-box time-red">{{ sealCountdown.split(':')[2] }}</b>
-            <span class="ml50">距离开奖:</span>
-            <b class="time-box time-green ml5">{{ drawCountdown.split(':')[0] }}</b>
-            <span class="time-sep">:</span>
-            <b class="time-box time-green">{{ drawCountdown.split(':')[1] }}</b>
-            <span class="time-sep">:</span>
-            <b class="time-box time-green">{{ drawCountdown.split(':')[2] }}</b>
-          </div>
-        </template>
-      </div>
+      <!-- Countdown / drawing status: flows naturally after left content -->
+      <template v-if="isDrawing">
+        <div class="drawing-row">
+          <b class="text-red">{{ preDrawIssue }}</b>
+          <span>期开奖：</span>
+          <img class="loading-gif" :src="loadingGif" alt="loading" />
+        </div>
+      </template>
+      <template v-else>
+        <div class="countdown-group">
+          <span class="ml40">距离封盘:</span>
+          <b class="time-val time-red ml5">{{ sealCountdown }}</b>
+          <span class="ml50">距离开奖:</span>
+          <b class="time-val time-green ml5">{{ drawCountdown }}</b>
+        </div>
+      </template>
     </div>
   </div>
 </template>
@@ -146,16 +117,17 @@ defineExpose({ updateCountdownPosition })
   align-items: center;
 }
 
-.issue-left--bottom,
-.issue-right--bottom {
+/* Bottom row left section offset */
+.issue-left--bottom {
   position: relative;
   top: -7px;
 }
 
+/* Countdown container: padding-right 100px matching original design (pr100) */
 .countdown-group {
   display: inline-flex;
   align-items: center;
-  pointer-events: none;
+  padding-right: 100px;
 }
 
 .text-blue {
@@ -190,11 +162,14 @@ defineExpose({ updateCountdownPosition })
   margin-left: 5px;
 }
 
+/* PC28 ball image: matches original design compact layout */
 .ball-img {
   width: 27px;
   height: 27px;
-  margin-left: 6px;
+  margin-left: 2px;
   display: inline-block;
+  position: relative;
+  top: 2px;
 }
 
 /* SSC blue balls: 26x26, no gap symbol */
@@ -205,20 +180,17 @@ defineExpose({ updateCountdownPosition })
   display: inline-block;
 }
 
+/* + and = symbols: tight spacing matching original design */
 .symbol {
-  margin: 0 6px;
+  margin: 0 1px;
   font-size: 12px;
   color: #333;
 }
 
-.time-box {
-  display: inline-block;
-  width: 16px;
-  height: 17px;
-  line-height: 17px;
-  text-align: center;
-  border-radius: 3px;
+/* Countdown time value: matches original design (single <b> block, font-size 13px) */
+.time-val {
   font-size: 13px;
+  border-radius: 3px;
 }
 
 .time-red {
@@ -227,11 +199,6 @@ defineExpose({ updateCountdownPosition })
 
 .time-green {
   color: green;
-}
-
-.time-sep {
-  margin: 0 4px;
-  color: #333;
 }
 
 .bet-tab {
@@ -256,6 +223,20 @@ defineExpose({ updateCountdownPosition })
   color: #00f !important;
   background: transparent !important;
   border: none !important;
+}
+
+/* Drawing in-progress row: issue number + loading animation */
+.drawing-row {
+  display: inline-flex;
+  align-items: center;
+  height: 25px;
+  margin-left: 40px;
+}
+
+.loading-gif {
+  width: 55px;
+  height: 11px;
+  margin-left: 4px;
 }
 
 .game-name-clickable {
