@@ -38,8 +38,12 @@ const onGameNameClick = () => {
       <div class="issue-right">
         <b class="text-green mr10">{{ preDrawIssue }}</b>
         <span>期开奖：</span>
+        <!-- Drawing state: show loading.gif replacing balls -->
+        <template v-if="isDrawing">
+          <img class="loading-gif" :src="loadingGif" alt="loading" />
+        </template>
         <!-- PC28: 3 balls + sum (ball1 + ball2 + ball3 = sum) -->
-        <template v-if="gameCategory === 'pc28' && preDrawBalls.length === 3">
+        <template v-else-if="gameCategory === 'pc28' && preDrawBalls.length === 3">
           <img class="ball-img" :src="getBallSrc(preDrawBalls[0]!)" :alt="String(preDrawBalls[0])" />
           <span class="symbol">+</span>
           <img class="ball-img" :src="getBallSrc(preDrawBalls[1]!)" :alt="String(preDrawBalls[1])" />
@@ -69,10 +73,11 @@ const onGameNameClick = () => {
       </div>
       <!-- Countdown / drawing status: flows naturally after left content -->
       <template v-if="isDrawing">
-        <div class="drawing-row">
-          <b class="text-red">{{ preDrawIssue }}</b>
-          <span>期开奖：</span>
-          <img class="loading-gif" :src="loadingGif" alt="loading" />
+        <div class="countdown-group">
+          <span class="ml40">距离封盘:</span>
+          <b class="time-val time-red ml5">00:00:00</b>
+          <span class="ml50">距离开奖:</span>
+          <b class="time-val time-green ml5">00:00:00</b>
         </div>
       </template>
       <template v-else>
@@ -225,18 +230,12 @@ const onGameNameClick = () => {
   border: none !important;
 }
 
-/* Drawing in-progress row: issue number + loading animation */
-.drawing-row {
-  display: inline-flex;
-  align-items: center;
-  height: 25px;
-  margin-left: 40px;
-}
-
+/* Loading animation displayed on top of ball area (original design: 55x11) */
 .loading-gif {
   width: 55px;
   height: 11px;
   margin-left: 4px;
+  vertical-align: middle;
 }
 
 .game-name-clickable {

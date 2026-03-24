@@ -37,6 +37,8 @@ nohup java -jar target/backend-0.0.1-SNAPSHOT.jar > nohup.out 2>&1 &  # Producti
 ### Utilities
 ```bash
 ./scripts/view-logs.sh                   # Interactive log viewer for backend logs
+./scripts/backup_database.sh             # Database backup
+./scripts/backup_manager.sh              # Backup management (list, restore, cleanup)
 ```
 
 **No frontend test runner is configured.** Include manual verification steps for UI/routing changes.
@@ -51,6 +53,7 @@ nohup java -jar target/backend-0.0.1-SNAPSHOT.jar > nohup.out 2>&1 &  # Producti
 5. Public API calls append `t: Date.now()` parameter to bypass CDN/proxy/browser cache
 
 ### Frontend Key Details
+- **API client**: Single file `api/index.ts` — all API calls (auth, lottery, bets, notices, account, etc.) are exported from here. No sub-modules.
 - **Pinia stores**: `stores/auth.ts` (JWT + user session), `stores/cache.ts` (in-memory API cache with TTL)
 - **Router** (`router/index.ts`): guards check `isAuthenticated`, fetch user profile on refresh, redirect to `/change-password` if `needPasswordChange` is set
 - **Protected routes**: `dashboard`, `changePassword`, `userAgreement`, `gameHome`, `betStatus`, `accountHistory`
@@ -84,6 +87,14 @@ Backend Caffeine cache TTLs:
 - `lotteryListOtherPages`: 15 minutes | `accessLines`: 6 hours
 
 Frontend `stores/cache.ts` provides TTL-based caching (e.g., lottery games cached 1 hour).
+
+### Game Module Architecture
+The game feature is a self-contained module under `views/game/` with its own sub-structure:
+- `components/` — game-specific UI (LotteryHeader, BettingBalls, QuickBetBar, etc.) + `ssc/` sub-folder for SSC game variants
+- `composables/` — game-specific hooks (`useLotteryData`, `useBetting`, `useDragonLeaderboard`, `useOddsStyles`, `useRecentDraws`, `useSummaryRoad`)
+- `constants/` — odds tables (`odds.ts`, `sscOdds.ts`) and notice content
+
+Game switching: `GameHeader` exposes `activeGameKey` via `defineModel`. `gameConfig.ts` (in `utils/`) maps gameKey → lotCode/gameName. `useLotteryData` accepts a reactive `lotCode` ref and auto-refetches on change.
 
 ### Lottery Integration
 - `LotteryService` proxies upstream data from `bw1284.cc`

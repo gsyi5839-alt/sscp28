@@ -79,7 +79,7 @@ const onGameClick = (url: string) => {
   width: 200px;
   flex-shrink: 0;
   /* Align top with game-panel top border (game-panel has margin-top: 5px) */
-  margin-top: 5px;
+  margin-top: 6px;
 }
 
 /* Uniform content width (consistent with design 184px) */

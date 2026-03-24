@@ -44,12 +44,12 @@ onMounted(() => {
 
 <template>
   <div class="right-sidebar">
-    <!-- Announce header - fixed -->
+    <!-- Announce header -->
     <div class="announce-header">
       <span class="announce-title">公告</span>
       <span class="more-link" @click="$emit('moreClick')">更多</span>
     </div>
-    <!-- Scrollable content -->
+    <!-- Content -->
     <div class="right-sidebar-scroll">
       <!-- Announce content -->
       <div class="announce-body">
@@ -66,40 +66,12 @@ onMounted(() => {
   width: 160px;
   flex-shrink: 0;
   margin-left: 10px;
-  position: sticky;
-  top: 106px;
+  margin-top: 6px;
   align-self: flex-start;
-  display: flex;
-  flex-direction: column;
-  max-height: calc(100vh - 106px);
 }
 
 .right-sidebar-scroll {
-  overflow-y: auto;
-  overflow-x: hidden;
-  scrollbar-width: thin;
-  scrollbar-color: #a6744d #f5f5f5;
-  flex: 1;
-  max-height: calc(100vh - 132px);
-}
-
-.right-sidebar-scroll::-webkit-scrollbar {
-  width: 9px;
-}
-
-.right-sidebar-scroll::-webkit-scrollbar-track {
-  background: #f5f5f5;
-  border-radius: 4px;
-}
-
-.right-sidebar-scroll::-webkit-scrollbar-thumb {
-  background: linear-gradient(to bottom, #a6744d 0%, #351c0c 100%);
-  border-radius: 4px;
-  border: 1px solid #efba84;
-}
-
-.right-sidebar-scroll::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(to bottom, #c0845c 0%, #4a2a18 100%);
+  overflow: visible;
 }
 
 .announce-header {

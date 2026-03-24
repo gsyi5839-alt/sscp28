@@ -219,46 +219,47 @@ onUnmounted(() => {
   <div class="page">
     <GameHeader v-model:betTab="activeBetTab" v-model:contentView="activeContentView" v-model:activeGameKey="activeGameKey" />
 
-    <div class="main-wrapper" :class="mainWrapperClasses">
-      <div class="main-body">
-        <!-- Left sidebar -->
-        <MemberSidebar />
+    <div class="page-scroll">
+      <div class="main-wrapper" :class="mainWrapperClasses">
+        <div class="main-body">
+          <!-- Left sidebar -->
+          <MemberSidebar />
 
-        <!-- Center content -->
-        <div class="center-content" :class="centerContentClasses">
-          <!-- Draw Results panel -->
-          <div v-if="activeContentView === 'drawResults'" key="draw-results-view" class="draw-results-view">
-            <DrawResults />
-          </div>
-
-          <!-- Game panel -->
-          <div v-else-if="!showNoticeList" key="game-panel-view" class="game-panel">
-            <!-- System closed overlay (China time daily 06:00-07:00) -->
-            <div v-if="isSystemClosed" class="system-closed-overlay">
-              <img src="@/assets/通用/bg.png" alt="系统封盘" class="system-closed-bg" />
+          <!-- Center content -->
+          <div class="center-content" :class="centerContentClasses">
+            <!-- Draw Results panel -->
+            <div v-if="activeContentView === 'drawResults'" key="draw-results-view" class="draw-results-view">
+              <DrawResults />
             </div>
 
-            <!-- Lottery header with countdown -->
-            <LotteryHeader
-              :game-name="activeGameName"
-              :pre-draw-issue="preDrawIssue"
-              :pre-draw-balls="preDrawBalls"
-              :pre-draw-sum="preDrawSum"
-              :draw-issue="drawIssue"
-              :seal-countdown="sealCountdown"
-              :draw-countdown="drawCountdown"
-              :is-drawing="isDrawing"
-              :active-bet-tab-label="activeBetTabLabel"
-              :game-category="activeGameCategory"
-              @refresh="handleRefresh"
-            />
+            <!-- Game panel -->
+            <div v-else-if="!showNoticeList" key="game-panel-view" class="game-panel">
+              <!-- System closed overlay (China time daily 06:00-07:00) -->
+              <div v-if="isSystemClosed" class="system-closed-overlay">
+                <img src="@/assets/通用/bg.png" alt="系统封盘" class="system-closed-bg" />
+              </div>
 
-            <!-- Top quick bar -->
-            <QuickBetBar
-              v-model:quickMode="quickMode"
-              show-recent-button
-              @recent="openRecentDialog(() => { showNoticeDialog = false })"
-            />
+              <!-- Lottery header with countdown -->
+              <LotteryHeader
+                :game-name="activeGameName"
+                :pre-draw-issue="preDrawIssue"
+                :pre-draw-balls="preDrawBalls"
+                :pre-draw-sum="preDrawSum"
+                :draw-issue="drawIssue"
+                :seal-countdown="sealCountdown"
+                :draw-countdown="drawCountdown"
+                :is-drawing="isDrawing"
+                :active-bet-tab-label="activeBetTabLabel"
+                :game-category="activeGameCategory"
+                @refresh="handleRefresh"
+              />
+
+              <!-- Top quick bar -->
+              <QuickBetBar
+                v-model:quickMode="quickMode"
+                show-recent-button
+                @recent="openRecentDialog(() => { showNoticeDialog = false })"
+              />
 
             <!-- Two-side betting panel: PC28 version -->
             <div v-show="activeBetTab === 'twoSide' && activeGameCategory === 'pc28'">
@@ -409,25 +410,26 @@ onUnmounted(() => {
               class="quick-bar-bottom"
             />
 
-            <!-- Summary road -->
-            <SummaryRoad
-              :summary-tabs="summaryTabs"
-              :active-summary-key="activeSummaryKey"
-              :active-summary-values="activeSummaryValues"
-              @tab-click="onSummaryTabClick"
-            />
+              <!-- Summary road -->
+              <SummaryRoad
+                :summary-tabs="summaryTabs"
+                :active-summary-key="activeSummaryKey"
+                :active-summary-values="activeSummaryValues"
+                @tab-click="onSummaryTabClick"
+              />
+            </div>
+
+            <!-- Notice list panel -->
+            <NoticeSection v-else v-model:show-list="showNoticeList" />
           </div>
 
-          <!-- Notice list panel -->
-          <NoticeSection v-else v-model:show-list="showNoticeList" />
+          <!-- Right sidebar -->
+          <AnnounceSidebar
+            v-if="!showNoticeList && activeContentView === 'game'"
+            :dragon-list="dragonList"
+            @more-click="showNoticeList = true"
+          />
         </div>
-
-        <!-- Right sidebar -->
-        <AnnounceSidebar
-          v-if="!showNoticeList && activeContentView === 'game'"
-          :dragon-list="dragonList"
-          @more-click="showNoticeList = true"
-        />
       </div>
     </div>
 
@@ -458,11 +460,19 @@ onUnmounted(() => {
 
 <style scoped>
 .page {
+  height: 100vh;
   min-height: 100vh;
   background: #fff;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  overflow: hidden;
+}
+
+.page-scroll {
+  min-height: 0;
+  overflow-y: auto;
   overflow-x: hidden;
+  background: #fff;
 }
 
 .main-wrapper {
