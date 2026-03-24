@@ -342,9 +342,12 @@ Frontend has in-memory cache store (`stores/cache.ts`) with TTL support for API 
 ### Frontend Deployment
 - Build output: `frontend/dist/`
 - Deploy script: `frontend/scripts/deploy-to-site-root.mjs`
-- **Important**: Deployment is non-destructive - old hashed chunks are preserved to avoid 404s for cached HTML referencing old chunk hashes
-- Never delete the assets directory before deploying
 - Site root: `/www/wwwroot/www.bcbbs3.cn/`
+- **IMPORTANT — Clean Deploy Rule**: Every production deployment MUST follow this sequence:
+  1. **Clean** the production assets first: `cd /www/wwwroot/www.bcbbs3.cn && find assets -mindepth 1 -delete`
+  2. **Build & Deploy**: `cd /root/sscp28/frontend && npm run build:site`
+  3. **Verify** the deployed file count: `ls /www/wwwroot/www.bcbbs3.cn/assets/ | wc -l` (should match the current build output, typically 60-80 files, NOT thousands)
+- Skipping the clean step causes old hashed chunks to accumulate (7000+ files), and browsers with cached `index.html` may load stale chunks, causing the site to appear "rolled back" to an old version
 
 ### Backend Deployment
 - Build artifact: `backend/target/backend-0.0.1-SNAPSHOT.jar`

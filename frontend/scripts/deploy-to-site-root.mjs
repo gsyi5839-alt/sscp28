@@ -51,11 +51,21 @@ async function main() {
 
   if (!(await exists(srcAssets))) throw new Error(`缺少 ${srcAssets}`)
 
-  // 重要：不要删除站点根目录的 assets。
-  // 原因：用户浏览器可能缓存了旧的 index-*.js（或旧的路由 chunk 引用）。
-  // 如果我们删除旧 hash 文件，会导致动态 import 404（你截图里的 ChangePassword-*.js 404）。
-  // 解决：只“覆盖/新增”本次构建的资源，保留历史 hash 文件，避免线上用户缓存不一致时白屏/无法跳转。
+  // Clean old assets before deploying new ones.
+  // Old non-destructive strategy caused assets to accumulate (7000+ files),
+  // and browsers loading cached index.html would resolve stale chunk hashes,
+  // making the site appear "rolled back" to an old version.
+  // Nginx already sets no-cache on index.html, so users always get the latest
+  // index.html which references the correct new chunk hashes.
+  if (await exists(destAssets)) {
+    console.log(`Cleaning old assets in ${destAssets} ...`)
+    await rmrf(destAssets)
+  }
   await copyDir(srcAssets, destAssets)
+  
+  // Log deployed asset count for verification
+  const deployedAssets = await fs.readdir(destAssets)
+  console.log(`Deployed ${deployedAssets.length} asset files (clean deploy)`)
 
   // 同步 dist 根目录的其它文件/目录到站点根目录（不做删除，只覆盖/新增）
   await Promise.all(

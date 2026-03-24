@@ -6,6 +6,9 @@ alwaysApply: true
 
 ## Project Overview
 
+绝大多数生产部署「先清理旧产物，再重新构建部署」，不然非常容易出现
+构建部署完 → 又退回到旧版本。
+
 BCBBS3 is a full-stack web application featuring a lottery game platform with multi-role authentication (USER/MEMBER/AGENT/ADMIN). The system includes captcha-gated login, password change enforcement policies, access line management, search functionality, and lottery game integration with upstream data provider (bw1284.cc).
 
 ## Technology Stack

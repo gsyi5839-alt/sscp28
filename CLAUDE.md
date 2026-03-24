@@ -98,7 +98,14 @@ Frontend `stores/cache.ts` provides TTL-based caching (e.g., lottery games cache
 
 ### Deployment
 
-**Frontend**: `npm run build:site` deploys to `/www/wwwroot/www.bcbbs3.cn/`. Deployment is **non-destructive** — old hashed chunks are preserved so cached HTML referencing old chunk hashes don't get 404s. Never delete the assets directory before deploying.
+**Frontend**: `npm run build:site` builds and deploys to `/www/wwwroot/www.bcbbs3.cn/`.
+
+**IMPORTANT — Clean Deploy Rule**: Every production deployment MUST follow this sequence:
+1. **Clean** the production directory first: `cd /www/wwwroot/www.bcbbs3.cn && find assets -mindepth 1 -delete`
+2. **Build & Deploy**: `cd /root/sscp28/frontend && npm run build:site`
+3. **Verify** the deployed file count: `ls /www/wwwroot/www.bcbbs3.cn/assets/ | wc -l` (should match the current build output, typically 60-80 files, NOT thousands)
+
+Skipping the clean step causes old hashed chunks to accumulate (7000+ files), and browsers with cached `index.html` may load stale chunks, causing the site to appear "rolled back" to an old version.
 
 **Backend**: `backend/target/backend-0.0.1-SNAPSHOT.jar` run with `nohup`.
 
