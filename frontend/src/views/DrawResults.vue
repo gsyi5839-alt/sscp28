@@ -284,7 +284,7 @@ onMounted(async () => {
             <template #header><b class="header-text">开奖结果</b></template>
             <template #default="{ row }">
               <div class="uno-flex-center">
-                <img v-for="(ball, index) in parseBalls(row.preDrawCode)" :key="`${row.preDrawIssue}-ball-${index}`" :src="getBallImageUrl(parseInt(ball, 10))" :alt="`ball-${ball}`" class="ball-img" />
+                <img v-for="(ball, index) in parseBalls(row.preDrawCode)" :key="`${row.preDrawIssue}-ball-${index}`" :src="getBallImageUrl(parseInt(ball, 10))" :alt="`ball-${ball}`" class="ball-img" loading="lazy" decoding="async" />
               </div>
             </template>
           </el-table-column>
@@ -360,7 +360,7 @@ onMounted(async () => {
             <template #header><b class="header-text">开奖结果</b></template>
             <template #default="{ row }">
               <div class="ball-list">
-                <img v-for="(ball, index) in parseBalls(row.preDrawCode)" :key="`${row.preDrawIssue}-${index}`" :src="getBallImageUrl(parseInt(ball, 10))" :alt="`ball-${ball}`" class="ball-img" />
+                <img v-for="(ball, index) in parseBalls(row.preDrawCode)" :key="`${row.preDrawIssue}-${index}`" :src="getBallImageUrl(parseInt(ball, 10))" :alt="`ball-${ball}`" class="ball-img" loading="lazy" decoding="async" />
               </div>
             </template>
           </el-table-column>

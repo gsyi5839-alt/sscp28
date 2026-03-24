@@ -13,6 +13,8 @@ import { HISTORY_LIST_SIZE } from '../constants/odds'
  * @param lotCodeRef reactive ref holding the current game's lottery code
  */
 export function useLotteryData(lotCodeRef: Ref<number>) {
+  const isMobileClient = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+
   // Previous draw data
   const preDrawIssue = ref('--')
   const preDrawBalls = ref<number[]>([0, 0, 0])
@@ -36,23 +38,31 @@ export function useLotteryData(lotCodeRef: Ref<number>) {
   const historyIssues = ref<any[]>([])
   const historyNums = ref<number[]>([])
 
-  // Polling interval matching original system design (4 seconds)
-  const INFO_POLL_INTERVAL = 4000
-  const HISTORY_POLL_INTERVAL = 5000
+  // Mobile-first polling strategy: keep data fresh while reducing network pressure.
+  const INFO_POLL_INTERVAL = isMobileClient ? 6000 : 4000
+  const HISTORY_POLL_INTERVAL = isMobileClient ? 12000 : 5000
+  const FULL_HISTORY_POLL_INTERVAL = 60000
+  const FAST_HISTORY_LIST_SIZE = isMobileClient ? 80 : 120
 
   // Internal state
   let countdownTimer: ReturnType<typeof setInterval> | null = null
   let infoPollTimer: ReturnType<typeof setInterval> | null = null
   let historyPollTimer: ReturnType<typeof setInterval> | null = null
+  let fullHistoryPollTimer: ReturnType<typeof setInterval> | null = null
+  let fullHistoryBootstrapTimer: ReturnType<typeof setTimeout> | null = null
   let isFetching = false
   let drawTimestamp = 0
   let sealTimestamp = 0
   let currentDrawIssue = ''
   let currentPreDrawIssue = ''
 
-  // Check if betting is sealed
+  // Check if betting is sealed.
+  // Only treat as sealed in the real window: [sealTimestamp, drawTimestamp).
+  // This avoids "stuck sealed overlay" after draw time has passed.
   const isSealed = computed(() => {
-    return sealCountdown.value === '00:00:00' || sealCountdown.value.startsWith('-')
+    const now = currentTime.value.getTime()
+    if (sealTimestamp <= 0 || drawTimestamp <= 0) return false
+    return now >= sealTimestamp && now < drawTimestamp
   })
 
   // Helper functions
@@ -115,9 +125,9 @@ export function useLotteryData(lotCodeRef: Ref<number>) {
   }
 
   // Fetch history list
-  const fetchHistoryList = async () => {
+  const fetchHistoryList = async (size = FAST_HISTORY_LIST_SIZE) => {
     try {
-      const res: any = await lotteryApi.getList(lotCodeRef.value, 1, HISTORY_LIST_SIZE)
+      const res: any = await lotteryApi.getList(lotCodeRef.value, 1, size)
       if (res?.code === 200 && res?.data?.list) {
         const rawList = res.data.list || []
         const sortedList = [...rawList].sort((a: any, b: any) => {
@@ -181,21 +191,60 @@ export function useLotteryData(lotCodeRef: Ref<number>) {
   }
 
   // Lifecycle
+  let isPageVisible = true
+
+  const handleVisibilityChange = () => {
+    isPageVisible = !document.hidden
+    if (isPageVisible) {
+      // Page became visible: fetch immediately and restart polling
+      fetchLotteryInfo()
+      fetchHistoryList()
+      if (!isMobileClient) {
+        fetchHistoryList(HISTORY_LIST_SIZE)
+      }
+      startPolling()
+    } else {
+      // Page hidden (mobile tab switch / screen off): pause polling to save battery & data
+      stopPolling()
+    }
+  }
+
+  const startPolling = () => {
+    stopPolling()
+    countdownTimer = setInterval(tickCountdown, 1000)
+    infoPollTimer = setInterval(fetchLotteryInfo, INFO_POLL_INTERVAL)
+    historyPollTimer = setInterval(fetchHistoryList, HISTORY_POLL_INTERVAL)
+    fullHistoryPollTimer = setInterval(() => {
+      fetchHistoryList(HISTORY_LIST_SIZE)
+    }, FULL_HISTORY_POLL_INTERVAL)
+  }
+
+  const stopPolling = () => {
+    if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null }
+    if (infoPollTimer) { clearInterval(infoPollTimer); infoPollTimer = null }
+    if (historyPollTimer) { clearInterval(historyPollTimer); historyPollTimer = null }
+    if (fullHistoryPollTimer) { clearInterval(fullHistoryPollTimer); fullHistoryPollTimer = null }
+    if (fullHistoryBootstrapTimer) { clearTimeout(fullHistoryBootstrapTimer); fullHistoryBootstrapTimer = null }
+  }
+
   onMounted(() => {
     fetchLotteryInfo()
     fetchHistoryList()
-    // 1s ticker for smooth countdown display
-    countdownTimer = setInterval(tickCountdown, 1000)
-    // 4s info polling matching original system design
-    infoPollTimer = setInterval(fetchLotteryInfo, INFO_POLL_INTERVAL)
-    // 5s history polling
-    historyPollTimer = setInterval(fetchHistoryList, HISTORY_POLL_INTERVAL)
+    if (isMobileClient) {
+      fullHistoryBootstrapTimer = setTimeout(() => {
+        fetchHistoryList(HISTORY_LIST_SIZE)
+      }, 8000)
+    } else {
+      fetchHistoryList(HISTORY_LIST_SIZE)
+    }
+    startPolling()
+    // Pause polling when page is hidden (mobile screen off / tab switch)
+    document.addEventListener('visibilitychange', handleVisibilityChange)
   })
 
   onUnmounted(() => {
-    if (countdownTimer) clearInterval(countdownTimer)
-    if (infoPollTimer) clearInterval(infoPollTimer)
-    if (historyPollTimer) clearInterval(historyPollTimer)
+    stopPolling()
+    document.removeEventListener('visibilitychange', handleVisibilityChange)
   })
 
   // Watch for lotCode changes to reload data for the new game
@@ -219,6 +268,16 @@ export function useLotteryData(lotCodeRef: Ref<number>) {
     // Fetch data for the new game immediately
     fetchLotteryInfo()
     fetchHistoryList()
+    if (isMobileClient) {
+      if (fullHistoryBootstrapTimer) {
+        clearTimeout(fullHistoryBootstrapTimer)
+      }
+      fullHistoryBootstrapTimer = setTimeout(() => {
+        fetchHistoryList(HISTORY_LIST_SIZE)
+      }, 6000)
+    } else {
+      fetchHistoryList(HISTORY_LIST_SIZE)
+    }
   })
 
   return {

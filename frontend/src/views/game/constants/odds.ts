@@ -82,6 +82,14 @@ export const summaryTabs: Array<{ key: SummaryKey; label: string }> = [
   { key: 'parity', label: '和值单双' },
 ]
 
+// SSC summary road tabs (road bead pattern with run-length grouping)
+export type SscSummaryKey = 'size' | 'parity' | 'dragonTiger'
+export const sscSummaryTabs: Array<{ key: SscSummaryKey; label: string }> = [
+  { key: 'size', label: '总和大小' },
+  { key: 'parity', label: '总和单双' },
+  { key: 'dragonTiger', label: '龙虎和' },
+]
+
 export const SUMMARY_CELL_COUNT = 30
 export const HISTORY_LIST_SIZE = 200
 

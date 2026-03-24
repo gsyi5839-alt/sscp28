@@ -1,16 +1,16 @@
 <script setup lang="ts">
-import type { SummaryKey } from '../constants/odds'
+import type { SummaryKey, SscSummaryKey } from '../constants/odds'
 
 interface Props {
-  summaryTabs: Array<{ key: SummaryKey; label: string }>
-  activeSummaryKey: SummaryKey
+  summaryTabs: Array<{ key: SummaryKey | SscSummaryKey; label: string }>
+  activeSummaryKey: SummaryKey | SscSummaryKey
   activeSummaryValues: any[]
 }
 
 const props = defineProps<Props>()
 
 const emit = defineEmits<{
-  'tabClick': [key: SummaryKey]
+  'tabClick': [key: SummaryKey | SscSummaryKey | string]
 }>()
 </script>
 

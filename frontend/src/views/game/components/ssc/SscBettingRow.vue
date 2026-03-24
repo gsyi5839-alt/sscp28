@@ -5,6 +5,7 @@
  * Used for 第一球~第五球 sections, each with 大/小/单/双 options.
  */
 import type { SscBetItem } from '../../constants/sscOdds'
+import { getBlueBallSrc } from '../../composables/useOddsStyles'
 
 interface Props {
   /** Section title displayed in the gradient header (e.g., '第一球') */
@@ -21,6 +22,8 @@ interface Props {
   keyPrefix: string
   /** Whether this is the first row (controls top border) */
   isFirst?: boolean
+  /** Previous draw ball number for this position (0-9), shown as blue ball icon */
+  ballNumber?: number | null
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -65,6 +68,12 @@ const onAmountChange = (label: string, val: number | undefined) => {
       :class="{ 'ssc-row-header--first': isFirst }"
     >
       {{ title }}
+      <img
+        v-if="ballNumber != null"
+        :src="getBlueBallSrc(ballNumber)"
+        class="ssc-header-ball"
+        :alt="String(ballNumber)"
+      />
     </div>
 
     <!-- Betting cells row: 4 items in a horizontal line -->
@@ -128,6 +137,14 @@ const onAmountChange = (label: string, val: number | undefined) => {
 /* First header has top border */
 .ssc-row-header--first {
   border-top: 1px solid var(--bw-border-color, #efba84);
+}
+
+/* Blue ball icon in header */
+.ssc-header-ball {
+  width: 26px;
+  height: 26px;
+  margin-left: 6px;
+  vertical-align: middle;
 }
 
 /* Row of 4 betting cells */

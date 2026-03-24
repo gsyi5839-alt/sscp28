@@ -19,6 +19,8 @@ interface Props {
   isSealed: boolean
   /** Quick mode: 'quick' hides input boxes, 'normal' shows them */
   quickMode: 'quick' | 'normal'
+  /** Previous draw balls (5 numbers for SSC) */
+  preDrawBalls: number[]
 }
 
 defineProps<Props>()
@@ -70,6 +72,7 @@ const isSelectedRef = ref(isKeySelected)
       :amounts="amounts"
       :key-prefix="`ball${idx + 1}`"
       :is-first="idx === 0"
+      :ball-number="preDrawBalls[idx] ?? null"
       v-model:isSelected="isSelectedRef"
       @toggle="toggleSelect"
       @ensure="ensureSelected"

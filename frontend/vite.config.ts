@@ -43,13 +43,37 @@ export default defineConfig({
     }
   },
   build: {
-    // Important: outDir must be separate from root/publicDir and cannot point to parent directory of root, otherwise Vite will warn about risk of overwriting source code
     // Output to frontend/dist uniformly here; then safely sync to site root directory through npm script.
     outDir: 'dist',
     assetsDir: 'assets',
     sourcemap: false,
     minify: 'esbuild',
-    // dist directory can be safely cleared
-    emptyOutDir: true
+    emptyOutDir: true,
+    // Target modern mobile browsers for smaller output
+    target: 'es2020',
+    // Warn when chunks exceed 300KB
+    chunkSizeWarningLimit: 300,
+    cssCodeSplit: true,
+    rollupOptions: {
+      output: {
+        // Split vendor chunks for better caching on mobile
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            // Element Plus is the largest dependency, isolate it
+            if (id.includes('element-plus')) return 'vendor-element'
+            // Vue core libraries
+            if (id.includes('vue') || id.includes('pinia') || id.includes('vue-router')) return 'vendor-vue'
+            // All other node_modules
+            return 'vendor-misc'
+          }
+          // Game module (composables + constants + game components)
+          if (id.includes('/views/game/')) return 'game-module'
+        },
+        // Use hashed filenames for long-term caching
+        chunkFileNames: 'assets/js/[name]-[hash].js',
+        entryFileNames: 'assets/js/[name]-[hash].js',
+        assetFileNames: 'assets/[ext]/[name]-[hash].[ext]',
+      }
+    }
   }
 })

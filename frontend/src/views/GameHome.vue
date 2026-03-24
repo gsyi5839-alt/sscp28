@@ -1,27 +1,30 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, defineAsyncComponent, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import GameHeader from '@/components/GameHeader.vue'
 import MemberSidebar from '@/components/MemberSidebar.vue'
-import NoticeDialog from '@/components/NoticeDialog.vue'
-import DrawResults from '@/views/DrawResults.vue'
 
-// Child components
+// Async-load heavy child components for faster initial render on mobile
+const DrawResults = defineAsyncComponent(() => import('@/views/DrawResults.vue'))
+const RecentDrawsDialog = defineAsyncComponent(() => import('./game/components/RecentDrawsDialog.vue'))
+const SscTwoSidePanel = defineAsyncComponent(() => import('./game/components/ssc/SscTwoSidePanel.vue'))
+const NoticeDialog = defineAsyncComponent(() => import('@/components/NoticeDialog.vue'))
+const BettingBalls = defineAsyncComponent(() => import('./game/components/BettingBalls.vue'))
+const NoticeSection = defineAsyncComponent(() => import('./game/components/NoticeSection.vue'))
+
+// Child components (lightweight, loaded synchronously)
 import LotteryHeader from './game/components/LotteryHeader.vue'
 import QuickBetBar from './game/components/QuickBetBar.vue'
-import BettingBalls from './game/components/BettingBalls.vue'
 import SummaryRoad from './game/components/SummaryRoad.vue'
 import AnnounceSidebar from './game/components/AnnounceSidebar.vue'
-import RecentDrawsDialog from './game/components/RecentDrawsDialog.vue'
 import FooterBar from './game/components/FooterBar.vue'
-import NoticeSection from './game/components/NoticeSection.vue'
-import SscTwoSidePanel from './game/components/ssc/SscTwoSidePanel.vue'
 
 // Composables
 import { useLotteryData } from './game/composables/useLotteryData'
 import { useBetting } from './game/composables/useBetting'
 import { useDragonLeaderboard } from './game/composables/useDragonLeaderboard'
 import { useSummaryRoad } from './game/composables/useSummaryRoad'
+import { useSscSummaryRoad } from './game/composables/useSscSummaryRoad'
 import { useRecentDraws } from './game/composables/useRecentDraws'
 import {
   sumGroups,
@@ -29,6 +32,7 @@ import {
   colorRows,
   patternRows,
   type SummaryKey,
+  type SscSummaryKey,
 } from './game/constants/odds'
 import { getBallSrc, sumOddTextStyle, twoSideOddTextStyle, colorOddTextStyle, patternOddTextStyle } from './game/composables/useOddsStyles'
 import { NOTICE_SHOWN_KEY } from './game/constants/notices'
@@ -36,6 +40,7 @@ import { getGameConfig, DEFAULT_GAME_KEY } from '@/utils/gameConfig'
 import { getSubNavForGame, getGameCategory } from '@/utils/gameSubNav'
 
 const route = useRoute()
+const isMobileClient = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
 
 // ─── Announcement Dialog ────────────────────────────────────────────────────────────────
 const showNoticeDialog = ref(false)
@@ -156,11 +161,32 @@ const {
 const { dragonList } = useDragonLeaderboard(historyIssues)
 
 // ─── Summary Road ───────────────────────────────────────────────────────────────────────
+// PC28 summary road (和值 / 和值大小 / 和值单双)
 const { summaryTabs, activeSummaryKey, activeSummaryValues, onSummaryTabClick } = useSummaryRoad(
   historyIssues,
   getIssueSum,
   activeGameCategory
 )
+// SSC summary road (总和大小 / 总和单双 / 龙虎和) with road bead pattern
+const {
+  sscSummaryTabs,
+  activeSscSummaryKey,
+  activeSscSummaryValues,
+  onSscSummaryTabClick,
+} = useSscSummaryRoad(historyIssues, getIssueSum)
+
+// Unified summary props that switch based on game category
+const isSscGame = computed(() => activeGameCategory.value === 'ssc')
+const currentSummaryTabs = computed(() => isSscGame.value ? sscSummaryTabs : summaryTabs)
+const currentSummaryKey = computed(() => isSscGame.value ? activeSscSummaryKey.value : activeSummaryKey.value)
+const currentSummaryValues = computed(() => isSscGame.value ? activeSscSummaryValues.value : activeSummaryValues.value)
+const handleSummaryTabClick = (key: string) => {
+  if (isSscGame.value) {
+    onSscSummaryTabClick(key as SscSummaryKey)
+  } else {
+    onSummaryTabClick(key as SummaryKey)
+  }
+}
 
 // ─── Recent Draws Dialog ────────────────────────────────────────────────────────────────
 const {
@@ -193,7 +219,8 @@ onMounted(() => {
   // Show notice after short delay (only once per session)
   const hasShownNotice = sessionStorage.getItem(NOTICE_SHOWN_KEY)
   if (!hasShownNotice) {
-    setTimeout(() => { showNoticeDialog.value = true }, 500)
+    const noticeDelayMs = isMobileClient ? 1800 : 500
+    setTimeout(() => { showNoticeDialog.value = true }, noticeDelayMs)
   }
 })
 
@@ -237,6 +264,11 @@ onUnmounted(() => {
               <!-- System closed overlay (China time daily 06:00-07:00) -->
               <div v-if="isSystemClosed" class="system-closed-overlay">
                 <img src="@/assets/通用/bg.png" alt="系统封盘" class="system-closed-bg" />
+              </div>
+
+              <!-- Sealed overlay: covers betting panel + right sidebar (830 x 732.84) -->
+              <div v-if="isSealed && !isSystemClosed && activeContentView === 'game'" class="sealed-overlay">
+                <img src="@/assets/通用/bg.png" alt="封盘" class="sealed-overlay-bg" />
               </div>
 
               <!-- Lottery header with countdown -->
@@ -391,13 +423,15 @@ onUnmounted(() => {
               v-show="activeBetTab === 'twoSide' && activeGameCategory === 'ssc'"
               :is-sealed="isSealed"
               :quick-mode="quickMode"
+              :pre-draw-balls="preDrawBalls"
             />
 
-            <!-- 1-3 balls betting panel (PC28 only) -->
+            <!-- Balls betting panel: PC28 (1-3球) / SSC (1-5球) -->
             <BettingBalls
-              v-show="activeBetTab === 'balls'"
+              v-show="activeBetTab === 'balls' && (activeGameCategory === 'pc28' || activeGameCategory === 'ssc')"
               :is-sealed="isSealed"
               :quick-mode="quickMode"
+              :game-category="activeGameCategory"
               v-model:ballAmounts="ballAmounts"
               :is-ball-selected="isBallSelected"
               @toggle-ball="toggleBallSelect"
@@ -412,10 +446,10 @@ onUnmounted(() => {
 
               <!-- Summary road -->
               <SummaryRoad
-                :summary-tabs="summaryTabs"
-                :active-summary-key="activeSummaryKey"
-                :active-summary-values="activeSummaryValues"
-                @tab-click="onSummaryTabClick"
+                :summary-tabs="currentSummaryTabs"
+                :active-summary-key="currentSummaryKey"
+                :active-summary-values="currentSummaryValues"
+                @tab-click="handleSummaryTabClick"
               />
             </div>
 
@@ -452,6 +486,7 @@ onUnmounted(() => {
 
     <!-- Notice dialog -->
     <NoticeDialog
+      v-if="showNoticeDialog"
       v-model:visible="showNoticeDialog"
       @close="handleCloseNotice"
     />
@@ -529,8 +564,6 @@ onUnmounted(() => {
   min-height: 733px;
   margin: 5px 0 30px;
   position: relative;
-  overflow: hidden;
-  contain: paint;
 }
 
 /* Section titles */
@@ -993,6 +1026,27 @@ onUnmounted(() => {
   margin-top: 10px;
   background: transparent;
   border-color: transparent;
+}
+
+/* Sealed overlay (rgba(53,28,12,.6), 830x732.84, z-index 2001) */
+.sealed-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 830px;
+  height: 732.84px;
+  background: var(--bw-header-bg-opacity, rgba(53, 28, 12, .6));
+  z-index: 2001;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sealed-overlay-bg {
+  width: 500px;
+  max-width: 90%;
+  opacity: 0.8;
 }
 
 /* System closed overlay */

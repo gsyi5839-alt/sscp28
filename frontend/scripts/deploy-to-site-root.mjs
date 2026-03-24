@@ -1,10 +1,16 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
+import { execFileSync } from 'node:child_process'
 
-const SITE_ROOT = process.env.SITE_ROOT || '/www/wwwroot/www.bcbbs3.cn'
+const STANDARD_SITE_ROOT = '/www/wwwroot/www.bcbbs3.cn'
+const SITE_ROOT = process.env.SITE_ROOT || STANDARD_SITE_ROOT
+const ALLOW_CUSTOM_SITE_ROOT = process.env.ALLOW_CUSTOM_SITE_ROOT === 'true'
 const FRONTEND_DIR = path.resolve(process.cwd())
+const PROJECT_ROOT = path.resolve(FRONTEND_DIR, '..')
 const DIST_DIR = path.resolve(FRONTEND_DIR, 'dist')
+const META_FILE = path.join(SITE_ROOT, 'deploy-meta.json')
+const DEPLOY_LOCK_FILE = path.join(SITE_ROOT, '.deploy.lock')
 
 async function exists(p) {
   try {
@@ -37,55 +43,280 @@ async function copyDir(srcDir, destDir) {
   )
 }
 
-async function main() {
-  if (!(await exists(DIST_DIR))) {
-    throw new Error(`dist 不存在：${DIST_DIR}（请先运行 npm run build）`)
+async function listFilesRecursively(dir) {
+  if (!(await exists(dir))) return []
+  const out = []
+
+  async function walk(currentDir) {
+    const entries = await fs.readdir(currentDir, { withFileTypes: true })
+    for (const ent of entries) {
+      const full = path.join(currentDir, ent.name)
+      if (ent.isDirectory()) {
+        await walk(full)
+      } else if (ent.isFile()) {
+        out.push(full)
+      }
+    }
   }
 
-  // dist 根目录内容（index.html、favicon、images、vite.svg 等来自 publicDir 的内容）
-  // 之前只同步了 index.html + assets，容易遗漏 publicDir 的文件更新，属于潜在 BUG。
-  const distEntries = await fs.readdir(DIST_DIR, { withFileTypes: true })
+  await walk(dir)
+  return out
+}
 
-  const srcAssets = path.join(DIST_DIR, 'assets')
-  const destAssets = path.join(SITE_ROOT, 'assets')
+async function countFilesRecursively(dir) {
+  const files = await listFilesRecursively(dir)
+  return files.length
+}
 
-  if (!(await exists(srcAssets))) throw new Error(`缺少 ${srcAssets}`)
+function nowStamp() {
+  return new Date().toISOString().replace(/[:.]/g, '-')
+}
 
-  // Clean old assets before deploying new ones.
-  // Old non-destructive strategy caused assets to accumulate (7000+ files),
-  // and browsers loading cached index.html would resolve stale chunk hashes,
-  // making the site appear "rolled back" to an old version.
-  // Nginx already sets no-cache on index.html, so users always get the latest
-  // index.html which references the correct new chunk hashes.
-  if (await exists(destAssets)) {
-    console.log(`Cleaning old assets in ${destAssets} ...`)
-    await rmrf(destAssets)
+function getGitCommit() {
+  try {
+    return execFileSync('git', ['-C', PROJECT_ROOT, 'rev-parse', '--short', 'HEAD'], {
+      encoding: 'utf8'
+    }).trim()
+  } catch {
+    return 'unknown'
   }
-  await copyDir(srcAssets, destAssets)
-  
-  // Log deployed asset count for verification
-  const deployedAssets = await fs.readdir(destAssets)
-  console.log(`Deployed ${deployedAssets.length} asset files (clean deploy)`)
+}
 
-  // 同步 dist 根目录的其它文件/目录到站点根目录（不做删除，只覆盖/新增）
+async function readText(filePath) {
+  return fs.readFile(filePath, 'utf8')
+}
+
+async function assertSiteRootPolicy() {
+  if (SITE_ROOT !== STANDARD_SITE_ROOT && !ALLOW_CUSTOM_SITE_ROOT) {
+    throw new Error(
+      `非标准部署目录被拒绝：${SITE_ROOT}。如需覆盖，请设置 ALLOW_CUSTOM_SITE_ROOT=true`
+    )
+  }
+}
+
+async function acquireDeployLock() {
+  try {
+    const payload = {
+      pid: process.pid,
+      startedAt: new Date().toISOString(),
+      siteRoot: SITE_ROOT
+    }
+    await fs.writeFile(DEPLOY_LOCK_FILE, `${JSON.stringify(payload)}\n`, {
+      encoding: 'utf8',
+      flag: 'wx'
+    })
+  } catch (err) {
+    if (err && typeof err === 'object' && 'code' in err && err.code === 'EEXIST') {
+      throw new Error(`检测到进行中的部署任务，请稍后重试。锁文件：${DEPLOY_LOCK_FILE}`)
+    }
+    throw err
+  }
+}
+
+async function releaseDeployLock() {
+  await rmrf(DEPLOY_LOCK_FILE)
+}
+
+async function cleanupTempAssetDirs() {
+  const entries = await fs.readdir(SITE_ROOT, { withFileTypes: true })
+  const tempDirs = entries
+    .filter((ent) => ent.isDirectory() && (ent.name.startsWith('.assets-next-') || ent.name.startsWith('.assets-prev-')))
+    .map((ent) => path.join(SITE_ROOT, ent.name))
+
+  await Promise.all(tempDirs.map((dir) => rmrf(dir)))
+}
+
+function extractAssetRefs(indexHtml) {
+  const refs = new Set()
+  const re = /(?:src|href)=["'](?:\.\/|\/)?(assets\/[^"'?#]+(?:\?[^"']*)?)["']/g
+  let match
+  while ((match = re.exec(indexHtml)) !== null) {
+    refs.add(match[1])
+  }
+  return [...refs]
+}
+
+async function validateDistIntegrity(distDir) {
+  const distIndex = path.join(distDir, 'index.html')
+  const distAssets = path.join(distDir, 'assets')
+
+  if (!(await exists(distIndex))) {
+    throw new Error(`缺少构建产物：${distIndex}`)
+  }
+  if (!(await exists(distAssets))) {
+    throw new Error(`缺少构建产物：${distAssets}`)
+  }
+
+  const html = await readText(distIndex)
+  const refs = extractAssetRefs(html)
+  const missing = []
+
   await Promise.all(
-    distEntries
+    refs.map(async (ref) => {
+      const fp = path.join(distDir, ref)
+      if (!(await exists(fp))) {
+        missing.push(ref)
+      }
+    })
+  )
+
+  if (missing.length > 0) {
+    throw new Error(`dist 完整性校验失败，index.html 引用了不存在的资源：${missing.join(', ')}`)
+  }
+
+  return {
+    distIndex,
+    distAssets,
+    referencedAssetCount: refs.length
+  }
+}
+
+async function atomicSwapAssets(srcAssets, destAssets) {
+  const stamp = nowStamp()
+  const stagedAssets = path.join(SITE_ROOT, `.assets-next-${stamp}`)
+  const backupAssets = path.join(SITE_ROOT, `.assets-prev-${stamp}`)
+
+  await rmrf(stagedAssets)
+  await rmrf(backupAssets)
+
+  await copyDir(srcAssets, stagedAssets)
+
+  try {
+    if (await exists(destAssets)) {
+      await fs.rename(destAssets, backupAssets)
+    }
+    await fs.rename(stagedAssets, destAssets)
+    await rmrf(backupAssets)
+  } catch (err) {
+    // Best-effort rollback for assets when swap fails.
+    if (!(await exists(destAssets)) && (await exists(backupAssets))) {
+      await fs.rename(backupAssets, destAssets)
+    }
+    await rmrf(stagedAssets)
+    throw err
+  }
+}
+
+async function syncDistRootEntries(distDir) {
+  const entries = await fs.readdir(distDir, { withFileTypes: true })
+  await Promise.all(
+    entries
       .filter((ent) => ent.name !== 'assets')
       .map(async (ent) => {
-        const src = path.join(DIST_DIR, ent.name)
+        const src = path.join(distDir, ent.name)
         const dest = path.join(SITE_ROOT, ent.name)
         if (ent.isDirectory()) return copyDir(src, dest)
         if (ent.isFile()) return copyFile(src, dest)
       })
   )
+}
 
-  // eslint-disable-next-line no-console
-  console.log(`Deployed frontend to ${SITE_ROOT}`)
+async function verifyDeployedIndex(siteRoot) {
+  const deployedIndex = path.join(siteRoot, 'index.html')
+  if (!(await exists(deployedIndex))) {
+    throw new Error(`部署后校验失败：缺少 ${deployedIndex}`)
+  }
+
+  const html = await readText(deployedIndex)
+  const refs = extractAssetRefs(html)
+  const missing = []
+
+  await Promise.all(
+    refs.map(async (ref) => {
+      const fp = path.join(siteRoot, ref)
+      if (!(await exists(fp))) {
+        missing.push(ref)
+      }
+    })
+  )
+
+  if (missing.length > 0) {
+    throw new Error(`部署后校验失败，index.html 引用了不存在的线上资源：${missing.join(', ')}`)
+  }
+
+  return refs.length
+}
+
+async function writeDeployMeta({ assetFileCount, assetDirCount, referencedAssetCount }) {
+  const payload = {
+    deployedAt: new Date().toISOString(),
+    siteRoot: SITE_ROOT,
+    gitCommit: getGitCommit(),
+    // Keep assetCount for backward compatibility; now it means real file count.
+    assetCount: assetFileCount,
+    assetFileCount,
+    assetDirCount,
+    referencedAssetCount
+  }
+
+  await fs.writeFile(META_FILE, `${JSON.stringify(payload, null, 2)}\n`, 'utf8')
+}
+
+async function runHealthCheck() {
+  const url = process.env.DEPLOY_HEALTHCHECK_URL
+  if (!url) return
+
+  console.log(`Running health check: ${url}`)
+  const resp = await fetch(url, {
+    method: 'GET',
+    headers: {
+      'Cache-Control': 'no-cache'
+    }
+  })
+
+  if (!resp.ok) {
+    throw new Error(`健康检查失败：${url} 返回 ${resp.status}`)
+  }
+
+  console.log(`Health check passed: ${resp.status}`)
+}
+
+async function main() {
+  await assertSiteRootPolicy()
+  if (!(await exists(DIST_DIR))) {
+    throw new Error(`dist 不存在：${DIST_DIR}（请先运行 npm run build）`)
+  }
+  await acquireDeployLock()
+
+  try {
+    await cleanupTempAssetDirs()
+    const { distAssets } = await validateDistIntegrity(DIST_DIR)
+    const distAssetFileCount = await countFilesRecursively(distAssets)
+
+    const destAssets = path.join(SITE_ROOT, 'assets')
+    console.log(`Deploying assets to ${destAssets} ...`)
+    await atomicSwapAssets(distAssets, destAssets)
+
+    const deployedAssetFileCount = await countFilesRecursively(destAssets)
+    if (deployedAssetFileCount !== distAssetFileCount) {
+      throw new Error(
+        `部署后资源文件数不一致：dist=${distAssetFileCount}, deployed=${deployedAssetFileCount}`
+      )
+    }
+
+    const deployedAssetTopEntries = await fs.readdir(destAssets)
+    console.log(
+      `Deployed ${deployedAssetFileCount} asset files in ${deployedAssetTopEntries.length} top-level entries (atomic swap, no pre-clean required)`
+    )
+
+    await syncDistRootEntries(DIST_DIR)
+
+    const deployedRefs = await verifyDeployedIndex(SITE_ROOT)
+    await writeDeployMeta({
+      assetFileCount: deployedAssetFileCount,
+      assetDirCount: deployedAssetTopEntries.length,
+      referencedAssetCount: deployedRefs
+    })
+    await runHealthCheck()
+
+    console.log(`Deployed frontend to ${SITE_ROOT}`)
+    console.log(`Wrote deploy metadata: ${META_FILE}`)
+  } finally {
+    await releaseDeployLock()
+  }
 }
 
 main().catch((err) => {
-  // eslint-disable-next-line no-console
   console.error(err)
   process.exit(1)
 })
-

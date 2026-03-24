@@ -1,11 +1,14 @@
 <script setup lang="ts">
-import { getBallSrc } from '../composables/useOddsStyles'
+import { computed } from 'vue'
+import { getBallSrc, getBlueBallSrc } from '../composables/useOddsStyles'
+import type { GameCategory } from '@/utils/gameSubNav'
 
 interface Props {
   isSealed: boolean
   quickMode: 'quick' | 'normal'
   ballAmounts: Record<string, string>
   isBallSelected: (key: string) => boolean
+  gameCategory?: GameCategory
 }
 
 const props = defineProps<Props>()
@@ -16,13 +19,19 @@ const emit = defineEmits<{
   'update:ballAmounts': [val: Record<string, string>]
 }>()
 
-const colNames = ['第一球', '第二球', '第三球']
+const isSscGame = computed(() => props.gameCategory === 'ssc')
+const colNames = computed(() => (
+  isSscGame.value
+    ? ['第一球', '第二球', '第三球', '第四球', '第五球']
+    : ['第一球', '第二球', '第三球']
+))
 const ballLabels = ['大', '小', '单', '双']
+const getDisplayBallSrc = (num: number) => (isSscGame.value ? getBlueBallSrc(num) : getBallSrc(num))
 </script>
 
 <template>
   <div class="balls-panel">
-    <div class="balls-grid">
+    <div class="balls-grid" :class="{ 'balls-grid--ssc': isSscGame }">
       <div
         v-for="(colName, colIdx) in colNames"
         :key="colIdx"
@@ -40,7 +49,7 @@ const ballLabels = ['大', '小', '单', '双']
           @click="$emit('toggleBall', `${colIdx}_${n - 1}`)"
         >
           <div class="balls-ball-cell">
-            <img :src="getBallSrc(n - 1)" class="ball-img balls-ball-img" :alt="String(n - 1)" />
+            <img :src="getDisplayBallSrc(n - 1)" class="ball-img balls-ball-img" :alt="String(n - 1)" />
           </div>
           <div class="balls-odd-cell"><b class="text-red">{{ isSealed ? '--' : '9.7' }}</b></div>
           <!-- Input area: only render in normal mode to avoid empty flex space in quick mode -->
@@ -104,6 +113,11 @@ const ballLabels = ['大', '小', '单', '双']
 
 .balls-col:last-child {
   border-right: none;
+}
+
+.balls-grid--ssc .balls-col {
+  flex: 0 0 20%;
+  width: 20%;
 }
 
 .balls-col-header {
@@ -207,5 +221,11 @@ const ballLabels = ['大', '小', '单', '双']
   font-weight: bold;
   background: var(--bw-form-item-label-bg-color, #fff1e4);
   box-sizing: border-box;
+}
+
+.balls-grid--ssc .balls-ball-cell,
+.balls-grid--ssc .balls-label-cell {
+  width: 30px;
+  flex: 0 0 30px;
 }
 </style>

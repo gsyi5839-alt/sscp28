@@ -66,10 +66,6 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOriginPatterns(List.of(
             "http://localhost:*",
-            "https://www.bcbbs3.cn",
-            "http://www.bcbbs3.cn",
-            "https://bcbbs3.cn",
-            "http://bcbbs3.cn",
             "https://18118bw.cn",
             "http://18118bw.cn",
             "https://www.18118bw.cn",
@@ -100,4 +96,3 @@ public class SecurityConfig {
     }
 
 }
-
