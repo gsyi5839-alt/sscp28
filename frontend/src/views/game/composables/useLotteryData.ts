@@ -26,12 +26,12 @@ export function useLotteryData(lotCodeRef: Ref<number>) {
   const drawCountdown = ref('--:--:--')
   const isDrawing = ref(false)
 
-  // System closed status (China time daily 06:00-07:00)
+  // System closed status (local time daily 06:00-07:00)
   const currentTime = ref(new Date())
   const isSystemClosed = computed(() => {
     const now = currentTime.value
-    const chinaHour = (now.getUTCHours() + 8) % 24
-    return chinaHour >= 6 && chinaHour < 7
+    const minutesOfDay = now.getHours() * 60 + now.getMinutes()
+    return minutesOfDay >= 6 * 60 && minutesOfDay < 7 * 60
   })
 
   // History data
@@ -66,9 +66,31 @@ export function useLotteryData(lotCodeRef: Ref<number>) {
   })
 
   // Helper functions
-  const parseTimestamp = (str: string | null | undefined): number => {
-    if (!str) return 0
-    return new Date(str.replace(' ', 'T') + '+08:00').getTime()
+  const parseTimestamp = (value: unknown): number => {
+    if (value == null) return 0
+
+    if (typeof value === 'number') {
+      if (!Number.isFinite(value)) return 0
+      // Accept both milliseconds and seconds epoch values.
+      return value > 1e12 ? value : value * 1000
+    }
+
+    if (typeof value !== 'string') return 0
+    const trimmed = value.trim()
+    if (!trimmed) return 0
+
+    // Accept numeric timestamp string.
+    if (/^\d+$/.test(trimmed)) {
+      const numeric = Number(trimmed)
+      if (!Number.isFinite(numeric)) return 0
+      return numeric > 1e12 ? numeric : numeric * 1000
+    }
+
+    const normalized = trimmed.includes('T') ? trimmed : trimmed.replace(' ', 'T')
+    const hasTimezone = /([zZ]|[+-]\d{2}:\d{2})$/.test(normalized)
+    const candidate = hasTimezone ? normalized : `${normalized}+08:00`
+    const ts = Date.parse(candidate)
+    return Number.isNaN(ts) ? 0 : ts
   }
 
   const fmtCountdown = (diffMs: number): string => {
@@ -264,7 +286,6 @@ export function useLotteryData(lotCodeRef: Ref<number>) {
     currentDrawIssue = ''
     currentPreDrawIssue = ''
     isFetching = false
-
     // Fetch data for the new game immediately
     fetchLotteryInfo()
     fetchHistoryList()

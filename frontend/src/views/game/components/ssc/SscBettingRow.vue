@@ -258,11 +258,21 @@ const onAmountChange = (label: string, val: number | undefined) => {
 /* el-input-number: match original design width 50px, small size, no controls */
 .ssc-number-input {
   width: 50px !important;
+  --el-input-border-color: #abb2c5;
+  --el-input-border-radius: 4px;
 }
 
 /* Override el-input-number inner input styles */
 .ssc-number-input :deep(.el-input__wrapper) {
+  height: 22px;
+  min-height: 22px;
   padding: 0 4px;
+  border-radius: 4px;
+  box-shadow: 0 0 0 1px #abb2c5 inset;
+}
+
+.ssc-number-input :deep(.el-input__wrapper.is-focus) {
+  box-shadow: 0 0 0 1px var(--el-color-primary, #5c2e0d) inset;
 }
 
 .ssc-number-input :deep(.el-input__inner) {

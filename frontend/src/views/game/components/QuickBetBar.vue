@@ -100,18 +100,34 @@ const onExplainClick = () => {
 }
 
 .amount-input {
-  width: 55px;
-  height: 24px;
-  border: 1px solid #a0b4d8;
-  border-radius: 0.5px;
+  width: 50px;
+  height: 22px;
+  padding: 0 4px;
+  border: 1px solid #abb2c5;
+  border-radius: 4px;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: textfield;
+  background: #ffffff;
+  color: #000;
+  font-size: 12px;
+  line-height: 22px;
+  text-align: center;
   box-sizing: border-box;
+}
+
+.amount-input:disabled {
+  opacity: 1;
+  background: #ffffff;
+  color: #000;
+  border-color: #abb2c5;
 }
 
 .amount-input:focus,
 .amount-input:focus-visible {
   outline: none;
   box-shadow: none;
-  border-color: #000;
+  border-color: var(--el-color-primary, #5c2e0d);
 }
 
 .btn {

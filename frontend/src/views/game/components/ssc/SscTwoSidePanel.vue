@@ -21,6 +21,8 @@ interface Props {
   quickMode: 'quick' | 'normal'
   /** Previous draw balls (5 numbers for SSC) */
   preDrawBalls: number[]
+  /** Whether to show blue ball icon beside each row title */
+  showHeaderBall?: boolean
 }
 
 defineProps<Props>()
@@ -72,7 +74,7 @@ const isSelectedRef = ref(isKeySelected)
       :amounts="amounts"
       :key-prefix="`ball${idx + 1}`"
       :is-first="idx === 0"
-      :ball-number="preDrawBalls[idx] ?? null"
+      :ball-number="showHeaderBall ? (preDrawBalls[idx] ?? null) : null"
       v-model:isSelected="isSelectedRef"
       @toggle="toggleSelect"
       @ensure="ensureSelected"

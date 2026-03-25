@@ -107,7 +107,6 @@ const emit = defineEmits<{
   display: flex;
   align-items: stretch;
   border: 1px solid var(--bw-border-color, #efba84);
-  border-top: none;
   background: var(--bw-bg-3, #fff7ef);
   box-sizing: border-box;
   text-align: center;
@@ -126,10 +125,6 @@ const emit = defineEmits<{
   border-right-width: 1px;
   border-right-style: solid;
   border-color: var(--el-border-color, var(--bw-border-color, #efba84));
-  border-top-color: rgb(239, 186, 132);
-  border-right-color: rgb(239, 186, 132);
-  border-bottom-color: rgb(239, 186, 132);
-  border-left-color: rgb(239, 186, 132);
   user-select: none;
 }
 
@@ -215,10 +210,6 @@ const emit = defineEmits<{
   border-right-width: 1px;
   border-right-style: solid;
   border-color: var(--el-border-color, var(--bw-border-color, #efba84));
-  border-top-color: rgb(239, 186, 132);
-  border-right-color: rgb(239, 186, 132);
-  border-bottom-color: rgb(239, 186, 132);
-  border-left-color: rgb(239, 186, 132);
 }
 
 .summary-cell-inner {

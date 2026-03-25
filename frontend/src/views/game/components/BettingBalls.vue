@@ -202,12 +202,15 @@ const getDisplayBallSrc = (num: number) => (isSscGame.value ? getBlueBallSrc(num
 
 .balls-cell-input {
   width: 50px;
-  height: 20px;
-  border: 1px solid #a0b4d8;
-  border-radius: 6px;
+  height: 22px;
+  padding: 0 4px;
+  border: 1px solid #abb2c5;
+  border-radius: 4px;
   background: #ffffff;
+  color: #000;
   text-align: center;
   font-size: 12px;
+  line-height: 22px;
   box-sizing: border-box;
 }
 

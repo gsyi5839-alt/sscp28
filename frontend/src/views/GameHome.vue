@@ -36,11 +36,12 @@ import {
 } from './game/constants/odds'
 import { getBallSrc, sumOddTextStyle, twoSideOddTextStyle, colorOddTextStyle, patternOddTextStyle } from './game/composables/useOddsStyles'
 import { NOTICE_SHOWN_KEY } from './game/constants/notices'
-import { getGameConfig, DEFAULT_GAME_KEY } from '@/utils/gameConfig'
+import { getGameConfig, DEFAULT_GAME_KEY, GAME_CONFIG_MAP } from '@/utils/gameConfig'
 import { getSubNavForGame, getGameCategory } from '@/utils/gameSubNav'
 
 const route = useRoute()
 const isMobileClient = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+const ACTIVE_GAME_STORAGE_KEY = 'bw-member-active-game-key'
 
 // ─── Announcement Dialog ────────────────────────────────────────────────────────────────
 const showNoticeDialog = ref(false)
@@ -88,6 +89,7 @@ watch(activeBetTab, () => {
 // Reset bet tab to default when switching games
 watch(activeGameKey, () => {
   activeBetTab.value = 'twoSide'
+  localStorage.setItem(ACTIVE_GAME_STORAGE_KEY, activeGameKey.value)
 })
 
 watch(activeContentView, (view) => {
@@ -203,6 +205,11 @@ const {
 
 // ─── Lifecycle ──────────────────────────────────────────────────────────────────────────
 onMounted(() => {
+  const savedGameKey = localStorage.getItem(ACTIVE_GAME_STORAGE_KEY)
+  if (savedGameKey && Object.prototype.hasOwnProperty.call(GAME_CONFIG_MAP, savedGameKey)) {
+    activeGameKey.value = savedGameKey
+  }
+
   document.title = '游戏首页'
   const favicon = document.getElementById('favicon') as HTMLLinkElement
   if (favicon) favicon.href = '/favicon.png'
@@ -261,16 +268,10 @@ onUnmounted(() => {
 
             <!-- Game panel -->
             <div v-else-if="!showNoticeList" key="game-panel-view" class="game-panel">
-              <!-- System closed overlay (China time daily 06:00-07:00) -->
+              <!-- System closed overlay (local time daily 06:00-07:00) -->
               <div v-if="isSystemClosed" class="system-closed-overlay">
                 <img src="@/assets/通用/bg.png" alt="系统封盘" class="system-closed-bg" />
               </div>
-
-              <!-- Sealed overlay: covers betting panel + right sidebar (830 x 732.84) -->
-              <div v-if="isSealed && !isSystemClosed && activeContentView === 'game'" class="sealed-overlay">
-                <img src="@/assets/通用/bg.png" alt="封盘" class="sealed-overlay-bg" />
-              </div>
-
               <!-- Lottery header with countdown -->
               <LotteryHeader
                 :game-name="activeGameName"
@@ -424,6 +425,7 @@ onUnmounted(() => {
               :is-sealed="isSealed"
               :quick-mode="quickMode"
               :pre-draw-balls="preDrawBalls"
+              :show-header-ball="activeGameKey !== 'caSsc'"
             />
 
             <!-- Balls betting panel: PC28 (1-3球) / SSC (1-5球) -->
@@ -742,17 +744,33 @@ onUnmounted(() => {
 }
 
 .cell-input {
-  width: 45px;
-  height: 20px;
-  border: 1px solid #a0b4d8;
-  border-radius: 0.5px;
+  width: 50px;
+  height: 22px;
+  padding: 0 4px;
+  border: 1px solid #abb2c5;
+  border-radius: 4px;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: textfield;
+  background: #ffffff;
+  color: #000;
+  font-size: 12px;
+  line-height: 22px;
+  text-align: center;
   box-sizing: border-box;
+}
+
+.cell-input:disabled {
+  opacity: 1;
+  background: #ffffff;
+  color: #000;
+  border-color: #abb2c5;
 }
 
 .cell-input:focus {
   outline: none;
   box-shadow: none;
-  border-color: #000;
+  border-color: var(--el-color-primary, #5c2e0d);
 }
 
 /* Two side grid */
@@ -1011,7 +1029,7 @@ onUnmounted(() => {
 
 .pattern-item .cell-input {
   width: 50px;
-  height: 20px;
+  height: 22px;
 }
 
 /* Quick bar top - right-align */
