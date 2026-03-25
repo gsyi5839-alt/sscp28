@@ -5,12 +5,14 @@ import GameHeader from '@/components/GameHeader.vue'
 import MemberSidebar from '@/components/MemberSidebar.vue'
 
 // Async-load heavy child components for faster initial render on mobile
-const DrawResults = defineAsyncComponent(() => import('@/views/DrawResults.vue'))
-const RecentDrawsDialog = defineAsyncComponent(() => import('./game/components/RecentDrawsDialog.vue'))
-const SscTwoSidePanel = defineAsyncComponent(() => import('./game/components/ssc/SscTwoSidePanel.vue'))
-const NoticeDialog = defineAsyncComponent(() => import('@/components/NoticeDialog.vue'))
-const BettingBalls = defineAsyncComponent(() => import('./game/components/BettingBalls.vue'))
-const NoticeSection = defineAsyncComponent(() => import('./game/components/NoticeSection.vue'))
+const DrawResults = defineAsyncComponent(loadDrawResults)
+const RecentDrawsDialog = defineAsyncComponent(loadRecentDrawsDialog)
+const SscTwoSidePanel = defineAsyncComponent(loadSscTwoSidePanel)
+const SscBallPositionPanel = defineAsyncComponent(loadSscBallPositionPanel)
+const SscSingleBallPanel = defineAsyncComponent(loadSscSingleBallPanel)
+const NoticeDialog = defineAsyncComponent(loadNoticeDialog)
+const BettingBalls = defineAsyncComponent(loadBettingBalls)
+const NoticeSection = defineAsyncComponent(loadNoticeSection)
 
 // Child components (lightweight, loaded synchronously)
 import LotteryHeader from './game/components/LotteryHeader.vue'
@@ -37,11 +39,76 @@ import {
 import { getBallSrc, sumOddTextStyle, twoSideOddTextStyle, colorOddTextStyle, patternOddTextStyle } from './game/composables/useOddsStyles'
 import { NOTICE_SHOWN_KEY } from './game/constants/notices'
 import { getGameConfig, DEFAULT_GAME_KEY, GAME_CONFIG_MAP } from '@/utils/gameConfig'
-import { getSubNavForGame, getGameCategory } from '@/utils/gameSubNav'
+import { getSubNavForGame, getGameCategory, type GameCategory } from '@/utils/gameSubNav'
 
 const route = useRoute()
 const isMobileClient = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
 const ACTIVE_GAME_STORAGE_KEY = 'bw-member-active-game-key'
+const ACTIVE_BET_TAB_MAP_STORAGE_KEY = 'bw-member-active-bet-tab-map'
+
+function loadDrawResults() {
+  return import('@/views/DrawResults.vue')
+}
+
+function loadRecentDrawsDialog() {
+  return import('./game/components/RecentDrawsDialog.vue')
+}
+
+function loadSscTwoSidePanel() {
+  return import('./game/components/ssc/SscTwoSidePanel.vue')
+}
+
+function loadSscBallPositionPanel() {
+  return import('./game/components/ssc/SscBallPositionPanel.vue')
+}
+
+function loadSscSingleBallPanel() {
+  return import('./game/components/ssc/SscSingleBallPanel.vue')
+}
+
+function loadNoticeDialog() {
+  return import('@/components/NoticeDialog.vue')
+}
+
+function loadBettingBalls() {
+  return import('./game/components/BettingBalls.vue')
+}
+
+function loadNoticeSection() {
+  return import('./game/components/NoticeSection.vue')
+}
+
+const isValidBetTabForGame = (gameKey: string, tab: string): boolean => (
+  getSubNavForGame(gameKey).some(item => item.key === tab)
+)
+
+const readBetTabMap = (): Record<string, string> => {
+  try {
+    const raw = localStorage.getItem(ACTIVE_BET_TAB_MAP_STORAGE_KEY)
+    if (!raw) return {}
+    const parsed = JSON.parse(raw) as Record<string, string>
+    return parsed && typeof parsed === 'object' ? parsed : {}
+  } catch {
+    return {}
+  }
+}
+
+const writeBetTabMap = (map: Record<string, string>) => {
+  localStorage.setItem(ACTIVE_BET_TAB_MAP_STORAGE_KEY, JSON.stringify(map))
+}
+
+const getSavedBetTabForGame = (gameKey: string): string | null => {
+  const tab = readBetTabMap()[gameKey]
+  if (!tab) return null
+  return isValidBetTabForGame(gameKey, tab) ? tab : null
+}
+
+const saveBetTabForGame = (gameKey: string, tab: string) => {
+  if (!isValidBetTabForGame(gameKey, tab)) return
+  const map = readBetTabMap()
+  map[gameKey] = tab
+  writeBetTabMap(map)
+}
 
 // ─── Announcement Dialog ────────────────────────────────────────────────────────────────
 const showNoticeDialog = ref(false)
@@ -55,6 +122,19 @@ const handleCloseNotice = () => {
 // ─── Tab States ─────────────────────────────────────────────────────────────────────────
 const activeBetTab = ref<string>('twoSide')
 const activeContentView = ref<'game' | 'drawResults'>('game')
+const tabLoading = ref(false)
+const TAB_LOADING_VISIBLE_MS = 200
+const SSC_THIRD_LEVEL_TAB_KEYS = new Set([
+  'twoSide',
+  'balls',
+  'ball1',
+  'ball2',
+  'ball3',
+  'ball4',
+  'ball5',
+  'niuNiu',
+])
+let tabLoadingTimer: ReturnType<typeof setTimeout> | null = null
 
 // ─── Active Game Selection ───────────────────────────────────────────────────────────────
 // Synced with GameHeader via v-model:activeGameKey
@@ -65,12 +145,56 @@ const activeLotCode = computed(() => getGameConfig(activeGameKey.value).lotCode)
 const activeGameName = computed(() => getGameConfig(activeGameKey.value).gameName)
 const activeGameCategory = computed(() => getGameCategory(activeGameKey.value))
 
+const preloadCommonPanels = () => {
+  void Promise.all([
+    loadDrawResults(),
+    loadRecentDrawsDialog(),
+    loadNoticeSection(),
+    loadNoticeDialog(),
+  ])
+}
+
+const preloadTabPanelsByCategory = (category: GameCategory) => {
+  if (category === 'ssc') {
+    void Promise.all([
+      loadBettingBalls(),
+      loadSscTwoSidePanel(),
+      loadSscBallPositionPanel(),
+      loadSscSingleBallPanel(),
+    ])
+    return
+  }
+
+  // PC28 and racing both use the balls panel.
+  void loadBettingBalls()
+}
+
+const preloadPanelsForCurrentGame = (category: GameCategory) => {
+  preloadCommonPanels()
+  preloadTabPanelsByCategory(category)
+}
+
 const activeBetTabLabel = computed(() => {
   // Find the matching sub-nav label for the current bet tab
   const subNavItems = getSubNavForGame(activeGameKey.value)
   const found = subNavItems.find(item => item.key === activeBetTab.value)
   return found ? found.label : '两面盘'
 })
+
+const SSC_BALL_TAB_TITLE_MAP: Record<string, string> = {
+  ball1: '第一球',
+  ball4: '第四球',
+  ball5: '第五球',
+}
+
+const showSscBallPositionPanel = computed(() => (
+  activeGameCategory.value === 'ssc'
+  && Object.prototype.hasOwnProperty.call(SSC_BALL_TAB_TITLE_MAP, activeBetTab.value)
+))
+
+const activeSscBallPositionTitle = computed(() => (
+  SSC_BALL_TAB_TITLE_MAP[activeBetTab.value] ?? '第一球'
+))
 
 const centerContentClasses = computed(() => ({
   'center-content--wide': activeContentView.value === 'drawResults'
@@ -80,17 +204,49 @@ const mainWrapperClasses = computed(() => ({
   'main-wrapper--draw-results': activeContentView.value === 'drawResults'
 }))
 
-// Watch tab changes to reset content view
-watch(activeBetTab, () => {
+const clearTabLoadingTimer = () => {
+  if (tabLoadingTimer !== null) {
+    clearTimeout(tabLoadingTimer)
+    tabLoadingTimer = null
+  }
+}
+
+const shouldShowTabLoading = (tab: string) => (
+  activeGameCategory.value === 'ssc' && SSC_THIRD_LEVEL_TAB_KEYS.has(tab)
+)
+
+// Watch tab changes to reset content view and show loading for SSC third-level tabs
+watch(activeBetTab, (tab) => {
   showNoticeList.value = false
   activeContentView.value = 'game'
+  saveBetTabForGame(activeGameKey.value, tab)
+
+  clearTabLoadingTimer()
+  if (!shouldShowTabLoading(tab)) {
+    tabLoading.value = false
+    return
+  }
+
+  tabLoading.value = true
+  tabLoadingTimer = setTimeout(() => {
+    tabLoading.value = false
+    tabLoadingTimer = null
+  }, TAB_LOADING_VISIBLE_MS)
+}, { flush: 'sync' })
+
+// Restore tab from game-specific history when switching games
+watch(activeGameKey, (gameKey) => {
+  activeBetTab.value = getSavedBetTabForGame(gameKey) ?? 'twoSide'
+  localStorage.setItem(ACTIVE_GAME_STORAGE_KEY, gameKey)
 })
 
-// Reset bet tab to default when switching games
-watch(activeGameKey, () => {
-  activeBetTab.value = 'twoSide'
-  localStorage.setItem(ACTIVE_GAME_STORAGE_KEY, activeGameKey.value)
-})
+watch(
+  activeGameCategory,
+  (category) => {
+    preloadPanelsForCurrentGame(category)
+  },
+  { immediate: true }
+)
 
 watch(activeContentView, (view) => {
   if (view === 'drawResults') {
@@ -216,8 +372,11 @@ onMounted(() => {
 
   // Handle tab parameter from URL
   const tabFromQuery = route.query.tab as string
-  if (tabFromQuery) {
+  if (tabFromQuery && isValidBetTabForGame(activeGameKey.value, tabFromQuery)) {
     activeBetTab.value = tabFromQuery
+    saveBetTabForGame(activeGameKey.value, tabFromQuery)
+  } else {
+    activeBetTab.value = getSavedBetTabForGame(activeGameKey.value) ?? 'twoSide'
   }
   if (route.query.view === 'drawResults') {
     activeContentView.value = 'drawResults'
@@ -232,6 +391,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  clearTabLoadingTimer()
   stopDrag()
 })
 
@@ -267,7 +427,11 @@ onUnmounted(() => {
             </div>
 
             <!-- Game panel -->
-            <div v-else-if="!showNoticeList" key="game-panel-view" class="game-panel">
+            <div
+              v-else-if="!showNoticeList"
+              key="game-panel-view"
+              class="game-panel"
+            >
               <!-- System closed overlay (local time daily 06:00-07:00) -->
               <div v-if="isSystemClosed" class="system-closed-overlay">
                 <img src="@/assets/通用/bg.png" alt="系统封盘" class="system-closed-bg" />
@@ -294,7 +458,14 @@ onUnmounted(() => {
                 @recent="openRecentDialog(() => { showNoticeDialog = false })"
               />
 
+              <!-- Betting panels loading region -->
+              <div
+                class="betting-content-area"
+                v-loading="tabLoading"
+                element-loading-text="加载中，请稍后！！！"
+              >
             <!-- Two-side betting panel: PC28 version -->
+            <div v-show="!tabLoading">
             <div v-show="activeBetTab === 'twoSide' && activeGameCategory === 'pc28'">
               <!-- Sum values -->
               <h5 class="section-title">和值</h5>
@@ -440,19 +611,51 @@ onUnmounted(() => {
               @ensure-ball="ensureBallSelected"
             />
 
-            <!-- Bottom quick bar -->
+            <!-- Single ball panels: 第一球~第五球 (SSC only) -->
+            <SscSingleBallPanel
+              v-show="activeBetTab === 'ball2' && activeGameCategory === 'ssc'"
+              title="第二球"
+              :is-sealed="isSealed"
+              :quick-mode="quickMode"
+              key-prefix="sb2"
+            />
+
+            <SscSingleBallPanel
+              v-show="activeBetTab === 'ball3' && activeGameCategory === 'ssc'"
+              title="第三球"
+              :is-sealed="isSealed"
+              :quick-mode="quickMode"
+              key-prefix="sb3"
+            />
+
+            <!-- SSC ball position panel: 第一球 ~ 第五球 -->
+            <SscBallPositionPanel
+              v-show="showSscBallPositionPanel"
+              :title="activeSscBallPositionTitle"
+              :position-key="activeBetTab"
+              :is-sealed="isSealed"
+              :quick-mode="quickMode"
+              v-model:ballAmounts="ballAmounts"
+              :is-ball-selected="isBallSelected"
+              @toggle-ball="toggleBallSelect"
+              @ensure-ball="ensureBallSelected"
+            />
+            </div>
+              </div>
+
+            <!-- Bottom quick bar (always visible) -->
             <QuickBetBar
               v-model:quickMode="quickMode"
               class="quick-bar-bottom"
             />
 
-              <!-- Summary road -->
-              <SummaryRoad
-                :summary-tabs="currentSummaryTabs"
-                :active-summary-key="currentSummaryKey"
-                :active-summary-values="currentSummaryValues"
-                @tab-click="handleSummaryTabClick"
-              />
+            <!-- Summary road -->
+            <SummaryRoad
+              :summary-tabs="currentSummaryTabs"
+              :active-summary-key="currentSummaryKey"
+              :active-summary-values="currentSummaryValues"
+              @tab-click="handleSummaryTabClick"
+            />
             </div>
 
             <!-- Notice list panel -->
@@ -566,6 +769,26 @@ onUnmounted(() => {
   min-height: 733px;
   margin: 5px 0 30px;
   position: relative;
+}
+
+.betting-content-loading-region {
+  min-height: 200px;
+  position: relative;
+}
+
+.betting-content-panels {
+  min-height: 200px;
+}
+
+.betting-content-loading-region :deep(.el-loading-mask) {
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 40px;
+}
+
+.betting-content-loading-region :deep(.el-loading-spinner) {
+  top: 0;
+  margin-top: 0;
 }
 
 /* Section titles */
@@ -1085,6 +1308,12 @@ onUnmounted(() => {
   width: 500px;
   max-width: 90%;
   opacity: 0.9;
+}
+
+/* Betting content loading area */
+.betting-content-area {
+  position: relative;
+  min-height: 200px;
 }
 
 /* Spacing */
