@@ -11,6 +11,7 @@ const PROJECT_ROOT = path.resolve(FRONTEND_DIR, '..')
 const DIST_DIR = path.resolve(FRONTEND_DIR, 'dist')
 const META_FILE = path.join(SITE_ROOT, 'deploy-meta.json')
 const DEPLOY_LOCK_FILE = path.join(SITE_ROOT, '.deploy.lock')
+const DRY_RUN = process.env.DEPLOY_DRY_RUN === 'true'
 
 async function exists(p) {
   try {
@@ -181,12 +182,16 @@ async function atomicSwapAssets(srcAssets, destAssets) {
 
   await copyDir(srcAssets, stagedAssets)
 
+  let hasBackup = false
   try {
     if (await exists(destAssets)) {
       await fs.rename(destAssets, backupAssets)
+      hasBackup = true
     }
     await fs.rename(stagedAssets, destAssets)
-    await rmrf(backupAssets)
+    return {
+      backupAssets: hasBackup ? backupAssets : null
+    }
   } catch (err) {
     // Best-effort rollback for assets when swap fails.
     if (!(await exists(destAssets)) && (await exists(backupAssets))) {
@@ -194,6 +199,25 @@ async function atomicSwapAssets(srcAssets, destAssets) {
     }
     await rmrf(stagedAssets)
     throw err
+  }
+}
+
+async function rollbackAssets(destAssets, backupAssets) {
+  if (!backupAssets || !(await exists(backupAssets))) {
+    return false
+  }
+
+  const failedAssets = `${destAssets}.failed-${nowStamp()}`
+  try {
+    if (await exists(destAssets)) {
+      await fs.rename(destAssets, failedAssets)
+    }
+    await fs.rename(backupAssets, destAssets)
+    await rmrf(failedAssets)
+    return true
+  } catch (err) {
+    // Keep failed assets for manual inspection if rollback itself fails.
+    return false
   }
 }
 
@@ -278,14 +302,22 @@ async function main() {
   }
   await acquireDeployLock()
 
+  let swapResult = null
+  const destAssets = path.join(SITE_ROOT, 'assets')
+
   try {
     await cleanupTempAssetDirs()
     const { distAssets } = await validateDistIntegrity(DIST_DIR)
     const distAssetFileCount = await countFilesRecursively(distAssets)
+    console.log(`dist assets file count: ${distAssetFileCount}`)
 
-    const destAssets = path.join(SITE_ROOT, 'assets')
+    if (DRY_RUN) {
+      console.log('Dry-run mode enabled. Validation passed, no files were deployed.')
+      return
+    }
+
     console.log(`Deploying assets to ${destAssets} ...`)
-    await atomicSwapAssets(distAssets, destAssets)
+    swapResult = await atomicSwapAssets(distAssets, destAssets)
 
     const deployedAssetFileCount = await countFilesRecursively(destAssets)
     if (deployedAssetFileCount !== distAssetFileCount) {
@@ -309,8 +341,24 @@ async function main() {
     })
     await runHealthCheck()
 
+    // Deployment fully succeeded; old assets can be safely removed now.
+    if (swapResult?.backupAssets) {
+      await rmrf(swapResult.backupAssets)
+    }
+
     console.log(`Deployed frontend to ${SITE_ROOT}`)
     console.log(`Wrote deploy metadata: ${META_FILE}`)
+  } catch (err) {
+    // Rollback to previous assets when deployment fails after swap.
+    if (swapResult?.backupAssets) {
+      const rolledBack = await rollbackAssets(destAssets, swapResult.backupAssets)
+      if (rolledBack) {
+        console.error('Deployment failed. Assets rolled back to previous version.')
+      } else {
+        console.error('Deployment failed. Asset rollback did not complete automatically.')
+      }
+    }
+    throw err
   } finally {
     await releaseDeployLock()
   }

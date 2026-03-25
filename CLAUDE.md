@@ -20,7 +20,9 @@ BCBBS3 is a full-stack lottery game platform with multi-role authentication (USE
 cd frontend && npm install               # Install dependencies
 cd frontend && npm run dev               # Dev server on :5173, proxies /api → :8080
 cd frontend && npm run build             # Type-check (vue-tsc) + Vite build to dist/
-cd frontend && npm run build:site        # build + deploy to /www/wwwroot/www.bcbbs3.cn/
+cd frontend && npm run clean:site:assets # Clean old files under /www/wwwroot/www.bcbbs3.cn/assets/
+cd frontend && npm run build:site        # One-command clean + build + deploy to /www/wwwroot/www.bcbbs3.cn/
+cd frontend && npm run build:site:dry    # Dry-run clean + build + deploy flow
 cd frontend && npm run deploy            # Deploy only (no rebuild)
 cd frontend && npm run preview           # Preview production build locally
 ```
@@ -109,14 +111,14 @@ Game switching: `GameHeader` exposes `activeGameKey` via `defineModel`. `gameCon
 
 ### Deployment
 
-**Frontend**: `npm run build:site` builds and deploys to `/www/wwwroot/www.bcbbs3.cn/`.
+**Frontend**: `npm run build:site` performs clean + build + deploy to `/www/wwwroot/www.bcbbs3.cn/`.
 
-**IMPORTANT — Clean Deploy Rule**: Every production deployment MUST follow this sequence:
-1. **Clean** the production directory first: `cd /www/wwwroot/www.bcbbs3.cn && find assets -mindepth 1 -delete`
-2. **Build & Deploy**: `cd /root/sscp28/frontend && npm run build:site`
-3. **Verify** the deployed file count: `ls /www/wwwroot/www.bcbbs3.cn/assets/ | wc -l` (should match the current build output, typically 60-80 files, NOT thousands)
+**IMPORTANT — One-Command Clean Deploy Rule**: Every production deployment MUST follow this sequence:
+1. **Run one command**: `cd /root/sscp28/frontend && npm run build:site`
+   - Internally executes: clean old assets -> build -> deploy
+2. **Verify** the deployed file count: `ls /www/wwwroot/www.bcbbs3.cn/assets/ | wc -l` (should match the current build output, typically 60-80 files, NOT thousands)
 
-Skipping the clean step causes old hashed chunks to accumulate (7000+ files), and browsers with cached `index.html` may load stale chunks, causing the site to appear "rolled back" to an old version.
+Skipping the clean step can cause old hashed chunks to accumulate (7000+ files), and browsers with cached `index.html` may load stale chunks, causing the site to appear "rolled back" to an old version.
 
 **Backend**: `backend/target/backend-0.0.1-SNAPSHOT.jar` run with `nohup`.
 

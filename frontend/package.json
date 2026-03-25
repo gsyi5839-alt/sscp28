@@ -8,8 +8,12 @@
     "build": "vue-tsc -b && vite build",
     "deploy": "node scripts/deploy-to-site-root.mjs",
     "deploy:standard": "SITE_ROOT=/www/wwwroot/www.bcbbs3.cn DEPLOY_HEALTHCHECK_URL=https://18118bw.cn/index.html node scripts/deploy-to-site-root.mjs",
-    "build:site": "npm run build && npm run deploy:standard",
-    "preview": "vite preview"
+    "deploy:standard:dry": "DEPLOY_DRY_RUN=true SITE_ROOT=/www/wwwroot/www.bcbbs3.cn DEPLOY_HEALTHCHECK_URL=https://18118bw.cn/index.html node scripts/deploy-to-site-root.mjs",
+    "build:site": "npm run clean:site:assets && npm run build && npm run deploy:standard",
+    "build:site:dry": "npm run clean:site:assets:dry && npm run build && npm run deploy:standard:dry",
+    "preview": "vite preview",
+    "clean:site:assets": "SITE_ROOT=/www/wwwroot/www.bcbbs3.cn node scripts/clean-site-assets.mjs",
+    "clean:site:assets:dry": "DEPLOY_DRY_RUN=true SITE_ROOT=/www/wwwroot/www.bcbbs3.cn node scripts/clean-site-assets.mjs"
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.2",

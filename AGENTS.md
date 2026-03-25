@@ -76,6 +76,7 @@ BCBBS3 is a full-stack web application featuring a lottery game platform with mu
 │   ├── public/                  # Static assets
 │   ├── dist/                    # Build output (gitignored)
 │   ├── scripts/
+│   │   ├── clean-site-assets.mjs    # Clean old site assets before deployment
 │   │   └── deploy-to-site-root.mjs  # Non-destructive deployment script
 │   ├── .env.development         # Dev environment variables
 │   ├── .env.production          # Production environment variables
@@ -162,8 +163,14 @@ npm run dev
 # Production build (type-check + Vite build to dist/)
 npm run build
 
-# Deploy to site root (build + deploy to /www/wwwroot/www.bcbbs3.cn/)
+# Clean production assets only (manual clean command)
+npm run clean:site:assets
+
+# One-command production deployment (clean old assets + build + deploy)
 npm run build:site
+
+# Dry-run deployment (clean/build/deploy simulation)
+npm run build:site:dry
 
 # Preview production build
 npm run preview
@@ -341,13 +348,14 @@ Frontend has in-memory cache store (`stores/cache.ts`) with TTL support for API 
 
 ### Frontend Deployment
 - Build output: `frontend/dist/`
-- Deploy script: `frontend/scripts/deploy-to-site-root.mjs`
+- Clean script: `frontend/scripts/clean-site-assets.mjs` (removes old files under site `assets/`)
+- Deploy script: `frontend/scripts/deploy-to-site-root.mjs` (atomic/non-destructive deployment)
 - Site root: `/www/wwwroot/www.bcbbs3.cn/`
-- **IMPORTANT — Clean Deploy Rule**: Every production deployment MUST follow this sequence:
-  1. **Clean** the production assets first: `cd /www/wwwroot/www.bcbbs3.cn && find assets -mindepth 1 -delete`
-  2. **Build & Deploy**: `cd /root/sscp28/frontend && npm run build:site`
-  3. **Verify** the deployed file count: `ls /www/wwwroot/www.bcbbs3.cn/assets/ | wc -l` (should match the current build output, typically 60-80 files, NOT thousands)
-- Skipping the clean step causes old hashed chunks to accumulate (7000+ files), and browsers with cached `index.html` may load stale chunks, causing the site to appear "rolled back" to an old version
+- **IMPORTANT — One-Command Clean Build Deploy Rule**: Every production deployment MUST follow this sequence:
+  1. **Run one command**: `cd /root/sscp28/frontend && npm run build:site`
+     - This command internally executes: clean old assets -> build -> deploy
+  2. **Verify** the deployed file count: `ls /www/wwwroot/www.bcbbs3.cn/assets/ | wc -l` (should match the current build output, typically 60-80 files, NOT thousands)
+- If the clean step is skipped, old hashed chunks can accumulate (7000+ files), and browsers with cached `index.html` may load stale chunks, causing the site to appear "rolled back" to an old version
 
 ### Backend Deployment
 - Build artifact: `backend/target/backend-0.0.1-SNAPSHOT.jar`
