@@ -282,12 +282,13 @@ onMounted(() => {
   height: 378px;
   flex-shrink: 0;
   background-repeat: no-repeat;
-  background-position: center;
-  background-size: 100% 100%;
+  background-position: left top;
+  background-size: 378px 383px;
   text-align: left;
   box-sizing: border-box;
   border: 1px solid #a8d4f0;
   border-radius: 4px;
+  overflow: hidden;
 }
 
 .desktop-form {
