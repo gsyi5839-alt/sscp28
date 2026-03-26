@@ -2,11 +2,13 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { Key, Lock, UserFilled } from '@element-plus/icons-vue'
 import { captchaApi } from '../api'
 import { useAuthStore } from '../stores/auth'
 import leftImg from '@/assets/会员登录/左侧.png'
 import rightBg from '@/assets/会员登录/右侧.png'
+import userIcon from '@/assets/移动登录图标/用户昵称.png'
+import passwordIcon from '@/assets/移动登录图标/你的密码.png'
+import captchaIcon from '@/assets/移动登录图标/验证码.png'
 
 const isMobile = ref(false)
 const checkMobile = () => {
@@ -161,7 +163,7 @@ onMounted(() => {
               />
               <button type="button" class="desktop-captcha-box" @click="generateCaptcha">
                 <img v-if="captchaImage" :src="captchaImage" alt="captcha" class="desktop-captcha-img" />
-                <span v-else class="desktop-captcha-fallback">点击刷新</span>
+                <span v-else class="desktop-captcha-fallback">加载中...</span>
               </button>
             </div>
             <div class="desktop-submit-row">
@@ -182,11 +184,15 @@ onMounted(() => {
   <div v-else class="login-page">
     <div class="login-main">
       <form class="login-wrapper" @submit.prevent="handleLogin">
-        <h1 class="welcome-title">登录邮箱</h1>
+        <div class="login-header">
+          <div class="logo-area">
+            <h1 class="welcome-title">登录邮箱</h1>
+          </div>
+        </div>
 
-        <div class="input-shell">
+        <div class="input-shell account-shell">
           <span class="icon-wrap">
-            <UserFilled class="field-icon" />
+            <img :src="userIcon" alt="账号图标" class="mobile-icon" />
           </span>
           <input
             v-model="loginForm.account"
@@ -197,9 +203,9 @@ onMounted(() => {
           />
         </div>
 
-        <div class="input-shell">
+        <div class="input-shell password-shell">
           <span class="icon-wrap">
-            <Lock class="field-icon" />
+            <img :src="passwordIcon" alt="密码图标" class="mobile-icon" />
           </span>
           <input
             v-model="loginForm.password"
@@ -212,7 +218,7 @@ onMounted(() => {
 
         <div class="input-shell captcha-shell">
           <span class="icon-wrap">
-            <Key class="field-icon" />
+            <img :src="captchaIcon" alt="验证码图标" class="mobile-icon" />
           </span>
           <input
             v-model="loginForm.captcha"
@@ -224,7 +230,7 @@ onMounted(() => {
           />
           <button type="button" class="captcha-box" @click="generateCaptcha">
             <img v-if="captchaImage" :src="captchaImage" alt="captcha" class="captcha-img" />
-            <span v-else class="captcha-fallback">点击刷新</span>
+            <span v-else class="captcha-fallback">加载中...</span>
           </button>
         </div>
 
@@ -405,7 +411,7 @@ onMounted(() => {
 /* ===================== Mobile Styles ===================== */
 .login-page {
   min-height: 100vh;
-  background: #d8d0c3;
+  background: linear-gradient(180deg, #f5ebe0, #e8d5c4 30%, #d4b896 70%, #be9d76);
   display: flex;
   flex-direction: column;
 }
@@ -414,96 +420,124 @@ onMounted(() => {
   flex: 1;
   display: flex;
   justify-content: center;
-  padding: clamp(120px, 25vh, 340px) 38px 24px;
+  padding: clamp(90px, 20vh, 220px) 20px 24px;
   box-sizing: border-box;
 }
 
 .login-wrapper {
-  width: min(100%, 760px);
+  width: 100%;
+  max-width: 760px;
   display: flex;
   flex-direction: column;
 }
 
+.login-header {
+  width: 360px;
+  height: 48px;
+  margin: 0 auto 10px;
+}
+
+.logo-area {
+  width: 360px;
+  height: 48px;
+}
+
 .welcome-title {
-  margin: 0 0 clamp(42px, 6vh, 70px);
+  margin: 0;
   text-align: center;
+  font-family: Tahoma, Helvetica, 'Microsoft Yahei', sans-serif;
   color: #ffffff;
-  font-size: clamp(28px, 7vw, 62px);
+  font-size: 32px;
+  line-height: 48px;
   font-weight: 700;
   letter-spacing: 2px;
-  text-shadow: 0 7px 14px rgba(0, 0, 0, 0.16);
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
 }
 
 .input-shell {
   width: 100%;
-  height: clamp(56px, 11vw, 100px);
-  border-radius: 999px;
-  background: #f5f5f5;
-  box-shadow: 0 8px 16px rgba(103, 92, 75, 0.16);
+  height: 50px;
+  border-radius: 25px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
   display: flex;
   align-items: center;
-  padding: 0 clamp(18px, 3vw, 32px);
-  margin-bottom: clamp(20px, 3.2vw, 30px);
+  padding: 0 20px;
+  margin: 15px auto;
   box-sizing: border-box;
+  transition: all 0.3s ease;
+}
+
+.account-shell {
+  background: rgba(255, 255, 255, 0.95);
+}
+
+.password-shell {
+  background: rgba(255, 255, 255, 0.95);
+}
+
+.captcha-shell {
+  background: rgba(255, 255, 255, 0.95);
+  padding-right: 10px;
 }
 
 .icon-wrap {
-  width: clamp(34px, 6vw, 52px);
+  width: 20px;
+  height: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-right: clamp(12px, 2vw, 20px);
+  margin-right: 15px;
   flex-shrink: 0;
 }
 
-.field-icon {
-  color: #b8b8b8;
-  width: 1em;
-  height: 1em;
-  font-size: clamp(24px, 4.4vw, 38px);
+.mobile-icon {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
 }
 
 .field-input {
   flex: 1;
   border: none;
   background: transparent;
-  color: #8d8d8d;
-  font-size: clamp(18px, 3.3vw, 36px);
+  font-family: Tahoma, Helvetica, 'Microsoft Yahei', sans-serif;
+  color: #333;
+  font-size: 15px;
   outline: none;
   min-width: 0;
-  line-height: 1.1;
+  line-height: 20px;
 }
 
 .field-input::placeholder {
-  color: #a7a7a7;
-}
-
-.captcha-shell {
-  padding-right: clamp(12px, 2vw, 18px);
+  color: #a6a6a6;
 }
 
 .captcha-input {
-  max-width: calc(100% - clamp(115px, 24vw, 180px));
+  max-width: calc(100% - 96px);
 }
 
 .captcha-box {
   margin-left: auto;
-  width: clamp(110px, 24vw, 180px);
-  height: 100%;
+  width: 80px;
+  height: 36px;
+  border-radius: 8px;
+  overflow: hidden;
   border: none;
-  background: transparent;
+  background: #f5f5f5;
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: center;
   cursor: pointer;
   padding: 0;
   flex-shrink: 0;
 }
 
 .captcha-img {
-  width: 100%;
-  height: clamp(44px, 7.8vw, 68px);
-  object-fit: contain;
+  width: 85px;
+  height: 27px;
+  object-fit: none;
+  object-position: center center;
+  display: block;
 }
 
 .captcha-fallback {
@@ -512,14 +546,14 @@ onMounted(() => {
 }
 
 .login-btn {
-  margin-top: clamp(26px, 5vw, 44px);
+  margin-top: clamp(28px, 5.2vw, 46px);
   width: 100%;
-  height: clamp(58px, 11vw, 96px);
+  height: clamp(64px, 11.5vw, 102px);
   border-radius: 999px;
   border: none;
-  background: #b49a75;
+  background: #b39b76;
   color: #fff;
-  font-size: clamp(22px, 4.4vw, 46px);
+  font-size: clamp(24px, 4.8vw, 48px);
   font-weight: 700;
   letter-spacing: 1px;
   cursor: pointer;
@@ -532,31 +566,32 @@ onMounted(() => {
 
 .login-footer {
   width: 100%;
-  background: #c3ab87;
-  padding: 0 24px 18px;
+  background: transparent;
+  padding: 0 24px 22px;
   box-sizing: border-box;
 }
 
 .footer-line {
-  border-top: 1px solid rgba(255, 255, 255, 0.22);
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.3) 50%, transparent 100%);
 }
 
 .footer-btn {
   display: block;
-  margin: clamp(30px, 4vh, 52px) auto 0;
-  width: clamp(128px, 23vw, 220px);
-  height: clamp(48px, 8.8vw, 74px);
+  margin: clamp(28px, 4.2vh, 52px) auto 0;
+  width: clamp(132px, 23vw, 220px);
+  height: clamp(52px, 9.2vw, 76px);
   border-radius: 999px;
-  border: 2px solid rgba(255, 255, 255, 0.42);
-  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid rgba(255, 255, 255, 0.45);
+  background: rgba(255, 255, 255, 0.06);
   color: #f4f4f4;
-  font-size: clamp(18px, 3.3vw, 34px);
+  font-size: clamp(18px, 3.5vw, 34px);
   cursor: pointer;
 }
 
 @media (max-width: 420px) {
   .login-page {
-    background: linear-gradient(to bottom, #d8d0c3 0%, #d8d0c3 86%, #c3ab87 86%, #c3ab87 100%);
+    background: linear-gradient(180deg, #f5ebe0, #e8d5c4 30%, #d4b896 70%, #be9d76);
   }
 }
 </style>
