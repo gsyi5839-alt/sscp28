@@ -83,7 +83,7 @@ const handleSearch = async () => {
   align-items: center;
   justify-content: flex-start;
   padding-top: 100px;
-  background: #ffffff;
+  background: #efefef;
 }
 
 /* Search container - holds logo and search box */
@@ -91,9 +91,8 @@ const handleSearch = async () => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 30px;
+  gap: 0;
   width: 100%;
-  max-width: 600px;
 }
 
 /* Logo section styling */
@@ -119,19 +118,23 @@ const handleSearch = async () => {
 /* Search input field - white background with gray border */
 .search-input {
   width: 300px;
-  height: 26px;
-  padding: 0 10px;
-  border: 1px solid #cccccc;
+  height: 22px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid #8a8a8a;
+  border-radius: 4px;
   background: #ffffff;
   color: #333333;
   font-size: 14px;
   text-align: center;
   outline: none;
-  box-sizing: border-box;
+  box-sizing: content-box;
 }
 
 .search-input:focus {
-  border-color: #333333;
+  border: 2px solid rgb(39, 94, 197);
+  border-radius: 4px;
+  box-shadow: none;
 }
 
 .search-input::placeholder {
@@ -145,11 +148,12 @@ const handleSearch = async () => {
   background: #68a937;
   color: #ffffff;
   border: none;
-  border-radius: 3px;
+  border-radius: 4px;
   font-size: 14px;
   cursor: pointer;
-  transition: background 0.3s ease;
   margin-left: 10px;
+  position: relative;
+  top: 1px;
 }
 
 .search-btn:hover {
@@ -160,93 +164,4 @@ const handleSearch = async () => {
   background: #cccccc;
   cursor: not-allowed;
 }
-
-/* ==================== Mobile Responsive (H5) ==================== */
-@media screen and (max-width: 768px) {
-  .search-page {
-    padding-top: 60px;
-  }
-  
-  .search-container {
-    gap: 24px;
-    padding: 0 16px;
-  }
-  
-  .logo-img {
-    width: 150px;
-    height: 150px;
-  }
-  
-  .search-input {
-    width: 220px;
-    height: 24px;
-    font-size: 13px;
-  }
-  
-  .search-btn {
-    width: 55px;
-    height: 24px;
-    font-size: 13px;
-  }
-}
-
-/* Extra small devices */
-@media screen and (max-width: 480px) {
-  .search-page {
-    padding-top: 40px;
-  }
-  
-  .search-container {
-    gap: 20px;
-  }
-  
-  .logo-img {
-    width: 120px;
-    height: 120px;
-  }
-  
-  .search-input {
-    width: 180px;
-    height: 22px;
-    font-size: 12px;
-  }
-  
-  .search-btn {
-    width: 50px;
-    height: 22px;
-    font-size: 12px;
-  }
-}
-
-/* Ultra small devices - 320px and below */
-@media screen and (max-width: 320px) {
-  .search-page {
-    padding-top: 30px;
-  }
-  
-  .search-container {
-    gap: 16px;
-    padding: 0 10px;
-  }
-  
-  .logo-img {
-    width: 100px;
-    height: 100px;
-  }
-  
-  .search-input {
-    width: 150px;
-    height: 20px;
-    font-size: 11px;
-    padding: 0 8px;
-  }
-  
-  .search-btn {
-    width: 45px;
-    height: 20px;
-    font-size: 11px;
-    margin-left: 6px;
-  }
-}
 </style>
-

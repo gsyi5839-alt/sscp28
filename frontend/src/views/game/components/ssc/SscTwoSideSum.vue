@@ -147,6 +147,15 @@ const onAmountChange = (label: string, val: number | undefined) => {
   width: 100%;
 }
 
+/* Keep row separators visually continuous across column borders. */
+.ssc-sum-row + .ssc-sum-row {
+  margin-top: -1px;
+}
+
+.ssc-sum-row + .ssc-sum-row .ssc-sum-cell {
+  border-top: 1px solid var(--bw-border-color, #efba84);
+}
+
 /* Individual sum cell: min-width 25% */
 .ssc-sum-cell {
   flex: 1;

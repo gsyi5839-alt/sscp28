@@ -1,21 +1,15 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
+
+const isMobile = ref(false)
+const checkMobile = () => {
+  isMobile.value = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+}
 import { useRouter } from 'vue-router'
-import { linesApi } from '../api'
 import { ElMessage } from 'element-plus'
+import { linesApi } from '../api'
 
-const router = useRouter()
-const activeTab = ref('member') // 'member' or 'agent'
-
-// Set page title on mount
-onMounted(() => {
-  document.title = '资讯网'
-  // Clear favicon on member panel page
-  const favicon = document.getElementById('favicon') as HTMLLinkElement
-  if (favicon) {
-    favicon.href = 'data:,'  // Empty favicon
-  }
-})
+type TabKey = 'member' | 'agent'
 
 type LineItem = {
   id: number | string
@@ -25,24 +19,83 @@ type LineItem = {
   type?: string
 }
 
+const router = useRouter()
+const activeTab = ref<TabKey>('member')
+const loading = ref(false)
+const speedTesting = ref(false)
+const memberLines = ref<LineItem[]>([])
+const agentLines = ref<LineItem[]>([])
+
 const STORAGE_KEY_MEMBER = 'cachedMemberLines'
 const STORAGE_KEY_AGENT = 'cachedAgentLines'
 
+const DEFAULT_MEMBER_DESKTOP_LINES: LineItem[] = [
+  { id: 'm-d-1', name: '会员1', pingMs: 24, url: '/member/login', type: 'MEMBER' },
+  { id: 'm-d-2', name: '会员2', pingMs: 49, url: '/member/login', type: 'MEMBER' },
+  { id: 'm-d-3', name: '会员3', pingMs: 21, url: '/member/login', type: 'MEMBER' },
+  { id: 'm-d-4', name: '会员4', pingMs: 48, url: '/member/login', type: 'MEMBER' }
+]
+
+const DEFAULT_MEMBER_MOBILE_LINES: LineItem[] = [
+  { id: 'm-m-1', name: '移动端1', pingMs: 36, url: '/member/login', type: 'MEMBER' },
+  { id: 'm-m-2', name: '移动端2', pingMs: 48, url: '/member/login', type: 'MEMBER' },
+  { id: 'm-m-3', name: '移动端3', pingMs: 26, url: '/member/login', type: 'MEMBER' },
+  { id: 'm-m-4', name: '移动端4', pingMs: 22, url: '/member/login', type: 'MEMBER' }
+]
+
 const DEFAULT_MEMBER_LINES: LineItem[] = [
-  { id: 'm1', name: '会员线路 1', pingMs: 35, url: '/member/login', type: 'MEMBER' },
-  { id: 'm2', name: '会员线路 2', pingMs: 42, url: '/member/login', type: 'MEMBER' },
-  { id: 'm3', name: '会员线路 3', pingMs: 55, url: '/member/login', type: 'MEMBER' },
-  { id: 'm4', name: '会员线路 4', pingMs: 68, url: '/member/login', type: 'MEMBER' }
+  ...DEFAULT_MEMBER_DESKTOP_LINES,
+  ...DEFAULT_MEMBER_MOBILE_LINES
 ]
 
 const DEFAULT_AGENT_LINES: LineItem[] = [
-  { id: 'a1', name: '代理线路 1', pingMs: 40, url: '/agent/login', type: 'AGENT' },
-  { id: 'a2', name: '代理线路 2', pingMs: 48, url: '/agent/login', type: 'AGENT' },
-  { id: 'a3', name: '代理线路 3', pingMs: 60, url: '/agent/login', type: 'AGENT' },
-  { id: 'a4', name: '代理线路 4', pingMs: 75, url: '/agent/login', type: 'AGENT' }
+  { id: 'a1', name: '代理1', pingMs: 39, url: '/agent/login', type: 'AGENT' },
+  { id: 'a2', name: '代理2', pingMs: 49, url: '/agent/login', type: 'AGENT' },
+  { id: 'a3', name: '代理3', pingMs: 35, url: '/agent/login', type: 'AGENT' },
+  { id: 'a4', name: '代理4', pingMs: 21, url: '/agent/login', type: 'AGENT' }
 ]
 
-function readCachedLines(key: string, fallback: LineItem[]) {
+const normalizeLineName = (value: string | undefined) => (value || '').replace(/\s+/g, '').toLowerCase()
+
+const isMobileLine = (line: LineItem) => {
+  const name = normalizeLineName(line.name)
+  return name.includes('移动') || name.includes('mobile')
+}
+
+const splitMemberLines = (lines: LineItem[]) => {
+  let desktop = lines.filter((line) => !isMobileLine(line))
+  let mobile = lines.filter(isMobileLine)
+
+  if (desktop.length === 0 && mobile.length === 0) {
+    desktop = [...DEFAULT_MEMBER_DESKTOP_LINES]
+    mobile = [...DEFAULT_MEMBER_MOBILE_LINES]
+  }
+
+  if (mobile.length === 0 && desktop.length > 4) {
+    mobile = desktop.slice(4)
+    desktop = desktop.slice(0, 4)
+  }
+
+  if (desktop.length === 0) {
+    desktop = [...DEFAULT_MEMBER_DESKTOP_LINES]
+  }
+  if (mobile.length === 0) {
+    mobile = [...DEFAULT_MEMBER_MOBILE_LINES]
+  }
+
+  return {
+    desktop: desktop.slice(0, 4),
+    mobile: mobile.slice(0, 4)
+  }
+}
+
+const memberDesktopLines = computed(() => splitMemberLines(memberLines.value).desktop)
+const memberMobileLines = computed(() => splitMemberLines(memberLines.value).mobile)
+const agentDisplayLines = computed(() =>
+  agentLines.value.length > 0 ? agentLines.value.slice(0, 4) : DEFAULT_AGENT_LINES
+)
+
+const readCachedLines = (key: string, fallback: LineItem[]) => {
   try {
     const raw = localStorage.getItem(key)
     if (!raw) return fallback
@@ -53,61 +106,16 @@ function readCachedLines(key: string, fallback: LineItem[]) {
   }
 }
 
-function writeCachedLines(key: string, value: any[]) {
+const writeCachedLines = (key: string, value: LineItem[]) => {
   try {
     if (Array.isArray(value) && value.length > 0) {
       localStorage.setItem(key, JSON.stringify(value))
     }
   } catch {
-    // ignore
+    // no-op
   }
 }
 
-const memberLines = ref<LineItem[]>([])
-const agentLines = ref<LineItem[]>([])
-const loading = ref(false)
-
-/**
- * Switch between member and agent tabs
- */
-const switchTab = (tab: string) => {
-  activeTab.value = tab
-}
-
-/**
- * Refresh lines data from the backend.
- */
-const testSpeed = async () => {
-  await loadLines()
-}
-
-/**
- * Logout and return to home page
- */
-const logout = () => {
-  router.push('/')
-}
-
-/**
- * Navigate to login page when clicking any line
- * Member lines go to member login, Agent lines go to agent login
- */
-const selectLine = () => {
-  if (activeTab.value === 'member') {
-    router.push('/member/login')
-  } else {
-    router.push('/agent/login')
-  }
-}
-
-// Current displayed lines based on active tab
-const currentLines = () => {
-  return activeTab.value === 'member' ? memberLines.value : agentLines.value
-}
-
-/**
- * Load member and agent lines from API.
- */
 const loadLines = async () => {
   loading.value = true
   try {
@@ -123,7 +131,6 @@ const loadLines = async () => {
       memberLines.value = memberResponse.data
       writeCachedLines(STORAGE_KEY_MEMBER, memberResponse.data)
     } else {
-      // Fallback: when API fails/returns empty, use local cache or default lines to avoid blank page
       memberLines.value = readCachedLines(STORAGE_KEY_MEMBER, DEFAULT_MEMBER_LINES)
     }
 
@@ -138,283 +145,391 @@ const loadLines = async () => {
       (memberRes.status === 'rejected' || agentRes.status === 'rejected') &&
       (memberLines.value.length > 0 || agentLines.value.length > 0)
     ) {
-      ElMessage.warning('线路API偶尔被阻止，使用本地备用线路')
+      ElMessage.warning('线路加载不稳定，已使用可用线路')
     }
   } catch {
-    // Final fallback
     memberLines.value = readCachedLines(STORAGE_KEY_MEMBER, DEFAULT_MEMBER_LINES)
     agentLines.value = readCachedLines(STORAGE_KEY_AGENT, DEFAULT_AGENT_LINES)
-    ElMessage.error('加载线路失败，使用本地备用线路')
+    ElMessage.error('加载线路失败，已使用备用线路')
   } finally {
     loading.value = false
   }
 }
 
-// Load lines on mount
+const onToggle = (tab: TabKey) => {
+  activeTab.value = tab
+}
+
+const randomPing = () => Math.floor(Math.random() * (50 - 20 + 1) + 20)
+
+const refreshPingValues = () => {
+  memberLines.value = memberLines.value.map((l) => ({ ...l, pingMs: randomPing() }))
+  agentLines.value = agentLines.value.map((l) => ({ ...l, pingMs: randomPing() }))
+}
+
+const onSpeed = async () => {
+  speedTesting.value = true
+  await loadLines()
+  setTimeout(() => {
+    refreshPingValues()
+    speedTesting.value = false
+  }, 1000)
+}
+
+const onLogout = () => {
+  router.push('/')
+}
+
+const openLine = (line: LineItem) => {
+  const target = (line.url || '').trim()
+  if (!target) {
+    router.push(activeTab.value === 'member' ? '/member/login' : '/agent/login')
+    return
+  }
+  if (/^https?:\/\//i.test(target)) {
+    window.open(target, '_blank')
+    return
+  }
+  router.push(target)
+}
+
 onMounted(() => {
-  loadLines()
+  document.title = '资讯网'
+  const favicon = document.getElementById('favicon') as HTMLLinkElement | null
+  if (favicon) favicon.href = 'data:,'
+  checkMobile()
+  speedTesting.value = true
+  loadLines().then(() => {
+    setTimeout(() => {
+      refreshPingValues()
+      speedTesting.value = false
+    }, 1000)
+  })
 })
 </script>
 
 <template>
-  <div class="member-panel">
-    <!-- Content Wrapper for centering -->
-    <div class="content-wrapper">
-      <!-- Header Section -->
-      <div class="header">
-        <!-- Left Buttons -->
-        <div class="header-left">
-          <button
-            class="btn-member"
-            :class="{ active: activeTab === 'member' }"
-            @click="switchTab('member')"
-          >
-            会员线路
-          </button>
-          <button
-            class="btn-agent"
-            :class="{ active: activeTab === 'agent' }"
-            @click="switchTab('agent')"
-          >
-            代理线路
-          </button>
-        </div>
-
-        <!-- Center Title -->
-        <h1 class="title">
-          <span class="welcome">欢迎</span>
-          <span class="brand">冠军</span>
-        </h1>
-
-        <!-- Right Buttons -->
-        <div class="header-right">
-          <button class="btn-action" @click="testSpeed">测速</button>
-          <button class="btn-action" @click="logout">退出</button>
-        </div>
+  <div class="container">
+    <div class="flex-space-between header">
+      <div class="btn-group left-group">
+        <button id="member-btn" class="btn2" :class="{ btn1: activeTab === 'member' }" @click="onToggle('member')">
+          会员线路
+        </button>
+        <button id="agent-btn" class="btn2" :class="{ btn1: activeTab === 'agent' }" @click="onToggle('agent')">
+          代理线路
+        </button>
       </div>
-      
-      <!-- Lines Container - 1201x61, 4 items each 299x60 -->
-      <div class="lines-container">
-        <div v-if="!loading && currentLines().length === 0" class="empty-lines">
-          暂无可用线路，请稍后重试或点击"测速"刷新
+
+      <h1>欢迎光临&nbsp;&nbsp;&nbsp;<span id="lineName">红运</span></h1>
+
+      <div class="btn-group right-group">
+        <button class="btn2" @click="onSpeed">测速</button>
+        <button class="btn2" @click="onLogout">退出</button>
+      </div>
+    </div>
+
+    <div class="content">
+      <template v-if="activeTab === 'member'">
+        <!-- Desktop: single grid without titles -->
+        <div v-if="!isMobile" id="member-lines-container" class="lines-wrap">
+          <div class="line-items">
+            <div v-for="line in memberDesktopLines" :key="`desktop-${line.id}`" class="line-item">
+              <button class="line-link member-item" @click="openLine(line)">
+                <span>{{ line.name }}</span>
+                <span class="sub-text">{{ speedTesting ? '测速中...' : `(${line.pingMs ?? 'N/A'}ms)` }}</span>
+              </button>
+            </div>
+          </div>
         </div>
 
-        <div 
-          v-for="line in currentLines()" 
-          :key="line.id" 
-          class="line-item"
-          @click="selectLine"
-        >
-          <span class="line-name">{{ line.name }}</span>
-          <span class="line-ping">({{ line.pingMs ?? 'N/A' }}ms)</span>
+        <!-- Mobile: two sections with titles -->
+        <template v-else>
+          <div id="member-lines-container" class="lines-wrap">
+            <div class="group-title">电脑端线路</div>
+            <div class="line-items">
+              <div v-for="line in memberDesktopLines" :key="`desktop-${line.id}`" class="line-item">
+                <button class="line-link member-item" @click="openLine(line)">
+                  <span>{{ line.name }}</span>
+                  <span class="sub-text">{{ speedTesting ? '测速中...' : `(${line.pingMs ?? 'N/A'}ms)` }}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div id="mobile-lines-container" class="lines-wrap">
+            <div class="group-title">移动端线路</div>
+            <div class="line-items">
+              <div v-for="line in memberMobileLines" :key="`mobile-${line.id}`" class="line-item">
+                <button class="line-link mobile-item" @click="openLine(line)">
+                  <span>{{ line.name }}</span>
+                  <span class="sub-text">{{ speedTesting ? '测速中...' : `(${line.pingMs ?? 'N/A'}ms)` }}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </template>
+      </template>
+
+      <div v-else id="agent-lines-container" class="lines-wrap">
+        <div class="line-items">
+          <div v-for="line in agentDisplayLines" :key="`agent-${line.id}`" class="line-item">
+            <button class="line-link agent-line-item" @click="openLine(line)">
+              <span>{{ line.name }}</span>
+              <span class="sub-text">{{ speedTesting ? '测速中...' : `(${line.pingMs ?? 'N/A'}ms)` }}</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>
+
   </div>
 </template>
 
 <style scoped>
-/* Main container - full page
- * NOTE:
- * The user expects "center" to mean both horizontally and vertically centered
- * on desktop. Previously we used top padding, which makes it look "not centered".
- */
-.member-panel {
+/* === Desktop-first layout (matches original design) === */
+.container {
+  width: 1200px;
+  margin: auto;
+  padding-top: 20%;
   min-height: 100vh;
-  background: #ffffff;
-  padding: 20px;
-  width: 100%;
   box-sizing: border-box;
-  display: flex;
-  align-items: center; /* vertical center */
-  justify-content: center; /* horizontal center */
+  background: #fff;
 }
 
-/* Content wrapper - keep the fixed design width (1201px) */
-.content-wrapper {
-  width: 1200px;
-  min-width: 1200px;
-  margin: 0 auto;
-}
-
-/* Header section - aligned with lines container */
-.header {
+.flex-space-between {
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  padding: 20px 0;
-  width: 100%;
+  align-items: center;
 }
 
-/* Left buttons container */
-.header-left {
-  display: flex;
-  gap: 8px;
+.header {
+  flex-direction: row;
+  align-items: center;
+  gap: 0;
 }
 
-/* Member button - blue #0099FF, size 80x30 */
-.btn-member {
-  width: 80px;
-  height: 30px;
-  background: #0099FF;
-  color: #ffffff;
-  border: none;
-  border-radius: 4px;
-  font-size: 14px;
-  cursor: pointer;
-  transition: opacity 0.3s;
+.left-group {
+  order: 0;
 }
 
-.btn-member:hover {
-  opacity: 0.9;
-}
-
-/* Agent button - orange #FF6600, size 80x30 */
-.btn-agent {
-  width: 80px;
-  height: 30px;
-  background: #FF6600;
-  color: #ffffff;
-  border: none;
-  border-radius: 4px;
-  font-size: 14px;
-  cursor: pointer;
-  transition: opacity 0.3s;
-}
-
-.btn-agent:hover {
-  opacity: 0.9;
-}
-
-/* Title section */
-.title {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
+.header h1 {
+  order: 0;
+  padding: 0;
   margin: 0;
-}
-
-/* Welcome text - red #FF0000 */
-.welcome {
-  font-size: 28px;
-  color: #FF0000;
+  text-align: center;
+  font-size: 30px;
   font-weight: normal;
+  color: red;
 }
 
-/* Brand text - red #FF0000 */
-.brand {
-  font-size: 28px;
-  color: #FF0000;
-  font-weight: normal;
+.right-group {
+  order: 0;
 }
 
-/* Right buttons container */
-.header-right {
+#lineName {
+  color: red;
+}
+
+.btn-group {
+  padding: 0;
+  margin: 0;
   display: flex;
-  gap: 8px;
+  justify-content: center;
+  gap: 10px;
 }
 
-/* Action buttons - blue #0099FF, size 80x30 */
-.btn-action {
+.btn2 {
   width: 80px;
   height: 30px;
-  background: #0099FF;
-  color: #ffffff;
   border: none;
   border-radius: 4px;
   font-size: 14px;
+  color: #fff;
+  background: #09f;
+  padding: 0;
   cursor: pointer;
-  transition: opacity 0.3s;
-}
-
-.btn-action:hover {
-  opacity: 0.9;
-}
-
-/* Lines container - 1201x61 total, aligned with header */
-.lines-container {
   display: flex;
-  width: 1200px;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn2:hover {
+  opacity: 0.8;
+}
+
+.btn2.btn1 {
+  background: #f60;
+}
+
+.btn2.btn1:hover {
+  opacity: 0.8;
+}
+
+.content {
+  margin-top: 20px;
+}
+
+.lines-wrap {
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  border-top: 1px solid #ccc;
+  border-left: 1px solid #ccc;
+}
+
+#mobile-lines-container {
+  margin-top: 20px;
+}
+
+.group-title {
+  width: 100%;
+  padding: 10px;
+  background-color: #f0f0f0;
+  border-right: 1px solid #ccc;
+  border-bottom: 1px solid #ccc;
+  font-weight: 700;
+  color: #333;
+  box-sizing: border-box;
+  font-size: 14px;
+}
+
+.line-items {
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.line-item {
+  width: 25%;
   height: 60px;
-  margin-top: 10px;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  overflow: hidden;
+  line-height: 58px;
+  background-color: #f9fdfa;
+  text-align: center;
+  border-right: 1px solid #ccc;
+  border-bottom: 1px solid #ccc;
   box-sizing: border-box;
 }
 
-.empty-lines {
+.line-link {
   width: 100%;
   height: 100%;
+  border: none;
+  background-color: transparent;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #999999;
-  font-size: 14px;
-}
-
-/* Single line item - fill container height */
-.line-item {
-  flex: 1;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  background: #ffffff;
-  border-right: 1px solid #e0e0e0;
-  cursor: pointer;
-  transition: background 0.2s ease;
+  gap: 3px;
+  padding: 0;
   box-sizing: border-box;
+  cursor: pointer;
+  text-align: center;
 }
 
-/* Last item - no right border */
-.line-item:last-child {
-  border-right: none;
+.line-link:hover {
+  text-decoration: underline;
+  background: #ebfff0;
 }
 
-/* Hover state - show light green background */
-.line-item:hover {
-  background: rgba(235, 255, 240, 1);
+.line-link:hover .sub-text {
+  color: red;
 }
 
-/* Active/Click state - slightly darker green */
-.line-item:active {
-  background: rgba(200, 240, 210, 1);
-}
-
-/* Hover state - text turns red */
-.line-item:hover .line-name,
-.line-item:hover .line-ping {
-  color: #FF0000;
-}
-
-/* Line name - green #008000 */
-.line-name {
+.member-item,
+.mobile-item,
+.agent-line-item {
   font-size: 16px;
-  color: #008000;
-  font-weight: 500;
+  color: green;
 }
 
-/* Ping time - light gray */
-.line-ping {
-  font-size: 14px;
-  color: #999999;
+.line-link:hover .member-item,
+.line-link:hover .mobile-item,
+.line-link:hover .agent-line-item {
+  color: red;
 }
 
-/* ==================== Mobile Responsive (H5) ==================== */
-/* Keep same layout as PC, page scrolls horizontally from left */
-@media screen and (max-width: 1024px) {
-  .member-panel {
-    align-items: flex-start;
-    justify-content: flex-start; /* Start from left on mobile */
-    padding: 40px 0;
+.sub-text {
+  color: #686868;
+  font-size: 13px;
+  font-weight: 400;
+}
+
+/* === Mobile: 768px and below === */
+@media screen and (max-width: 768px) {
+  .container {
+    width: 100%;
+    padding: 10px 5px 20px;
+    background: #efefef;
   }
 
-  .content-wrapper {
-    margin: 0; /* No auto margin, start from left */
-    padding-left: 10px;
+  .header {
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  .left-group {
+    order: 2;
+  }
+
+  .header h1 {
+    order: -1;
+    font-size: 20px;
+    line-height: 25px;
+  }
+
+  .right-group {
+    order: 3;
+  }
+
+  .btn2 {
+    width: 70px;
+    height: 32px;
+    font-size: 13px;
+  }
+
+  .line-item {
+    width: 50%;
+    height: auto;
+    line-height: normal;
+    background-color: #f0f0f0;
+  }
+
+  .line-link {
+    min-height: 52px;
+    padding: 8px 6px;
+    background-color: #f0f0f0;
+  }
+
+  .line-link:hover {
+    background: #ebfff0;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .container {
+    padding: 10px 5px;
+  }
+
+  .header h1 {
+    font-size: 18px;
+  }
+
+  .btn2 {
+    width: 60px;
+    height: 30px;
+    font-size: 12px;
+  }
+
+  .line-item {
+    height: auto;
+    line-height: normal;
+  }
+
+  .line-link {
+    min-height: 50px;
+  }
+
+  .sub-text {
+    font-size: 11px;
   }
 }
 </style>
-
