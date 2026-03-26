@@ -90,10 +90,19 @@ public class LotteryService {
      * @return mapped LotteryListResponse
      */
     public LotteryListResponse getHistoryList(int lotCode, int pageNo, int pageSize, String date) {
+        LotteryService invoker = getCacheInvoker();
         if (pageNo <= 1) {
-            return self.getHistoryListFirstPage(lotCode, pageSize, date);
+            return invoker.getHistoryListFirstPage(lotCode, pageSize, date);
         }
-        return self.getHistoryListOtherPages(lotCode, pageNo, pageSize, date);
+        return invoker.getHistoryListOtherPages(lotCode, pageNo, pageSize, date);
+    }
+
+    /**
+     * Return Spring proxy when available; otherwise fall back to current instance.
+     * This keeps unit tests (without Spring context) from failing with null self.
+     */
+    private LotteryService getCacheInvoker() {
+        return self != null ? self : this;
     }
 
     /**
