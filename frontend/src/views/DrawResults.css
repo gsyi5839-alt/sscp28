@@ -1,3 +1,5 @@
+@import '../mobile/styles/DrawResults.mobile.css';
+
 /* DrawResults.vue styles - extracted for better maintainability */
 
 /* Full width container - block display ensures it fills available width */
@@ -259,29 +261,4 @@
   width: 100%;
   padding: 8px 4px;
   box-sizing: border-box;
-}
-
-/* Responsive styles */
-@media (max-width: 900px) {
-  .draw-results-card > .toolbar {
-    flex-wrap: wrap;
-    height: auto;
-    padding: 8px 12px;
-  }
-
-  .toolbar-spacer {
-    display: none;
-  }
-
-  .date-picker {
-    width: 130px;
-    margin-left: auto;
-  }
-
-  .table-shell,
-  .pagination-container {
-    width: calc(100% - 24px);
-    margin-left: 12px;
-    margin-right: 12px;
-  }
 }

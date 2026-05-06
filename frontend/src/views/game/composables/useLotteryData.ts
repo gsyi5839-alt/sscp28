@@ -4,6 +4,8 @@
  */
 import { ref, computed, onMounted, onUnmounted, watch, type Ref } from 'vue'
 import { lotteryApi } from '../../../api/index'
+import { getLotteryDataClientConfig } from '@/mobile/config/lotteryData'
+import { isGameMobileClient } from '@/mobile/utils/client'
 import { HISTORY_LIST_SIZE } from '../constants/odds'
 
 /**
@@ -13,7 +15,8 @@ import { HISTORY_LIST_SIZE } from '../constants/odds'
  * @param lotCodeRef reactive ref holding the current game's lottery code
  */
 export function useLotteryData(lotCodeRef: Ref<number>) {
-  const isMobileClient = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+  const isMobileClient = isGameMobileClient()
+  const lotteryDataClientConfig = getLotteryDataClientConfig(isMobileClient)
 
   // Previous draw data
   const preDrawIssue = ref('--')
@@ -39,10 +42,11 @@ export function useLotteryData(lotCodeRef: Ref<number>) {
   const historyNums = ref<number[]>([])
 
   // Mobile-first polling strategy: keep data fresh while reducing network pressure.
-  const INFO_POLL_INTERVAL = isMobileClient ? 6000 : 4000
-  const HISTORY_POLL_INTERVAL = isMobileClient ? 12000 : 5000
-  const FULL_HISTORY_POLL_INTERVAL = 60000
-  const FAST_HISTORY_LIST_SIZE = isMobileClient ? 80 : 120
+  const INFO_POLL_INTERVAL = lotteryDataClientConfig.infoPollInterval
+  const HISTORY_POLL_INTERVAL = lotteryDataClientConfig.historyPollInterval
+  const FULL_HISTORY_POLL_INTERVAL = lotteryDataClientConfig.fullHistoryPollInterval
+  const FAST_HISTORY_LIST_SIZE = lotteryDataClientConfig.fastHistoryListSize
+  const ROLLOVER_REFRESH_INTERVAL = 1000
 
   // Internal state
   let countdownTimer: ReturnType<typeof setInterval> | null = null
@@ -55,6 +59,7 @@ export function useLotteryData(lotCodeRef: Ref<number>) {
   let sealTimestamp = 0
   let currentDrawIssue = ''
   let currentPreDrawIssue = ''
+  let lastRolloverRefreshAt = 0
 
   // Check if betting is sealed.
   // Only treat as sealed in the real window: [sealTimestamp, drawTimestamp).
@@ -129,6 +134,7 @@ export function useLotteryData(lotCodeRef: Ref<number>) {
         // New period detection
         if (newIssue && newIssue !== currentDrawIssue) {
           currentDrawIssue = newIssue
+          lastRolloverRefreshAt = 0
           isDrawing.value = false
           fetchHistoryList()
         }
@@ -179,6 +185,10 @@ export function useLotteryData(lotCodeRef: Ref<number>) {
       isDrawing.value = true
       drawCountdown.value = '00:00:00'
       sealCountdown.value = '00:00:00'
+      if (now - lastRolloverRefreshAt >= ROLLOVER_REFRESH_INTERVAL) {
+        lastRolloverRefreshAt = now
+        fetchLotteryInfo()
+      }
     } else {
       isDrawing.value = false
       drawCountdown.value = fmtCountdown(drawDiff)
@@ -255,7 +265,7 @@ export function useLotteryData(lotCodeRef: Ref<number>) {
     if (isMobileClient) {
       fullHistoryBootstrapTimer = setTimeout(() => {
         fetchHistoryList(HISTORY_LIST_SIZE)
-      }, 8000)
+      }, lotteryDataClientConfig.initialFullHistoryDelay)
     } else {
       fetchHistoryList(HISTORY_LIST_SIZE)
     }
@@ -285,6 +295,7 @@ export function useLotteryData(lotCodeRef: Ref<number>) {
     sealTimestamp = 0
     currentDrawIssue = ''
     currentPreDrawIssue = ''
+    lastRolloverRefreshAt = 0
     isFetching = false
     // Fetch data for the new game immediately
     fetchLotteryInfo()
@@ -295,7 +306,7 @@ export function useLotteryData(lotCodeRef: Ref<number>) {
       }
       fullHistoryBootstrapTimer = setTimeout(() => {
         fetchHistoryList(HISTORY_LIST_SIZE)
-      }, 6000)
+      }, lotteryDataClientConfig.switchGameFullHistoryDelay)
     } else {
       fetchHistoryList(HISTORY_LIST_SIZE)
     }

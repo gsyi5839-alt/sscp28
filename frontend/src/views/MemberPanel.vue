@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import MemberPanelMobile from '@/mobile/components/MemberPanelMobile.vue'
+import { isResponsiveMobileClient } from '@/mobile/utils/client'
 
 const isMobile = ref(false)
 const checkMobile = () => {
-  isMobile.value = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+  isMobile.value = isResponsiveMobileClient()
 }
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
@@ -209,7 +211,20 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="container">
+  <MemberPanelMobile
+    v-if="isMobile"
+    :active-tab="activeTab"
+    :speed-testing="speedTesting"
+    :member-desktop-lines="memberDesktopLines"
+    :member-mobile-lines="memberMobileLines"
+    :agent-display-lines="agentDisplayLines"
+    @toggle="onToggle"
+    @speed="onSpeed"
+    @logout="onLogout"
+    @open-line="openLine"
+  />
+
+  <div v-else class="container">
     <div class="flex-space-between header">
       <div class="btn-group left-group">
         <button id="member-btn" class="btn2" :class="{ btn1: activeTab === 'member' }" @click="onToggle('member')">
@@ -230,8 +245,7 @@ onMounted(() => {
 
     <div class="content">
       <template v-if="activeTab === 'member'">
-        <!-- Desktop: single grid without titles -->
-        <div v-if="!isMobile" id="member-lines-container" class="lines-wrap">
+        <div id="member-lines-container" class="lines-wrap">
           <div class="line-items">
             <div v-for="line in memberDesktopLines" :key="`desktop-${line.id}`" class="line-item">
               <button class="line-link member-item" @click="openLine(line)">
@@ -241,33 +255,6 @@ onMounted(() => {
             </div>
           </div>
         </div>
-
-        <!-- Mobile: two sections with titles -->
-        <template v-else>
-          <div id="member-lines-container" class="lines-wrap">
-            <div class="group-title">电脑端线路</div>
-            <div class="line-items">
-              <div v-for="line in memberDesktopLines" :key="`desktop-${line.id}`" class="line-item">
-                <button class="line-link member-item" @click="openLine(line)">
-                  <span>{{ line.name }}</span>
-                  <span class="sub-text">{{ speedTesting ? '测速中...' : `(${line.pingMs ?? 'N/A'}ms)` }}</span>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div id="mobile-lines-container" class="lines-wrap">
-            <div class="group-title">移动端线路</div>
-            <div class="line-items">
-              <div v-for="line in memberMobileLines" :key="`mobile-${line.id}`" class="line-item">
-                <button class="line-link mobile-item" @click="openLine(line)">
-                  <span>{{ line.name }}</span>
-                  <span class="sub-text">{{ speedTesting ? '测速中...' : `(${line.pingMs ?? 'N/A'}ms)` }}</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </template>
       </template>
 
       <div v-else id="agent-lines-container" class="lines-wrap">
@@ -377,22 +364,6 @@ onMounted(() => {
   border-left: 1px solid #ccc;
 }
 
-#mobile-lines-container {
-  margin-top: 20px;
-}
-
-.group-title {
-  width: 100%;
-  padding: 10px;
-  background-color: #f0f0f0;
-  border-right: 1px solid #ccc;
-  border-bottom: 1px solid #ccc;
-  font-weight: 700;
-  color: #333;
-  box-sizing: border-box;
-  font-size: 14px;
-}
-
 .line-items {
   width: 100%;
   display: flex;
@@ -451,85 +422,5 @@ onMounted(() => {
   color: #686868;
   font-size: 13px;
   font-weight: 400;
-}
-
-/* === Mobile: 768px and below === */
-@media screen and (max-width: 768px) {
-  .container {
-    width: 100%;
-    padding: 10px 5px 20px;
-    background: #efefef;
-  }
-
-  .header {
-    flex-direction: column;
-    gap: 15px;
-  }
-
-  .left-group {
-    order: 2;
-  }
-
-  .header h1 {
-    order: -1;
-    font-size: 20px;
-    line-height: 25px;
-  }
-
-  .right-group {
-    order: 3;
-  }
-
-  .btn2 {
-    width: 70px;
-    height: 32px;
-    font-size: 13px;
-  }
-
-  .line-item {
-    width: 50%;
-    height: auto;
-    line-height: normal;
-    background-color: #f0f0f0;
-  }
-
-  .line-link {
-    min-height: 52px;
-    padding: 8px 6px;
-    background-color: #f0f0f0;
-  }
-
-  .line-link:hover {
-    background: #ebfff0;
-  }
-}
-
-@media screen and (max-width: 480px) {
-  .container {
-    padding: 10px 5px;
-  }
-
-  .header h1 {
-    font-size: 18px;
-  }
-
-  .btn2 {
-    width: 60px;
-    height: 30px;
-    font-size: 12px;
-  }
-
-  .line-item {
-    height: auto;
-    line-height: normal;
-  }
-
-  .line-link {
-    min-height: 50px;
-  }
-
-  .sub-text {
-    font-size: 11px;
-  }
 }
 </style>

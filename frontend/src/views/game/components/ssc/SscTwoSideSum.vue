@@ -192,17 +192,13 @@ const onAmountChange = (label: string, val: number | undefined) => {
 }
 
 /* Selected state */
-.ssc-sum-cell--selected,
-.ssc-sum-cell--selected:hover {
+.ssc-sum-cell--selected {
   background: #ffc214;
 }
 
 .ssc-sum-cell--selected .ssc-sum-label,
-.ssc-sum-cell--selected:hover .ssc-sum-label,
 .ssc-sum-cell--selected .ssc-sum-odd,
-.ssc-sum-cell--selected:hover .ssc-sum-odd,
-.ssc-sum-cell--selected .ssc-sum-input,
-.ssc-sum-cell--selected:hover .ssc-sum-input {
+.ssc-sum-cell--selected .ssc-sum-input {
   background: #ffc214;
 }
 

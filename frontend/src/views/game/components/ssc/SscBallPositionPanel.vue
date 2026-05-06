@@ -315,17 +315,13 @@ const onAmountInput = (key: string, event: Event) => {
   background: transparent;
 }
 
-.ssc-pos-cell--selected,
-.ssc-pos-cell--selected:hover {
+.ssc-pos-cell--selected {
   background: #ffc214;
 }
 
 .ssc-pos-cell--selected .ssc-pos-label,
-.ssc-pos-cell--selected:hover .ssc-pos-label,
 .ssc-pos-cell--selected .ssc-pos-odd,
-.ssc-pos-cell--selected:hover .ssc-pos-odd,
-.ssc-pos-cell--selected .ssc-pos-input-wrap,
-.ssc-pos-cell--selected:hover .ssc-pos-input-wrap {
+.ssc-pos-cell--selected .ssc-pos-input-wrap {
   background: #ffc214;
 }
 

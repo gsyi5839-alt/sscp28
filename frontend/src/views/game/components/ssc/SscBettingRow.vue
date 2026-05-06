@@ -193,17 +193,13 @@ const onAmountChange = (label: string, val: number | undefined) => {
 }
 
 /* Selected state (golden highlight) */
-.ssc-cell--selected,
-.ssc-cell--selected:hover {
+.ssc-cell--selected {
   background: #ffc214;
 }
 
 .ssc-cell--selected .ssc-cell-label,
-.ssc-cell--selected:hover .ssc-cell-label,
 .ssc-cell--selected .ssc-cell-odd,
-.ssc-cell--selected:hover .ssc-cell-odd,
-.ssc-cell--selected .ssc-cell-input,
-.ssc-cell--selected:hover .ssc-cell-input {
+.ssc-cell--selected .ssc-cell-input {
   background: #ffc214;
 }
 

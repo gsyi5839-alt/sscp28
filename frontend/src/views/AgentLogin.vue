@@ -400,16 +400,5 @@ onMounted(() => {
   font-style: italic;
   margin: 0;
 }
-
-/* Mobile: same as PC layout, allow horizontal scroll */
-@media screen and (max-width: 900px) {
-  .login-page {
-    justify-content: flex-start;
-    padding: 80px 0 20px 0;
-  }
-
-  .login-container {
-    min-width: 800px;
-  }
-}
 </style>
+<style scoped src="../mobile/styles/AgentLogin.mobile.css"></style>

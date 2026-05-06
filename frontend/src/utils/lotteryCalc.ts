@@ -147,6 +147,59 @@ export function calcBullResult(numbers: number[]): string {
   return '无牛'
 }
 
+export type BullPokerResult = '高牌' | '一对' | '二对' | '三条' | '顺子' | '葫芦' | '四条' | '五条'
+
+/**
+ * Check whether five lottery digits form a circular straight.
+ * Supports regular sequences and digit wrap-around such as 8,9,0,1,2.
+ * @param numbers - array of exactly 5 numbers
+ * @returns true when the numbers form a five-digit straight
+ */
+function isFiveNumberStraight(numbers: number[]): boolean {
+  const uniqueNums = [...new Set(numbers)]
+  if (uniqueNums.length !== 5) return false
+
+  const numSet = new Set(uniqueNums)
+  for (let start = 0; start <= 9; start++) {
+    let matched = true
+    for (let offset = 0; offset < 5; offset++) {
+      if (!numSet.has((start + offset) % 10)) {
+        matched = false
+        break
+      }
+    }
+    if (matched) return true
+  }
+
+  return false
+}
+
+/**
+ * Calculate the poker-style bull category from 5 numbers.
+ * @param numbers - array of exactly 5 numbers
+ * @returns poker category for the NiuNiu/Suoha statistics panel
+ */
+export function calcBullPokerResult(numbers: number[]): BullPokerResult {
+  if (!numbers || numbers.length !== 5) return '高牌'
+
+  const counts = new Map<number, number>()
+  numbers.forEach(num => {
+    counts.set(num, (counts.get(num) ?? 0) + 1)
+  })
+
+  const countValues = [...counts.values()].sort((a, b) => b - a)
+  const pairCount = countValues.filter(count => count === 2).length
+
+  if (countValues[0] === 5) return '五条'
+  if (countValues[0] === 4) return '四条'
+  if (countValues[0] === 3 && countValues[1] === 2) return '葫芦'
+  if (isFiveNumberStraight(numbers)) return '顺子'
+  if (countValues[0] === 3) return '三条'
+  if (pairCount === 2) return '二对'
+  if (pairCount === 1) return '一对'
+  return '高牌'
+}
+
 /**
  * Get color class for dragon/tiger result
  * @param result - dragon/tiger result string

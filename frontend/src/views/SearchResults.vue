@@ -347,57 +347,5 @@ const handlePageChange = (newPage: number) => {
   justify-content: center;
   padding: 24px 0;
 }
-
-/* ==================== Mobile Responsive (H5) ==================== */
-@media screen and (max-width: 768px) {
-  .results-header {
-    padding: 12px 16px;
-  }
-  
-  .header-content {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
-  }
-  
-  .header-search {
-    width: 100%;
-    max-width: none;
-  }
-  
-  .icon-box {
-    width: 16px;
-    height: 16px;
-    font-size: 8px;
-  }
-  
-  .logo-text .bw,
-  .logo-text .search-text {
-    font-size: 14px;
-  }
-  
-  .search-input {
-    height: 32px;
-    font-size: 13px;
-  }
-  
-  .search-btn {
-    width: 50px;
-    height: 32px;
-    font-size: 13px;
-  }
-  
-  .results-main {
-    padding: 16px;
-  }
-  
-  .result-title {
-    font-size: 16px;
-  }
-  
-  .result-desc {
-    font-size: 13px;
-  }
-}
 </style>
-
+<style scoped src="../mobile/styles/SearchResults.mobile.css"></style>

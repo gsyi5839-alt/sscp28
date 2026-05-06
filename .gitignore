@@ -12,6 +12,14 @@ target/
 /assets/
 /index.html
 /style.css
+/default-favicon.svg
+/vite.svg
+
+# Local tool / agent state
+/.codex
+/.codex/
+/.cursor/
+/.qoder/
 
 # IDE
 .idea/
@@ -26,10 +34,14 @@ Thumbs.db
 
 # Logs
 logs/
+backend/logs/
 *.log
 npm-debug.log*
 nohup.out
 backend/nohup.out
+
+# Generated test output
+test-results/
 
 # Environment variables
 .env.local
@@ -49,6 +61,7 @@ mvnw.cmd
 
 # Compiled files
 *.jar
+backend/*.jar.bak.*
 *.war
 *.ear
 

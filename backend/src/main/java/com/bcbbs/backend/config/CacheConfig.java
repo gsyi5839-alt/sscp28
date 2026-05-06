@@ -14,7 +14,7 @@ import java.util.concurrent.TimeUnit;
  * 
  * Cache regions:
  * - lotteryGames: lottery type catalog, 1h TTL, max 10 entries
- * - lotteryInfo: current issue info per lotCode, 5s TTL, max 20 entries
+ * - lotteryInfo: current issue info per lotCode, 1s TTL, max 20 entries
  * - lotteryListFirstPage: first page history (latest draws), 5s TTL, max 20 entries
  * - lotteryListOtherPages: other pages history (stable data), 15min TTL, max 100 entries
  * - accessLines: access line list per type, 6h TTL, max 5 entries
@@ -35,10 +35,10 @@ public class CacheConfig {
                 .recordStats()
                 .build());
         
-        // Current issue info: changes every ~5 min, cache 5 seconds to reduce upstream calls
+        // Current issue info: keep below the UI tick window so draw rollover is not delayed.
         cacheManager.registerCustomCache("lotteryInfo",
             Caffeine.newBuilder()
-                .expireAfterWrite(5, TimeUnit.SECONDS)
+                .expireAfterWrite(1, TimeUnit.SECONDS)
                 .maximumSize(20)
                 .recordStats()
                 .build());

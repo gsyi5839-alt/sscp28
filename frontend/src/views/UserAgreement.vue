@@ -173,19 +173,5 @@ const handleAgree = () => {
 .mt10 {
   margin-top: 10px !important;
 }
-
-/* Mobile responsive */
-@media screen and (max-width: 1024px) {
-  .home-container {
-    overflow-x: auto;
-    align-items: flex-start;
-    justify-content: flex-start;
-    padding: 10px;
-  }
-  
-  .home-wrapper,
-  .home-footer {
-    min-width: 980px;
-  }
-}
 </style>
+<style scoped src="../mobile/styles/UserAgreement.mobile.css"></style>

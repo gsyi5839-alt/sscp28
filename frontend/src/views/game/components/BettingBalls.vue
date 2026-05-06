@@ -146,12 +146,15 @@ const getDisplayBallSrc = (num: number) => (isSscGame.value ? getBlueBallSrc(num
 .balls-row-selected .balls-ball-cell,
 .balls-row-selected .balls-odd-cell,
 .balls-row-selected .balls-input-cell,
-.balls-row-selected .balls-label-cell,
+.balls-row-selected .balls-label-cell {
+  background: #ffc214;
+}
+
 .balls-row-selected:hover .balls-ball-cell,
 .balls-row-selected:hover .balls-odd-cell,
 .balls-row-selected:hover .balls-input-cell,
 .balls-row-selected:hover .balls-label-cell {
-  background: #ffc214;
+  background: var(--bw-header-color, #be9d76);
 }
 
 .balls-ball-cell {

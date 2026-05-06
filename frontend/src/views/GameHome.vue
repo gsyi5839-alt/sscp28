@@ -10,6 +10,8 @@ const RecentDrawsDialog = defineAsyncComponent(loadRecentDrawsDialog)
 const SscTwoSidePanel = defineAsyncComponent(loadSscTwoSidePanel)
 const SscBallPositionPanel = defineAsyncComponent(loadSscBallPositionPanel)
 const SscSingleBallPanel = defineAsyncComponent(loadSscSingleBallPanel)
+const SscNiuNiuPanel = defineAsyncComponent(loadSscNiuNiuPanel)
+const SscNiuNiuStats = defineAsyncComponent(loadSscNiuNiuStats)
 const NoticeDialog = defineAsyncComponent(loadNoticeDialog)
 const BettingBalls = defineAsyncComponent(loadBettingBalls)
 const NoticeSection = defineAsyncComponent(loadNoticeSection)
@@ -38,11 +40,13 @@ import {
 } from './game/constants/odds'
 import { getBallSrc, sumOddTextStyle, twoSideOddTextStyle, colorOddTextStyle, patternOddTextStyle } from './game/composables/useOddsStyles'
 import { NOTICE_SHOWN_KEY } from './game/constants/notices'
+import { getGameHomeNoticeDelay } from '@/mobile/config/gameHome'
+import { isGameMobileClient } from '@/mobile/utils/client'
 import { getGameConfig, DEFAULT_GAME_KEY, GAME_CONFIG_MAP } from '@/utils/gameConfig'
 import { getSubNavForGame, getGameCategory, type GameCategory } from '@/utils/gameSubNav'
 
 const route = useRoute()
-const isMobileClient = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+const isMobileClient = isGameMobileClient()
 const ACTIVE_GAME_STORAGE_KEY = 'bw-member-active-game-key'
 const ACTIVE_BET_TAB_MAP_STORAGE_KEY = 'bw-member-active-bet-tab-map'
 
@@ -64,6 +68,14 @@ function loadSscBallPositionPanel() {
 
 function loadSscSingleBallPanel() {
   return import('./game/components/ssc/SscSingleBallPanel.vue')
+}
+
+function loadSscNiuNiuPanel() {
+  return import('./game/components/ssc/SscNiuNiuPanel.vue')
+}
+
+function loadSscNiuNiuStats() {
+  return import('./game/components/ssc/SscNiuNiuStats.vue')
 }
 
 function loadNoticeDialog() {
@@ -161,6 +173,8 @@ const preloadTabPanelsByCategory = (category: GameCategory) => {
       loadSscTwoSidePanel(),
       loadSscBallPositionPanel(),
       loadSscSingleBallPanel(),
+      loadSscNiuNiuPanel(),
+      loadSscNiuNiuStats(),
     ])
     return
   }
@@ -385,7 +399,7 @@ onMounted(() => {
   // Show notice after short delay (only once per session)
   const hasShownNotice = sessionStorage.getItem(NOTICE_SHOWN_KEY)
   if (!hasShownNotice) {
-    const noticeDelayMs = isMobileClient ? 1800 : 500
+    const noticeDelayMs = getGameHomeNoticeDelay(isMobileClient)
     setTimeout(() => { showNoticeDialog.value = true }, noticeDelayMs)
   }
 })
@@ -640,6 +654,13 @@ onUnmounted(() => {
               @toggle-ball="toggleBallSelect"
               @ensure-ball="ensureBallSelected"
             />
+
+            <template v-if="activeBetTab === 'niuNiu' && activeGameCategory === 'ssc'">
+              <SscNiuNiuPanel
+                :is-sealed="isSealed"
+                :quick-mode="quickMode"
+              />
+            </template>
             </div>
               </div>
 
@@ -649,8 +670,14 @@ onUnmounted(() => {
               class="quick-bar-bottom"
             />
 
+            <SscNiuNiuStats
+              v-if="activeBetTab === 'niuNiu' && activeGameCategory === 'ssc'"
+              :history-issues="historyIssues"
+            />
+
             <!-- Summary road -->
             <SummaryRoad
+              v-else
               :summary-tabs="currentSummaryTabs"
               :active-summary-key="currentSummaryKey"
               :active-summary-values="currentSummaryValues"
@@ -902,9 +929,12 @@ onUnmounted(() => {
 }
 
 .sum-row-selected .sum-cell,
-.sum-row-selected:hover .sum-cell,
 .sum-row-selected:focus-within .sum-cell {
   background: #ffc214 !important;
+}
+
+.sum-row-selected:hover .sum-cell {
+  background: var(--bw-header-color, #be9d76) !important;
 }
 
 .sum-cell {
@@ -1187,21 +1217,27 @@ onUnmounted(() => {
 }
 
 .bet-item-selected,
-.bet-item-selected:hover,
 .bet-item-selected:focus-within {
   background: #ffc214;
 }
 
 .bet-item-selected .label,
-.bet-item-selected:hover .label,
 .bet-item-selected:focus-within .label,
 .bet-item-selected .odd,
-.bet-item-selected:hover .odd,
 .bet-item-selected:focus-within .odd,
 .bet-item-selected .input-box,
-.bet-item-selected:hover .input-box,
 .bet-item-selected:focus-within .input-box {
   background: #ffc214;
+}
+
+.bet-item-selected:hover {
+  background: var(--bw-header-color, #be9d76);
+}
+
+.bet-item-selected:hover .label,
+.bet-item-selected:hover .odd,
+.bet-item-selected:hover .input-box {
+  background: transparent;
 }
 
 .pattern-item:last-child {

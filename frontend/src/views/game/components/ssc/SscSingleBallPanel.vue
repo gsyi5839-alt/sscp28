@@ -270,21 +270,15 @@ const sumKeyPrefix = `${props.keyPrefix}_sum`
 }
 
 /* Selected */
-.sb-cell--selected,
-.sb-cell--selected:hover {
+.sb-cell--selected {
   background: #ffc214;
 }
 
 .sb-cell--selected .sb-cell-icon,
-.sb-cell--selected:hover .sb-cell-icon,
 .sb-cell--selected .sb-cell-label,
-.sb-cell--selected:hover .sb-cell-label,
 .sb-cell--selected .sb-cell-plabel,
-.sb-cell--selected:hover .sb-cell-plabel,
 .sb-cell--selected .sb-cell-odd,
-.sb-cell--selected:hover .sb-cell-odd,
-.sb-cell--selected .sb-cell-input,
-.sb-cell--selected:hover .sb-cell-input {
+.sb-cell--selected .sb-cell-input {
   background: #ffc214;
 }
 

@@ -11,6 +11,8 @@ export interface SscBetItem {
   odd: string
   /** Whether this cell is disabled (e.g., empty placeholder cell) */
   disabled?: boolean
+  /** Whether this cell should display as stopped betting */
+  stopped?: boolean
 }
 
 /**
@@ -116,3 +118,43 @@ export const SSC_PATTERN_ITEMS: SscBetItem[] = [
 
 /** Pattern section titles */
 export const SSC_PATTERN_TITLES = ['前三', '中三', '后三']
+
+/**
+ * NiuNiu betting panel items.
+ * The odds are taken from the reference design screenshot.
+ */
+export const SSC_NIUNIU_ROW1: SscBetItem[] = [
+  { label: '牛牛', odd: '15.3' },
+  { label: '牛九', odd: '15.4' },
+  { label: '牛八', odd: '15.19' },
+  { label: '牛七', odd: '15.4' },
+  { label: '牛六', odd: '15.19' },
+  { label: '牛五', odd: '15.4' },
+  { label: '牛四', odd: '15.19' },
+  { label: '牛三', odd: '15.4' },
+  { label: '牛二', odd: '15.19' },
+  { label: '牛一', odd: '15.4' },
+  { label: '无牛', odd: '2.73' },
+  { label: '', odd: '--', disabled: true },
+]
+
+export const SSC_NIUNIU_TWO_SIDE: SscBetItem[] = [
+  { label: '牛单', odd: '3.08' },
+  { label: '牛双', odd: '3.01' },
+  { label: '牛大', odd: '3.04' },
+  { label: '牛小', odd: '3.05' },
+]
+
+export const SSC_NIUNIU_SOHA: SscBetItem[] = [
+  { label: '高牌', odd: '--', stopped: true },
+  { label: '一对', odd: '--', stopped: true },
+  { label: '二对', odd: '--', stopped: true },
+  { label: '三条', odd: '--', stopped: true },
+  { label: '顺子', odd: '--', stopped: true },
+  { label: '葫芦', odd: '--', stopped: true },
+  { label: '四条', odd: '--', stopped: true },
+  { label: '五条', odd: '--', stopped: true },
+]
+
+export const SSC_NIUNIU_STATS_BULL = ['牛牛', '牛九', '牛八', '牛七', '牛六', '牛五', '牛四', '牛三', '牛二', '牛一', '无牛'] as const
+export const SSC_NIUNIU_STATS_POKER = ['高牌', '一对', '二对', '三条', '顺子', '葫芦', '四条', '五条'] as const
