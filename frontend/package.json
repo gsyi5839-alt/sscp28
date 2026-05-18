@@ -11,6 +11,7 @@
     "deploy:standard:dry": "DEPLOY_DRY_RUN=true SITE_ROOT=/www/wwwroot/www.bcbbs3.cn DEPLOY_HEALTHCHECK_URL=https://18118bw.cn/index.html node scripts/site-deploy.mjs",
     "build:site": "npm run build && npm run deploy:standard",
     "build:site:dry": "npm run build && npm run deploy:standard:dry",
+    "test:seal": "node scripts/test-betting-seal-state.mjs",
     "preview": "vite preview",
     "clean:site:assets": "SITE_ROOT=/www/wwwroot/www.bcbbs3.cn node scripts/site-deploy.mjs --clean-assets-only",
     "clean:site:assets:dry": "SITE_ROOT=/www/wwwroot/www.bcbbs3.cn DEPLOY_DRY_RUN=true node scripts/site-deploy.mjs --clean-assets-only"

@@ -32,6 +32,9 @@ public class LotteryInfoResponse {
     /** Current/next draw time */
     private String drawTime;
 
+    /** Upstream service time used to align client countdowns */
+    private String serviceTime;
+
     /** Lottery code, e.g. 720 */
     private Integer lotCode;
 

@@ -265,6 +265,7 @@ const sumKeyPrefix = `${props.keyPrefix}_sum`
 .sb-cell:not(.sb-cell--disabled):hover .sb-cell-icon,
 .sb-cell:not(.sb-cell--disabled):hover .sb-cell-label,
 .sb-cell:not(.sb-cell--disabled):hover .sb-cell-plabel,
+.sb-cell:not(.sb-cell--disabled):hover .sb-cell-odd,
 .sb-cell:not(.sb-cell--disabled):hover .sb-cell-input {
   background: transparent;
 }

@@ -77,17 +77,23 @@ const onExplainClick = () => {
 }
 
 .quick-tab {
+  display: inline-block;
   width: 35px;
+  padding: 4px 0;
   text-align: center;
   cursor: pointer;
   color: #ff0000;
+  line-height: 14.95px;
+  box-sizing: border-box;
+}
+
+.quick-tab:first-child {
+  margin-left: 10px;
 }
 
 .quick-tab.active {
   background: #ffffbf;
   border: 1px solid var(--bw-border-color, #efba84);
-  height: 25px;
-  line-height: 25px;
   color: #ff0000;
 }
 
@@ -134,7 +140,9 @@ const onExplainClick = () => {
   width: 46px;
   height: 20px;
   border: none;
-  font-size: 12px;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 20px;
   cursor: pointer;
   color: #fff;
 }

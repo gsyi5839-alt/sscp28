@@ -39,6 +39,9 @@
   --el-color-danger-light-8: #fde2e2;
   --el-color-danger-light-9: #fef0f0;
   --el-color-danger-dark-2: #c45656;
+  --el-disabled-bg-color: #f5f7fa;
+  --el-disabled-text-color: #a8abb2;
+  --el-disabled-border-color: #e4e7ed;
   /* Element Plus date picker width override */
   --el-date-editor-width: 130px;
   --pc28-cell-bg: #f2eae0;
@@ -227,6 +230,29 @@ a {
 
 a:hover {
   color: #535bf2;
+}
+
+/* Unified sealed betting input style. */
+.game-panel input:disabled {
+  opacity: 1 !important;
+  background: var(--el-disabled-bg-color, #f5f7fa) !important;
+  color: var(--el-disabled-text-color, #a8abb2) !important;
+  border-color: var(--el-disabled-border-color, #e4e7ed) !important;
+  cursor: not-allowed !important;
+}
+
+.game-panel .el-input.is-disabled .el-input__wrapper,
+.game-panel .el-input-number.is-disabled .el-input__wrapper {
+  opacity: 1 !important;
+  background: var(--el-disabled-bg-color, #f5f7fa) !important;
+  box-shadow: 0 0 0 1px var(--el-disabled-border-color, #e4e7ed) inset !important;
+  cursor: not-allowed !important;
+}
+
+.game-panel .el-input.is-disabled .el-input__inner,
+.game-panel .el-input-number.is-disabled .el-input__inner {
+  color: var(--el-disabled-text-color, #a8abb2) !important;
+  cursor: not-allowed !important;
 }
 
 /* ========== 公告弹窗：覆盖 Element Plus Dialog 默认样式 ========== */

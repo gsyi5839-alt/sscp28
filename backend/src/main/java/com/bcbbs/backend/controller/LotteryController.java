@@ -12,6 +12,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 /**
@@ -28,6 +31,8 @@ import java.util.List;
 public class LotteryController {
 
     private final LotteryService lotteryService;
+    private static final ZoneId COUNTDOWN_ZONE = ZoneId.of("Asia/Shanghai");
+    private static final DateTimeFormatter SERVICE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     /**
      * Get current issue info: latest draw result + next draw time.
@@ -39,6 +44,7 @@ public class LotteryController {
             @RequestParam(defaultValue = "720") int lotCode
     ) {
         LotteryInfoResponse info = lotteryService.getCurrentInfo(lotCode);
+        info.setServiceTime(LocalDateTime.now(COUNTDOWN_ZONE).format(SERVICE_TIME_FORMATTER));
         return ResponseEntity.ok(ApiResponse.success(info));
     }
 

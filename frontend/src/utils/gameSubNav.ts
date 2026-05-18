@@ -46,21 +46,14 @@ export const SSC_SUB_NAV: SubNavItem[] = [
 
 /**
  * Racing-type sub-navigation items (e.g., 澳洲幸运10, 欢乐赛车).
- * Panels: 两面盘, 冠亚军, 1-10名 (individual positions)
+ * Panels: 两面盘, 1-10名, 冠亚军组合, 宝斗, 牛牛
  */
 export const RACING_SUB_NAV: SubNavItem[] = [
   { key: 'twoSide', label: '两面盘' },
-  { key: 'topTwo', label: '冠亚军' },
-  { key: 'pos1', label: '第一名' },
-  { key: 'pos2', label: '第二名' },
-  { key: 'pos3', label: '第三名' },
-  { key: 'pos4', label: '第四名' },
-  { key: 'pos5', label: '第五名' },
-  { key: 'pos6', label: '第六名' },
-  { key: 'pos7', label: '第七名' },
-  { key: 'pos8', label: '第八名' },
-  { key: 'pos9', label: '第九名' },
-  { key: 'pos10', label: '第十名' },
+  { key: 'positions', label: '1-10名' },
+  { key: 'topTwo', label: '冠亚军组合' },
+  { key: 'baoDou', label: '宝斗' },
+  { key: 'racingNiuNiu', label: '牛牛' },
 ]
 
 /**

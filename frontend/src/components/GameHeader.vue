@@ -1,223 +1,39 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { useAuthStore } from '../stores/auth'
 import logoImg from '@/assets/通用/logo.png'
-import { getSubNavForGame } from '@/utils/gameSubNav'
-// Game tab background images for each theme
-import gameTabBgBrown from '@/assets/顶部导航栏背景图/棕.png'
-import gameTabBgRed from '@/assets/顶部导航栏背景图/紫.png'
-import gameTabBgGreen from '@/assets/顶部导航栏背景图/绿.png'
-import gameTabBgCyan from '@/assets/顶部导航栏背景图/青.png'
-import gameTabBgBlue from '@/assets/顶部导航栏背景图/蓝.png'
-// Header bar background images for each theme
-import headerBgBrown from '@/assets/顶部导航栏背景图/顶部导航栏-棕.png'
-import headerBgRed from '@/assets/顶部导航栏背景图/顶部导航栏-紫.png'
-import headerBgGreen from '@/assets/顶部导航栏背景图/顶部导航栏-绿.png'
-import headerBgCyan from '@/assets/顶部导航栏背景图/顶部导航栏背景-青.png'
-import headerBgBlue from '@/assets/顶部导航栏背景图/导航栏背景-蓝.png'
+import { useGameHeader } from './useGameHeader'
 
-// Props: hideSubNav allows pages like BetStatus/AccountHistory to hide the sub navigation bar
 const props = defineProps<{
   hideSubNav?: boolean
 }>()
 
-// Expose the "盘面" selection to the parent page (GameHome)
-// Sub-nav key is passed directly (e.g., 'twoSide', 'balls', 'ball1', 'niuNiu', etc.)
 const betTab = defineModel<string>('betTab', { default: 'twoSide' })
-
-// Expose content view state for switching between game panel and draw results
 const contentView = defineModel<'game' | 'drawResults'>('contentView', { default: 'game' })
-
-// Expose active game key to parent so GameHome can load the correct lottery data
 const activeGameKey = defineModel<string>('activeGameKey', { default: 'caPc28' })
 
-/* ============ 类型 ============ */
-interface NavItem { key: string; label: string }
-interface GameItem { key: string; label: string; badge?: 'new' | 'hot' }
-
-const route = useRoute()
-const router = useRouter()
-const authStore = useAuthStore()
-
-/* ============ 顶部导航 ============ */
-const topNav: NavItem[] = [
-  { key: 'betStatus', label: '下注状况' },
-  { key: 'accountHistory', label: '账户历史' },
-  { key: 'drawResults', label: '开奖结果' },
-  { key: 'profile', label: '个人资料' },
-  { key: 'rules', label: '游戏规则' },
-  { key: 'settings', label: '设置游戏' },
-  { key: 'logout', label: '退出登录' },
-]
-
-/* ============ 游戏导航 ============ */
-const gameNav: GameItem[] = [
-  { key: 'caPc28', label: '加拿大pc28', badge: 'new' },
-  { key: 'caSsc', label: '加拿大时时彩', badge: 'new' },
-  { key: 'aus10', label: '澳洲幸运10' },
-  { key: 'aus5', label: '澳洲幸运5' },
-  { key: 'happyRacing', label: '欢乐赛车', badge: 'hot' },
-  { key: 'happySsc', label: '欢乐时时彩', badge: 'hot' },
-]
-
-/* ============ 更多游戏下拉 ============ */
-const moreGames: GameItem[] = [
-  { key: 'luckyPlane', label: '幸运飞艇' },
-  { key: 'speedRacing', label: '极速赛车' },
-  { key: 'speedSsc', label: '极速时时彩' },
-  { key: 'lucky168', label: '168幸运飞艇' },
-  { key: 'lottery5', label: '体彩乐透5' },
-  { key: 'lottery10', label: '体彩乐透10' },
-]
-
-/* ============ 子导航（动态，根据游戏类型切换） ============ */
-const subNav = computed(() => getSubNavForGame(activeGameKey.value))
-
-/* ============ 主题色 ============ */
-type ThemeKey = 'red' | 'green' | 'cyan' | 'blue' | 'brown'
-
-const themeColors: Array<{ key: ThemeKey; color: string }> = [
-  { key: 'red', color: '#b654a7' },
-  { key: 'green', color: '#4a8e57' },
-  { key: 'cyan', color: '#518594' },
-  { key: 'blue', color: '#28a3ef' },
-  { key: 'brown', color: '#be9d76' },
-]
-
-// Map theme keys to their game tab background images
-const themeGameTabBgMap: Record<ThemeKey, string> = {
-  brown: gameTabBgBrown,
-  red: gameTabBgRed,
-  green: gameTabBgGreen,
-  cyan: gameTabBgCyan,
-  blue: gameTabBgBlue,
-}
-
-// Map theme keys to their header bar background images
-const themeHeaderBgMap: Record<ThemeKey, string> = {
-  brown: headerBgBrown,
-  red: headerBgRed,
-  green: headerBgGreen,
-  cyan: headerBgCyan,
-  blue: headerBgBlue,
-}
-
-/* ============ 状态 ============ */
-const activeTheme = ref<ThemeKey>('brown') // Default brown theme
-const THEME_STORAGE_KEY = 'bw-member-active-theme-name'
-const THEME_CLASS_LIST: ThemeKey[] = ['red', 'green', 'cyan', 'blue', 'brown']
-
-const isThemeKey = (value: string | null): value is ThemeKey => {
-  return !!value && THEME_CLASS_LIST.includes(value as ThemeKey)
-}
-
-const applyTheme = (theme: ThemeKey) => {
-  const root = document.documentElement
-  root.classList.remove(...THEME_CLASS_LIST)
-  root.classList.add(theme)
-  localStorage.setItem(THEME_STORAGE_KEY, theme)
-}
-
-/* ============ Helper Functions ============ */
-// Check if a top navigation item is currently active
-const isTopItemActive = (key: string): boolean => {
-  if (key === 'betStatus' && route.name === 'betStatus') return true
-  if (key === 'accountHistory' && route.name === 'accountHistory') return true
-  if (key === 'drawResults' && contentView.value === 'drawResults') return true
-  return false
-}
-
-/* ============ 事件处理 ============ */
-const onTopClick = async (key: string) => {
-  if (key === 'logout') {
-    authStore.logout()
-    await router.push('/member/login')
-    return
-  }
-  if (key === 'betStatus') {
-    await router.push('/bet-status')
-    return
-  }
-  if (key === 'accountHistory') {
-    await router.push('/account-history')
-    return
-  }
-  if (key === 'drawResults') {
-    contentView.value = 'drawResults'
-    const nextQuery = { ...route.query, view: 'drawResults' }
-    if (router.currentRoute.value.name !== 'gameHome') {
-      await router.push({ name: 'gameHome', query: nextQuery })
-      return
-    }
-    await router.replace({ name: 'gameHome', query: nextQuery })
-    return
-  }
-  // Other navigation functions to be implemented
-}
-
-const onGameClick = (key: string) => {
-  activeGameKey.value = key
-  // Reset to game view when switching games
-  contentView.value = 'game'
-  if (router.currentRoute.value.name !== 'gameHome') {
-    router.push({ name: 'gameHome' })
-    return
-  }
-  if (route.query.view) {
-    const nextQuery = { ...route.query }
-    delete nextQuery.view
-    router.replace({ name: 'gameHome', query: nextQuery })
-  }
-}
-
-const onMoreGameClick = (key: string) => {
-  activeGameKey.value = key
-  // Reset to game view when switching games
-  contentView.value = 'game'
-  if (router.currentRoute.value.name !== 'gameHome') {
-    router.push({ name: 'gameHome' })
-    return
-  }
-  if (route.query.view) {
-    const nextQuery = { ...route.query }
-    delete nextQuery.view
-    router.replace({ name: 'gameHome', query: nextQuery })
-  }
-}
-
-const onSubNavClick = (key: string) => {
-  // Directly pass the sub-nav key as the betTab value to GameHome
-  contentView.value = 'game'
-  betTab.value = key
-}
-
-const onThemeClick = (key: ThemeKey) => {
-  activeTheme.value = key
-  applyTheme(key)
-}
-
-onMounted(() => {
-  const saved = localStorage.getItem(THEME_STORAGE_KEY)
-  const nextTheme: ThemeKey = isThemeKey(saved) ? saved : 'brown'
-  activeTheme.value = nextTheme
-  applyTheme(nextTheme)
-
-  // Preload all theme background images to prevent lag when switching
-  const allImages = [...Object.values(themeHeaderBgMap), ...Object.values(themeGameTabBgMap)]
-  allImages.forEach(src => {
-    const img = new Image()
-    img.src = src
-  })
-})
+const {
+  activeTheme,
+  gameNav,
+  isTopItemActive,
+  moreGames,
+  onGameClick,
+  onMoreGameClick,
+  onSubNavClick,
+  onThemeClick,
+  onTopClick,
+  subNav,
+  themeColors,
+  themeGameTabBgMap,
+  themeHeaderBgMap,
+  topNav,
+} = useGameHeader(betTab, contentView, activeGameKey)
 </script>
 
 <template>
   <div class="header-container">
-    <!-- ====== 主导航区域 (70px) ====== -->
+    <!-- Main navigation area (70px) -->
     <div class="header" :style="{ backgroundImage: `url(${themeHeaderBgMap[activeTheme]})` }">
       <div class="header-inner">
-        <!-- 第一行：Logo + 顶部导航 -->
+        <!-- First row: logo and top navigation -->
         <div class="row-top">
           <!-- Logo -->
           <div class="brand">
@@ -225,7 +41,7 @@ onMounted(() => {
             <span class="brand-name">海源</span>
           </div>
 
-          <!-- 顶部功能导航 -->
+          <!-- Top action navigation -->
           <div class="top-nav">
             <template v-for="(item, idx) in topNav" :key="item.key">
               <span
@@ -240,9 +56,9 @@ onMounted(() => {
           </div>
         </div>
 
-        <!-- 第二行：游戏导航 -->
+        <!-- Second row: game navigation -->
         <div class="row-games">
-          <!-- 主要游戏 -->
+          <!-- Primary games -->
           <div
             v-for="item in gameNav"
             :key="item.key"
@@ -258,7 +74,7 @@ onMounted(() => {
             {{ item.label }}
           </div>
 
-          <!-- 更多游戏（下拉） -->
+          <!-- More games dropdown -->
           <el-popover
             placement="bottom"
             :width="124"
@@ -283,9 +99,9 @@ onMounted(() => {
       </div>
     </div>
 
-    <!-- ====== 子导航栏 (31px) ====== -->
+    <!-- Sub navigation bar (31px) -->
     <div class="menus">
-      <!-- 主题颜色切换 -->
+      <!-- Theme color switcher -->
       <div class="theme-colors">
         <div
           v-for="tc in themeColors"
@@ -297,7 +113,7 @@ onMounted(() => {
         />
       </div>
 
-      <!-- 子导航项 - can be hidden via hideSubNav prop -->
+      <!-- Sub navigation items can be hidden via hideSubNav prop. -->
       <div v-if="!props.hideSubNav" class="menus-center">
         <div class="sub-nav">
           <template v-for="(item, idx) in subNav" :key="item.key">
@@ -317,7 +133,7 @@ onMounted(() => {
 </template>
 
 <style scoped>
-/* ========================= 整体容器 ========================= */
+/* Overall container */
 .header-container {
   width: 100%;
   min-width: 1418px;
@@ -325,7 +141,7 @@ onMounted(() => {
   font-weight: 700;
 }
 
-/* ========================= 主导航 (70px) ========================= */
+/* Main navigation (70px) */
 .header {
   position: relative;
   height: 70px;
@@ -358,7 +174,7 @@ onMounted(() => {
   box-sizing: border-box;
 }
 
-/* ---------- 第一行：Logo + 顶部导航 ---------- */
+/* First row: logo and top navigation */
 .row-top {
   display: flex;
   align-items: center;
@@ -442,7 +258,7 @@ onMounted(() => {
   font-size: 13px;
 }
 
-/* ---------- 第二行：游戏导航 ---------- */
+/* Second row: game navigation */
 .row-games {
   display: flex;
   align-items: center;
@@ -479,7 +295,7 @@ onMounted(() => {
   color: #fcff00;
 }
 
-/* "新" 角标 */
+/* New badge */
 .game-item.is-new::after {
   content: '';
   position: absolute;
@@ -491,7 +307,7 @@ onMounted(() => {
   pointer-events: none;
 }
 
-/* "热" 角标 */
+/* Hot badge */
 .game-item.is-hot::after {
   content: '';
   position: absolute;
@@ -503,7 +319,7 @@ onMounted(() => {
   pointer-events: none;
 }
 
-/* ========================= 子导航栏 menus (31px) ========================= */
+/* Sub navigation menus (31px) */
 .menus {
   height: 31px;
   width: 100%;
@@ -514,7 +330,7 @@ onMounted(() => {
   align-items: center;
 }
 
-/* ---------- 主题色圆点 ---------- */
+/* Theme color dots */
 .theme-colors {
   display: flex;
   align-items: center;
@@ -538,7 +354,7 @@ onMounted(() => {
   box-shadow: 0 0 3px rgba(0,0,0,0.3);
 }
 
-/* ---------- 子导航项 ---------- */
+/* Sub navigation items */
 .menus-center {
   flex: 1;
 }
@@ -587,7 +403,7 @@ onMounted(() => {
   font-weight: 700;
 }
 
-/* ========================= 更多游戏下拉项 ========================= */
+/* More games dropdown items */
 .more-game-item {
   width: 100px;
   height: 22px;

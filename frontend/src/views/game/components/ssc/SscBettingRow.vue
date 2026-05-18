@@ -188,6 +188,7 @@ const onAmountChange = (label: string, val: number | undefined) => {
 }
 
 .ssc-cell:not(.ssc-cell--disabled):hover .ssc-cell-label,
+.ssc-cell:not(.ssc-cell--disabled):hover .ssc-cell-odd,
 .ssc-cell:not(.ssc-cell--disabled):hover .ssc-cell-input {
   background: transparent;
 }

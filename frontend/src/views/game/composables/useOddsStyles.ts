@@ -51,3 +51,9 @@ export const getBlueBallSrc = (num: number) => {
   const safe = Math.max(0, Math.min(9, num))
   return new URL(`../../../assets/游戏/ball_blue_split/ball_${safe}.png`, import.meta.url).href
 }
+
+// Get racing ball image source (racing games: 1-10)
+export const getRacingBallSrc = (num: number) => {
+  const safe = Math.max(1, Math.min(10, num))
+  return new URL(`../../../assets/游戏/ball_racing_split/ball_${safe}.png`, import.meta.url).href
+}

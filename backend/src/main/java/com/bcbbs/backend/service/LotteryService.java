@@ -64,6 +64,7 @@ public class LotteryService {
                     .preDrawTime(str(data, "preDrawTime"))
                     .drawIssue(str(data, "drawIssue"))
                     .drawTime(str(data, "drawTime"))
+                    .serviceTime(str(data, "serviceTime"))
                     .lotCode(toInt(data, "lotCode"))
                     .lotName(str(data, "lotName"))
                     .sumValue(str(data, "attr1"))
@@ -80,7 +81,7 @@ public class LotteryService {
 
     /**
      * Fetch paginated lottery history list with smart caching strategy.
-     * Page 1: cached 5 seconds (frequent updates)
+     * Page 1: cached 1 second (frequent updates)
      * Other pages: cached 15 minutes (historical data, stable)
      *
      * @param lotCode  lottery code
@@ -106,7 +107,7 @@ public class LotteryService {
     }
 
     /**
-     * First page cache: 5 second TTL for latest draw results.
+     * First page cache: 1 second TTL for latest draw results.
      */
     @Cacheable(value = "lotteryListFirstPage",
         key = "#lotCode + ':' + #pageSize + ':' + (#date != null ? #date : 'all')")

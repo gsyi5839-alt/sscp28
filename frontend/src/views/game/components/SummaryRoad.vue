@@ -1,13 +1,18 @@
 <script setup lang="ts">
 import type { SummaryKey, SscSummaryKey } from '../constants/odds'
 
+type SummaryVariant = 'pc28' | 'ssc' | 'racing'
+
 interface Props {
   summaryTabs: Array<{ key: SummaryKey | SscSummaryKey; label: string }>
   activeSummaryKey: SummaryKey | SscSummaryKey
   activeSummaryValues: any[]
+  variant?: SummaryVariant
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  variant: 'pc28',
+})
 
 const emit = defineEmits<{
   'tabClick': [key: SummaryKey | SscSummaryKey | string]
@@ -15,7 +20,10 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <div class="summary-road mt10" :class="`summary-road--${activeSummaryKey}`">
+  <div
+    class="summary-road mt10"
+    :class="[`summary-road--${activeSummaryKey}`, `summary-road--${variant}`]"
+  >
     <div class="summary-bar">
       <span
         v-for="tab in summaryTabs"
@@ -97,6 +105,11 @@ const emit = defineEmits<{
 .summary-road--parity {
   --summary-road-height: 148.73px;
   --summary-body-height: 110.73px;
+}
+
+.summary-road--baoDou {
+  --summary-road-height: 100px;
+  --summary-body-height: 70px;
 }
 
 .summary-bar {
@@ -188,6 +201,11 @@ const emit = defineEmits<{
   max-height: var(--summary-body-height, 110.73px);
 }
 
+.summary-values--baoDou {
+  display: flex;
+  grid-template-columns: none;
+}
+
 .summary-value {
   display: block;
   width: 100%;
@@ -196,6 +214,10 @@ const emit = defineEmits<{
   min-height: 0;
   box-sizing: border-box;
   overflow: hidden;
+}
+
+.summary-road--baoDou .summary-value {
+  flex: 1 1 0;
 }
 
 .text-center {
@@ -231,6 +253,24 @@ const emit = defineEmits<{
 
 .summary-cell-inner--road .pt5 {
   padding-top: 0;
+}
+
+.summary-road--racing .summary-cell-inner--road {
+  padding-bottom: 10px;
+}
+
+.summary-road--racing .summary-cell-inner--road .pt5 {
+  padding-top: 5px;
+}
+
+.summary-road--racing .multi-row {
+  padding: 5px 0 10px;
+  gap: 5px;
+}
+
+.summary-road--racing .value-text-multi {
+  line-height: 1.2;
+  padding: 0;
 }
 
 .block {

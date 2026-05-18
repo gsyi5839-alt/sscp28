@@ -1,0 +1,238 @@
+.page {
+  height: 100vh;
+  min-height: 100vh;
+  background: #fff;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  overflow: hidden;
+}
+
+.page .page-scroll {
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: #fff;
+}
+
+.page .main-wrapper {
+  width: 92%;
+  margin: 5px auto 0;
+  position: relative;
+  left: -67px;
+  background: #fff;
+  border-bottom: none;
+}
+
+.page .main-wrapper--draw-results {
+  width: calc(100% - 7px);
+  left: 0;
+  margin-left: 0;
+  margin-right: 7px;
+  box-sizing: border-box;
+}
+
+.page .main-body {
+  display: flex;
+  align-items: flex-start;
+  width: 100%;
+}
+
+.page .center-content {
+  flex: 0 0 720px;
+  width: 720px;
+  min-height: 500px;
+  border-left: none;
+  border-right: none;
+}
+
+.page .center-content.center-content--wide {
+  flex: 1 1 0 !important;
+  width: auto !important;
+  min-width: 0;
+  max-width: none;
+  overflow-x: auto;
+  overflow-y: visible;
+}
+
+.page .draw-results-view {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+  overflow: visible;
+}
+
+.page .game-panel {
+  width: 720px;
+  min-height: 733px;
+  margin: 5px 0 30px;
+  position: relative;
+  font-family: "Microsoft YaHei", Tahoma, HelveticaNeue-Light, "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.15;
+  --el-font-size-base: 13px;
+  --el-component-size: 26px;
+  --el-component-size-small: 22px;
+}
+
+.page .betting-content-loading-region {
+  min-height: 200px;
+  position: relative;
+}
+
+.page .betting-content-panels {
+  min-height: 200px;
+}
+
+.page .betting-content-loading-region .el-loading-mask {
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 40px;
+}
+
+.page .betting-content-loading-region .el-loading-spinner {
+  top: 0;
+  margin-top: 0;
+}
+
+.page .quick-bar:not(.quick-bar-bottom) {
+  justify-content: flex-end;
+  padding: 0 10px;
+}
+
+.page .quick-bar-bottom {
+  height: 48px;
+  margin-top: 10px;
+  background: transparent;
+  border-color: transparent;
+}
+
+.page .sealed-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 830px;
+  height: 732.84px;
+  background: var(--bw-header-bg-opacity, rgba(53, 28, 12, .6));
+  z-index: 2001;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.page .sealed-overlay-bg {
+  width: 500px;
+  max-width: 90%;
+  opacity: 0.8;
+}
+
+.page .betting-content-area {
+  position: relative;
+  min-height: 200px;
+}
+
+.page .mt10 {
+  margin-top: 10px;
+}
+
+.page .game-panel .issue-bar {
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 13.8px;
+}
+
+.page .game-panel .quick-bar,
+.page .game-panel .quick-tab,
+.page .game-panel .explain-link {
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 14.95px;
+}
+
+.page .game-panel .quick-bar .btn {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 20px;
+}
+
+.page .game-panel input,
+.page .game-panel .el-input__inner {
+  font-size: 12px !important;
+  font-weight: 400;
+  line-height: 12px !important;
+}
+
+.page .game-panel .betting-content-area {
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 30px;
+}
+
+.page .game-panel .ssc-row-header,
+.page .game-panel .ssc-sum-header,
+.page .game-panel .sb-header,
+.page .game-panel .ssc-pos-header,
+.page .game-panel .balls-col-header,
+.page .game-panel .racing-section-title,
+.page .game-panel .racing-rank-title {
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 30px;
+}
+
+.page .game-panel .racing-niuniu-panel .racing-niuniu-title {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 35px;
+}
+
+.page .game-panel .ssc-cell,
+.page .game-panel .ssc-sum-cell,
+.page .game-panel .sb-cell,
+.page .game-panel .ssc-pos-cell,
+.page .game-panel .balls-row,
+.page .game-panel .racing-cell,
+.page .game-panel .racing-niuniu-cell {
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 30px;
+}
+
+.page .game-panel .betting-content-area b,
+.page .game-panel .racing-odd b,
+.page .game-panel .racing-niuniu-odd b {
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 30px;
+}
+
+.page .game-panel .racing-niuniu-panel .racing-niuniu-cell.racing-cell--selected {
+  background: #ffc214 !important;
+}
+
+.page .game-panel .racing-niuniu-panel .racing-niuniu-cell.racing-cell--selected .racing-niuniu-label,
+.page .game-panel .racing-niuniu-panel .racing-niuniu-cell.racing-cell--selected .racing-niuniu-odd,
+.page .game-panel .racing-niuniu-panel .racing-niuniu-cell.racing-cell--selected .racing-niuniu-input-wrap {
+  background: #ffc214 !important;
+}
+
+.page .game-panel .racing-niuniu-panel .racing-niuniu-cell.racing-cell--selected .racing-niuniu-input {
+  background: #fff !important;
+}
+
+.page .game-panel .racing-niuniu-panel .racing-niuniu-cell:not(.racing-cell--sealed):hover {
+  background: var(--bw-header-color, #be9d76) !important;
+}
+
+.page .game-panel .racing-niuniu-panel .racing-niuniu-cell:not(.racing-cell--sealed):hover .racing-niuniu-label,
+.page .game-panel .racing-niuniu-panel .racing-niuniu-cell:not(.racing-cell--sealed):hover .racing-niuniu-odd,
+.page .game-panel .racing-niuniu-panel .racing-niuniu-cell:not(.racing-cell--sealed):hover .racing-niuniu-input-wrap {
+  background: transparent !important;
+}
+
+.page .game-panel .racing-niuniu-panel .racing-niuniu-cell:not(.racing-cell--sealed):hover .racing-niuniu-input {
+  background: #fff !important;
+}

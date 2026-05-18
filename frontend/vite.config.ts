@@ -51,16 +51,19 @@ export default defineConfig({
     emptyOutDir: true,
     // Target modern mobile browsers for smaller output
     target: 'es2020',
-    // Warn when chunks exceed 300KB
-    chunkSizeWarningLimit: 300,
+    // Element Plus must stay package-level to avoid circular initialization across internal chunks.
+    chunkSizeWarningLimit: 500,
     cssCodeSplit: true,
     rollupOptions: {
       output: {
         // Split vendor chunks for better caching on mobile
         manualChunks(id) {
           if (id.includes('node_modules')) {
-            // Element Plus is the largest dependency, isolate it
+            // Keep Element Plus package internals together to preserve initialization order.
+            if (id.includes('@element-plus/icons-vue')) return 'vendor-element-icons'
             if (id.includes('element-plus')) return 'vendor-element'
+            if (id.includes('dayjs')) return 'vendor-date'
+            if (id.includes('lodash-es')) return 'vendor-lodash'
             // Vue core libraries
             if (id.includes('vue') || id.includes('pinia') || id.includes('vue-router')) return 'vendor-vue'
             // All other node_modules

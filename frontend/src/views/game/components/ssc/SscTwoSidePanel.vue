@@ -4,9 +4,15 @@
  * Composes 5 ball rows (第一球~第五球) + sum section (总和+龙虎和).
  * Manages selection state and bet amounts for all SSC two-side bets.
  */
-import { reactive, ref } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import SscBettingRow from './SscBettingRow.vue'
 import SscTwoSideSum from './SscTwoSideSum.vue'
+import {
+  AUS5_BALL_ITEMS,
+  AUS5_BALL_TITLES,
+  AUS5_SUM_ROW1,
+  AUS5_SUM_ROW2,
+} from '../../constants/aus5Odds'
 import {
   SSC_BALL_ITEMS,
   SSC_BALL_TITLES,
@@ -23,9 +29,26 @@ interface Props {
   preDrawBalls: number[]
   /** Whether to show blue ball icon beside each row title */
   showHeaderBall?: boolean
+  /** Odds/layout variant for 5-ball games with different reference odds */
+  variant?: 'default' | 'aus5'
 }
 
-defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  variant: 'default',
+})
+
+const ballTitles = computed(() => (
+  props.variant === 'aus5' ? AUS5_BALL_TITLES : SSC_BALL_TITLES
+))
+const ballItems = computed(() => (
+  props.variant === 'aus5' ? AUS5_BALL_ITEMS : SSC_BALL_ITEMS
+))
+const sumRow1 = computed(() => (
+  props.variant === 'aus5' ? AUS5_SUM_ROW1 : SSC_SUM_ROW1
+))
+const sumRow2 = computed(() => (
+  props.variant === 'aus5' ? AUS5_SUM_ROW2 : SSC_SUM_ROW2
+))
 
 // ─── Selection State ─────────────────────────────────────────────────────
 // Track which bet cells are currently selected (for quick bet mode)
@@ -65,10 +88,10 @@ const isSelectedRef = ref(isKeySelected)
   <div class="ssc-two-side-panel">
     <!-- Ball rows: 第一球 ~ 第五球, each with 大/小/单/双 -->
     <SscBettingRow
-      v-for="(title, idx) in SSC_BALL_TITLES"
+      v-for="(title, idx) in ballTitles"
       :key="title"
       :title="title"
-      :items="SSC_BALL_ITEMS"
+      :items="ballItems"
       :is-sealed="isSealed"
       :quick-mode="quickMode"
       :amounts="amounts"
@@ -83,8 +106,8 @@ const isSelectedRef = ref(isKeySelected)
 
     <!-- Sum section: 总和(总大/总小/总单/总双) + 龙/虎/和 -->
     <SscTwoSideSum
-      :row1="SSC_SUM_ROW1"
-      :row2="SSC_SUM_ROW2"
+      :row1="sumRow1"
+      :row2="sumRow2"
       :is-sealed="isSealed"
       :quick-mode="quickMode"
       :amounts="amounts"

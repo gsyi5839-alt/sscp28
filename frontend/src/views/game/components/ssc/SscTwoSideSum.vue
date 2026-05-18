@@ -187,6 +187,7 @@ const onAmountChange = (label: string, val: number | undefined) => {
 }
 
 .ssc-sum-cell:not(.ssc-sum-cell--disabled):hover .ssc-sum-label,
+.ssc-sum-cell:not(.ssc-sum-cell--disabled):hover .ssc-sum-odd,
 .ssc-sum-cell:not(.ssc-sum-cell--disabled):hover .ssc-sum-input {
   background: transparent;
 }

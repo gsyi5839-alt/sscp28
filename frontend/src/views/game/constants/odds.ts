@@ -75,11 +75,17 @@ export const patternRows = [
 ]
 
 // Summary tabs for road display
-export type SummaryKey = 'sum' | 'size' | 'parity'
+export type SummaryKey = 'sum' | 'size' | 'parity' | 'baoDou'
 export const summaryTabs: Array<{ key: SummaryKey; label: string }> = [
   { key: 'sum', label: '和值' },
   { key: 'size', label: '和值大小' },
   { key: 'parity', label: '和值单双' },
+]
+
+export const racingSummaryTabs: Array<{ key: SummaryKey; label: string }> = [
+  { key: 'sum', label: '冠亚军和' },
+  { key: 'size', label: '冠亚军和大小' },
+  { key: 'parity', label: '冠亚军和单双' },
 ]
 
 // SSC summary road tabs (road bead pattern with run-length grouping)

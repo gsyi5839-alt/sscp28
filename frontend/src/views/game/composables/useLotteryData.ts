@@ -6,7 +6,16 @@ import { ref, computed, onMounted, onUnmounted, watch, type Ref } from 'vue'
 import { lotteryApi } from '../../../api/index'
 import { getLotteryDataClientConfig } from '@/mobile/config/lotteryData'
 import { isGameMobileClient } from '@/mobile/utils/client'
+import { isBettingSealed, resolvePendingResultIssue } from '@/utils/bettingSealState'
+import { RACING_LOT_CODES } from '@/utils/drawResultsConfig'
 import { HISTORY_LIST_SIZE } from '../constants/odds'
+
+const DEFAULT_SEAL_OFFSET_MS = 10 * 1000
+const RACING_SEAL_OFFSET_MS = 70 * 1000
+
+const getSealOffsetMs = (lotCode: number): number => {
+  return RACING_LOT_CODES.includes(lotCode) ? RACING_SEAL_OFFSET_MS : DEFAULT_SEAL_OFFSET_MS
+}
 
 /**
  * Lottery data management composable.
@@ -59,15 +68,21 @@ export function useLotteryData(lotCodeRef: Ref<number>) {
   let sealTimestamp = 0
   let currentDrawIssue = ''
   let currentPreDrawIssue = ''
+  let pendingResultIssue = ''
   let lastRolloverRefreshAt = 0
+  let upstreamTimeOffsetMs = 0
 
-  // Check if betting is sealed.
-  // Only treat as sealed in the real window: [sealTimestamp, drawTimestamp).
-  // This avoids "stuck sealed overlay" after draw time has passed.
+  // Keep betting sealed after draw time until upstream confirms the next issue.
   const isSealed = computed(() => {
     const now = currentTime.value.getTime()
-    if (sealTimestamp <= 0 || drawTimestamp <= 0) return false
-    return now >= sealTimestamp && now < drawTimestamp
+    return isBettingSealed({
+      nowMs: now,
+      sealTimestamp,
+      drawTimestamp,
+      drawIssue: drawIssue.value,
+      pendingResultIssue,
+      preDrawIssue: preDrawIssue.value,
+    })
   })
 
   // Helper functions
@@ -129,10 +144,18 @@ export function useLotteryData(lotCodeRef: Ref<number>) {
         // Current draw period
         drawIssue.value = newIssue
         drawTimestamp = parseTimestamp(d.drawTime)
-        sealTimestamp = drawTimestamp - 10 * 1000
+        sealTimestamp = drawTimestamp - getSealOffsetMs(lotCodeRef.value)
+        const serviceTimestamp = parseTimestamp(d.serviceTime)
+        if (serviceTimestamp > 0) {
+          upstreamTimeOffsetMs = serviceTimestamp - Date.now()
+        }
+        const hasNewDrawIssue = Boolean(newIssue && newIssue !== currentDrawIssue)
+        pendingResultIssue = hasNewDrawIssue
+          ? ''
+          : resolvePendingResultIssue(pendingResultIssue, preDrawIssue.value)
 
         // New period detection
-        if (newIssue && newIssue !== currentDrawIssue) {
+        if (hasNewDrawIssue) {
           currentDrawIssue = newIssue
           lastRolloverRefreshAt = 0
           isDrawing.value = false
@@ -174,13 +197,16 @@ export function useLotteryData(lotCodeRef: Ref<number>) {
 
   // Countdown ticker (runs every 1s for smooth UI countdown)
   const tickCountdown = () => {
-    const now = Date.now()
+    const now = Date.now() + upstreamTimeOffsetMs
     const drawDiff = drawTimestamp - now
     const sealDiff = sealTimestamp - now
 
-    currentTime.value = new Date()
+    currentTime.value = new Date(now)
 
     if (drawDiff <= 0 && drawTimestamp > 0) {
+      if (!pendingResultIssue && drawIssue.value && drawIssue.value !== '--') {
+        pendingResultIssue = drawIssue.value
+      }
       // Draw time reached: show loading animation
       isDrawing.value = true
       drawCountdown.value = '00:00:00'
@@ -295,7 +321,9 @@ export function useLotteryData(lotCodeRef: Ref<number>) {
     sealTimestamp = 0
     currentDrawIssue = ''
     currentPreDrawIssue = ''
+    pendingResultIssue = ''
     lastRolloverRefreshAt = 0
+    upstreamTimeOffsetMs = 0
     isFetching = false
     // Fetch data for the new game immediately
     fetchLotteryInfo()

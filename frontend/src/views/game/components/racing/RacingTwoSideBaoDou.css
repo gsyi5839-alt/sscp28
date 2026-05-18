@@ -1,0 +1,389 @@
+.racing-baodou-section {
+  display: flex;
+  justify-content: center;
+  padding: 20px 0;
+  border: 0;
+}
+
+.racing-baodou-board {
+  position: relative;
+  width: 440px;
+  height: 440px;
+  overflow: hidden;
+  background:
+    linear-gradient(#bdc2c7, #bdc2c7) 66px 0 / 2px 440px no-repeat,
+    linear-gradient(#bdc2c7, #bdc2c7) 220px 0 / 2px 440px no-repeat,
+    linear-gradient(#bdc2c7, #bdc2c7) 374px 0 / 2px 440px no-repeat,
+    linear-gradient(#bdc2c7, #bdc2c7) 0 66px / 440px 2px no-repeat,
+    linear-gradient(#bdc2c7, #bdc2c7) 0 220px / 440px 2px no-repeat,
+    linear-gradient(#bdc2c7, #bdc2c7) 0 374px / 440px 2px no-repeat,
+    linear-gradient(#f3bdc8, #f3bdc8) 135.3px 135.3px / 169.4px 169.4px no-repeat,
+    linear-gradient(#b7d8c8, #b7d8c8) 66px 66px / 308px 308px no-repeat,
+    #e8eef7;
+  border: 2px solid #bdc2c7;
+  border-radius: 10px;
+  box-sizing: border-box;
+}
+
+.racing-baodou-line {
+  position: absolute;
+  z-index: 1;
+  height: 2px;
+  background: #bdc2c7;
+  transform-origin: left center;
+}
+
+.racing-baodou-line.line-tl {
+  left: 66px;
+  top: 66px;
+  width: 218px;
+  transform: rotate(45deg);
+}
+
+.racing-baodou-line.line-tr {
+  left: 374px;
+  top: 66px;
+  width: 218px;
+  transform: rotate(135deg);
+}
+
+.racing-baodou-line.line-bl {
+  left: 66px;
+  top: 374px;
+  width: 218px;
+  transform: rotate(-45deg);
+}
+
+.racing-baodou-line.line-br {
+  left: 374px;
+  top: 374px;
+  width: 218px;
+  transform: rotate(-135deg);
+}
+
+.racing-baodou-board-cell {
+  position: absolute;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  cursor: pointer;
+}
+
+.racing-baodou-board-cell-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+}
+
+.racing-baodou-board-cell.racing-cell--sealed {
+  cursor: not-allowed;
+}
+
+.racing-baodou-board-cell.racing-cell--selected {
+  background: #ffc214;
+}
+
+.racing-baodou-board-cell:not(.racing-cell--sealed):hover,
+.racing-baodou-board-cell.racing-cell--selected:not(.racing-cell--sealed):hover {
+  background: #bcd8fb;
+}
+
+.racing-baodou-board-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #030303;
+  line-height: 1;
+}
+
+.racing-baodou-board .racing-odd {
+  flex: 0 0 auto;
+  width: auto;
+  height: 17px;
+  border-right: 0;
+  line-height: 1;
+}
+
+.racing-baodou-board .racing-odd b {
+  font-size: 13px;
+}
+
+.racing-baodou-board .racing-input-wrap {
+  flex: 0 0 auto;
+  width: auto;
+  height: auto;
+}
+
+.racing-baodou-board .racing-input {
+  width: 45px;
+  height: 22px;
+  margin-top: 2px;
+}
+
+.racing-baodou-board .racing-input:disabled {
+  background: #f5f7fa;
+  color: #a8abb2;
+  border-color: #d4d7de;
+}
+
+.bd-corner-tl,
+.bd-corner-tr,
+.bd-corner-bl,
+.bd-corner-br {
+  width: 66px;
+  height: 66px;
+}
+
+.bd-corner-tl {
+  left: 0;
+  top: 0;
+}
+
+.bd-corner-tr {
+  right: 0;
+  top: 0;
+}
+
+.bd-corner-bl {
+  left: 0;
+  bottom: 0;
+}
+
+.bd-corner-br {
+  right: 0;
+  bottom: 0;
+}
+
+.bd-top-left,
+.bd-top-right,
+.bd-bottom-left,
+.bd-bottom-right {
+  width: 154px;
+  height: 66px;
+}
+
+.bd-top-left {
+  left: 66px;
+  top: 0;
+}
+
+.bd-top-right {
+  left: 220px;
+  top: 0;
+}
+
+.bd-bottom-left {
+  left: 66px;
+  bottom: 0;
+}
+
+.bd-bottom-right {
+  left: 220px;
+  bottom: 0;
+}
+
+.bd-side-left-top,
+.bd-side-left-bottom,
+.bd-side-right-top,
+.bd-side-right-bottom {
+  width: 66px;
+  height: 154px;
+}
+
+.bd-side-left-top {
+  left: 0;
+  top: 66px;
+}
+
+.bd-side-left-bottom {
+  left: 0;
+  top: 220px;
+}
+
+.bd-side-right-top {
+  right: 0;
+  top: 66px;
+}
+
+.bd-side-right-bottom {
+  right: 0;
+  top: 220px;
+}
+
+.bd-green-top-left,
+.bd-green-top-right,
+.bd-green-bottom-left,
+.bd-green-bottom-right {
+  width: 154px;
+  height: 80px;
+}
+
+.bd-green-top-left {
+  left: 66px;
+  top: 66px;
+}
+
+.bd-green-top-right {
+  left: 220px;
+  top: 66px;
+}
+
+.bd-green-bottom-left {
+  left: 66px;
+  top: 294px;
+}
+
+.bd-green-bottom-right {
+  left: 220px;
+  top: 294px;
+}
+
+.bd-green-left-top,
+.bd-green-left-bottom,
+.bd-green-right-top,
+.bd-green-right-bottom {
+  width: 80px;
+  height: 74px;
+}
+
+.bd-green-left-top {
+  left: 66px;
+  top: 146px;
+}
+
+.bd-green-left-bottom {
+  left: 66px;
+  top: 220px;
+}
+
+.bd-green-right-top {
+  right: 66px;
+  top: 146px;
+}
+
+.bd-green-right-bottom {
+  right: 66px;
+  top: 220px;
+}
+
+.bd-green-top-left:not(.racing-cell--sealed):hover,
+.bd-green-top-right:not(.racing-cell--sealed):hover,
+.bd-green-left-top:not(.racing-cell--sealed):hover,
+.bd-green-left-bottom:not(.racing-cell--sealed):hover,
+.bd-green-right-top:not(.racing-cell--sealed):hover,
+.bd-green-right-bottom:not(.racing-cell--sealed):hover,
+.bd-green-bottom-left:not(.racing-cell--sealed):hover,
+.bd-green-bottom-right:not(.racing-cell--sealed):hover {
+  background: #87c8ad;
+}
+
+.bd-pink-top,
+.bd-pink-left,
+.bd-pink-bottom,
+.bd-pink-right {
+  left: 135.3px;
+  top: 135.3px;
+  z-index: 7;
+  display: block;
+  width: 169.4px;
+  height: 84.7px;
+  background: pink;
+  clip-path: polygon(50% 0, 0 100%, 100% 100%);
+}
+
+.bd-pink-top:not(.racing-cell--sealed):hover,
+.bd-pink-left:not(.racing-cell--sealed):hover,
+.bd-pink-bottom:not(.racing-cell--sealed):hover,
+.bd-pink-right:not(.racing-cell--sealed):hover {
+  background: #cf939d;
+}
+
+.bd-pink-top {
+  transform: rotate(180deg) translateY(0) translate(0);
+}
+
+.bd-pink-left {
+  transform: rotate(90deg) translateY(50%) translate(25%);
+}
+
+.bd-pink-bottom {
+  transform: rotate(0) translateY(100%) translate(0);
+}
+
+.bd-pink-right {
+  transform: rotate(270deg) translateY(50%) translate(-25%);
+}
+
+.bd-pink-top .racing-baodou-board-cell-content,
+.bd-pink-left .racing-baodou-board-cell-content,
+.bd-pink-bottom .racing-baodou-board-cell-content,
+.bd-pink-right .racing-baodou-board-cell-content {
+  position: absolute;
+  width: 58px;
+  height: 44px;
+}
+
+.bd-pink-top .racing-baodou-board-cell-content {
+  left: 61.6px;
+  top: 39.6px;
+  transform: rotate(180deg);
+}
+
+.bd-pink-left .racing-baodou-board-cell-content {
+  left: 49.28px;
+  top: 35.2px;
+  transform: rotate(270deg);
+}
+
+.bd-pink-bottom .racing-baodou-board-cell-content {
+  left: 61.6px;
+  top: 28.6px;
+  transform: rotate(0);
+}
+
+.bd-pink-right .racing-baodou-board-cell-content {
+  left: 70.4px;
+  top: 30.8px;
+  transform: rotate(90deg);
+}
+
+.racing-baodou-core {
+  position: absolute;
+  left: 189.2px;
+  top: 189.2px;
+  z-index: 11;
+  display: grid;
+  grid-template-columns: repeat(2, 30.8px);
+  grid-template-rows: repeat(2, 30.8px);
+  background: #e95b23;
+  border: 1px solid #b94c19;
+}
+
+.racing-baodou-core span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: #050505;
+  background: #f0bcae;
+  border-right: 1px solid #b94c19;
+  border-bottom: 1px solid #b94c19;
+}
+
+.racing-baodou-core span:nth-child(2),
+.racing-baodou-core span:nth-child(4) {
+  background: #e95b23;
+}
+
+.racing-baodou-core span:nth-child(2n) {
+  border-right: 0;
+}
+
+.racing-baodou-core span:nth-child(n + 3) {
+  border-bottom: 0;
+}

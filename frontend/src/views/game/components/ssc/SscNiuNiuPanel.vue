@@ -176,6 +176,7 @@ const onAmountChange = (label: string, val: number | undefined) => {
 }
 
 .niuniu-cell--clickable:not(.niuniu-cell--sealed):hover .niuniu-label,
+.niuniu-cell--clickable:not(.niuniu-cell--sealed):hover .niuniu-odd,
 .niuniu-cell--clickable:not(.niuniu-cell--sealed):hover .niuniu-input-area {
   background: transparent;
 }

@@ -1,0 +1,315 @@
+.racing-two-side-panel {
+  width: 720px;
+  font-family: Microsoft YaHei, Tahoma, HelveticaNeue-Light, Helvetica Neue Light, Helvetica Neue, Helvetica, Arial, sans-serif;
+  font-size: 13px;
+  text-align: center;
+}
+
+.racing-section {
+  width: 100%;
+}
+
+.racing-section-title,
+.racing-rank-title {
+  height: 30px;
+  line-height: 30px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: #000;
+  background: var(--bw-table-header-bg-color, linear-gradient(to bottom, #fff 0%, #fff1e4 100%));
+  border: 1px solid var(--bw-border-color, #efba84);
+  border-top: none;
+  box-sizing: border-box;
+}
+
+.racing-section-title--first {
+  border-top: 1px solid var(--bw-border-color, #efba84);
+}
+
+.racing-top-sum-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  width: 100%;
+}
+
+.racing-rank-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  width: 100%;
+}
+
+.racing-two-side-panel--position .racing-rank-grid {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.racing-rank-group {
+  width: 100%;
+  min-width: 0;
+}
+
+.racing-rank-group--line-start .racing-rank-title {
+  border-left: 1px solid var(--bw-border-color, #efba84);
+}
+
+.racing-rank-title {
+  border-left: none;
+}
+
+.racing-two-side-panel--position .racing-rank-title {
+  border-top: 1px solid var(--bw-border-color, #efba84);
+}
+
+.racing-cell {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 30px;
+  line-height: 30px;
+  background: var(--el-disabled-bg-color, #f5f7fa);
+  border: 1px solid var(--bw-border-color, #efba84);
+  border-top: none;
+  border-left: none;
+  box-sizing: border-box;
+  cursor: pointer;
+}
+
+.racing-top-cell:first-child,
+.racing-rank-group--line-start .racing-cell {
+  border-left: 1px solid var(--bw-border-color, #efba84);
+}
+
+.racing-cell:not(.racing-cell--sealed):hover {
+  background: var(--bw-header-color, #be9d76);
+}
+
+.racing-cell:not(.racing-cell--sealed):hover .racing-label,
+.racing-cell:not(.racing-cell--sealed):hover .racing-rank-ball-wrap,
+.racing-cell:not(.racing-cell--sealed):hover .racing-special-label,
+.racing-cell:not(.racing-cell--sealed):hover .racing-baodou-label,
+.racing-cell:not(.racing-cell--sealed):hover .racing-top-combo-label,
+.racing-cell:not(.racing-cell--sealed):hover .racing-odd,
+.racing-cell:not(.racing-cell--sealed):hover .racing-input-wrap {
+  background: transparent;
+}
+
+.racing-cell--selected {
+  background: #ffc214;
+}
+
+.racing-cell--selected .racing-label,
+.racing-cell--selected .racing-rank-ball-wrap,
+.racing-cell--selected .racing-special-label,
+.racing-cell--selected .racing-baodou-label,
+.racing-cell--selected .racing-top-combo-label,
+.racing-cell--selected .racing-odd,
+.racing-cell--selected .racing-input-wrap {
+  background: #ffc214;
+}
+
+.racing-label {
+  flex: 0 0 30px;
+  width: 30px;
+  height: 30px;
+  line-height: 30px;
+  color: var(--bw-default-color, #351c0c);
+  background: var(--bw-form-item-label-bg-color, #fff1e4);
+  border-right: 1px solid var(--bw-border-color, #efba84);
+  box-sizing: border-box;
+}
+
+.racing-odd {
+  flex: 1 1 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  height: 30px;
+  color: red;
+  border-right: 1px solid var(--bw-border-color, #efba84);
+  box-sizing: border-box;
+}
+
+.racing-odd b {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.racing-input-wrap {
+  flex: 1 1 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  height: 30px;
+}
+
+.racing-input {
+  width: 50px;
+  height: 22px;
+  padding: 0 4px;
+  border: 1px solid #abb2c5;
+  border-radius: 4px;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: textfield;
+  background: #ffffff;
+  color: #000;
+  font-size: 12px;
+  line-height: 22px;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.racing-input:disabled {
+  opacity: 1;
+  background: var(--el-disabled-bg-color, #f5f7fa);
+  color: var(--el-disabled-text-color, #a8abb2);
+  border-color: var(--el-disabled-border-color, #e4e7ed);
+  cursor: not-allowed;
+}
+
+.racing-input:focus,
+.racing-input:focus-visible {
+  outline: none;
+  box-shadow: none;
+  border-color: var(--el-color-primary, #5c2e0d);
+}
+
+.racing-cell--disabled {
+  cursor: not-allowed;
+}
+
+.racing-top-combo-grid {
+  width: 100%;
+}
+
+.racing-top-combo-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  width: 100%;
+}
+
+.racing-top-combo-cell {
+  height: 30px;
+  min-height: 30px;
+}
+
+.racing-top-combo-row .racing-top-combo-cell:first-child {
+  border-left: 1px solid var(--bw-border-color, #efba84);
+}
+
+.racing-top-combo-label {
+  flex: 0 0 50px;
+  width: 50px;
+  height: 30px;
+  line-height: 30px;
+  color: #000;
+  font-weight: 700;
+  background: var(--bw-form-item-label-bg-color, #fff1e4);
+  border-right: 1px solid var(--bw-border-color, #efba84);
+  box-sizing: border-box;
+}
+
+.racing-number-group {
+  width: 100%;
+}
+
+.racing-position-section {
+  border-top: 1px solid var(--bw-border-color, #efba84);
+}
+
+.racing-position-number-grid {
+  display: flex;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.racing-position-number-group {
+  flex: 0 0 20%;
+  width: 20%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.racing-position-number-group--line-start .racing-rank-title,
+.racing-position-number-group--line-start .racing-cell {
+  border-left: 1px solid var(--bw-border-color, #efba84);
+}
+
+.racing-number-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  border-left: 1px solid var(--bw-border-color, #e6b987);
+}
+
+.racing-number-grid--sum {
+  grid-template-columns: repeat(6, 1fr);
+}
+
+.racing-number-cell {
+  min-height: 30px;
+  border-right: 1px solid var(--bw-border-color, #e6b987);
+  border-bottom: 1px solid var(--bw-border-color, #e6b987);
+}
+
+.racing-position-number-cell {
+  height: 30px;
+  min-height: 30px;
+}
+
+.racing-number-label {
+  width: 44px;
+  color: #d80000;
+  font-weight: 700;
+  text-align: center;
+}
+
+.racing-rank-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  margin: 0 10px;
+  border-radius: 4px;
+  color: #fff;
+  background: linear-gradient(180deg, #f0412f 0%, #9d1307 100%);
+  font-weight: 800;
+  line-height: 1;
+}
+
+.racing-rank-ball-wrap {
+  flex: 0 0 30px;
+  width: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 30px;
+  background: var(--bw-form-item-label-bg-color, #fff1e4);
+  border-right: 1px solid var(--bw-border-color, #efba84);
+  box-sizing: border-box;
+}
+
+.racing-rank-ball {
+  width: 27px;
+  height: 27px;
+  display: block;
+}
+
+.racing-special-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  width: 100%;
+}
+
+.racing-special-label {
+  flex: 0 0 72px;
+  width: 72px;
+  height: 30px;
+  line-height: 30px;
+  color: var(--bw-default-color, #351c0c);
+  background: var(--bw-form-item-label-bg-color, #fff1e4);
+  border-right: 1px solid var(--bw-border-color, #efba84);
+  box-sizing: border-box;
+}

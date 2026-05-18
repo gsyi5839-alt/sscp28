@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import type { RecentDialogRow, RecentTab } from '../composables/useRecentDraws'
-import { getBallSrc } from '../composables/useOddsStyles'
+import { getBallSrc, getBlueBallSrc, getRacingBallSrc } from '../composables/useOddsStyles'
 
 interface Props {
   show: boolean
   gameName: string
+  gameCategory: string
   recentTab: RecentTab
   recentDialogRows: RecentDialogRow[]
   recentDialogStyle: { left: string; top: string }
@@ -21,23 +22,33 @@ const emit = defineEmits<{
 const closeIcon = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABIAAAASCAYAAABWzo5XAAAACXBIWXMAAAsSAAALEgHS3X78AAAAIGNIUk0AAHolAACAgwAA+f8AAIDpAAB1MAAA6mAAADqYAAAXb5JfxUYAAAO6SURBVHjaTJTNb1RlFMZ/7zt3Op1Oh+nQVj5KARWwxaQoCAkmunBjgkQSEUOaiCEQg7ggMdEQDcY1Gv0LDMTg10IS8B8gGA1gBVuaDlBpCW1pZzrTj/nqnXvve46LEcPZPL/NeXIW53nM8pH3NtlEyyUSdgcYTMyAgKry5JgnWK0BUXCKhm7Y+cEBzyS8y3Zb14BpbwEF9SNM3II1oMBjw8dqAKdgmyy1cIeMFy9bjccGTJsHIuhCFXd9EpebBSeoc2jkmuocahRXqBBdn0RKVVQE02rRuB2wiqJhhMxXkHkh8e4RyPYS3poEo6AOnMMYkIdF3EQZ75XX0EWDlmoQCaqKVQXCiCCXx2wfoOWN12k7dRLN9hLlZjAGjDFEj5aI5oW2kydIfnCM+L79BLk8uhKgBqw4AcDbnKV+9Qr+b39gu7tInzmNa1tH4+4s4XSRoKSkTn9C/OU9uGKJ+tXfIdOKAcQpVlAIHd7qJC1dMZbPnSe4P4ntyLDq9Mc0XJr6TIP0R6eIP7cFqdZYOPsN7sEoiY0ZVAQRwcwdP6rpTRkwFuPFaDycpTzj033mM5K7XiC4N446R6K/j/DRHPlPP6fVlUj1bUaiCJxQnqngiTFoGKHlJWSxiBc1SMzPMXHoMJu//47U3j0A1P+6xcP3P6Q9zJPY3kuYq2A6ujCrMqixeGG+gKuuoLUqIOB5rCzWkGwPtMT/f0IJQvxikXSngfoKEpShWMKk2gmCFLZ+J4eUl0EEi2V2dIrlNf1s+/UiqV0vUr4xRPn6n7Tv3cOzv/xEvpFmeWqRGDGIFF0sUx/LYcVYjFNMIEzcGGd5XT99P18gsX4ti9ducPvgYcaOn8B/NEv6pZ08c/5bpmpxFiYLxCLQUHHEsKqK+I779woEu17l+QvnSDzVxcLQTW4fPcaG1oCOpRluDh7BLxTp2L2Tp7/+ksmapVgoYwJFVLAqQlQPyS/UyB58i+SGHqYuXmLo0GF6owqdXavp6VnLqjvDXHv7HWpT06zdv4/M4CD/TC+gvkMjJXY8nfmiO9VKJuExMfQ3+bvj3D/7FVvVZ01nltCP0FDIptOURkZ5MJqjUatT+OFHtsQgaS3z9QBzrWej9q1uxxpDsVJneK5Ef3eW9ekUkVOalaCAwSiMFEoU/Aa7O7Nkk62IKGPVGubKmp7hre1tA6mYRRRElBgGRZv7QtNMms0SqRKJkrQWFKou4k7DH/HqYfTm2FLlUou1O4zSTPmTpfb4qP/QGrAYnCpiIBAZbogc+HcAo/AMwa270esAAAAASUVORK5CYII='
 
 const getBallSizeLabels = (row: RecentDialogRow) => {
-  const [b0 = 0, b1 = 0, b2 = 0] = row.balls
-  return [b0 >= 5 ? '大' : '小', b1 >= 5 ? '大' : '小', b2 >= 5 ? '大' : '小'] as const
+  const threshold = props.gameCategory === 'racing' ? 6 : 5
+  return row.balls.map(ball => ball >= threshold ? '大' : '小')
 }
 
 const getBallParityLabels = (row: RecentDialogRow) => {
-  const [b0 = 0, b1 = 0, b2 = 0] = row.balls
-  return [b0 % 2 === 0 ? '双' : '单', b1 % 2 === 0 ? '双' : '单', b2 % 2 === 0 ? '双' : '单'] as const
+  return row.balls.map(ball => ball % 2 === 0 ? '双' : '单')
 }
 
 const getTagColorClass = (label: '大' | '小' | '单' | '双') =>
   label === '大' || label === '双' ? 'recent-pill--orange' : 'recent-pill--blue'
+
+const getRecentBallSrc = (ball: number) => {
+  if (props.gameCategory === 'ssc') return getBlueBallSrc(ball)
+  if (props.gameCategory === 'racing') return getRacingBallSrc(ball)
+  return getBallSrc(ball)
+}
+
+const isSscHighlight = (value: string) => (
+  value === '大' || value === '双' || value === '龙' || value === '豹子' || value === '顺子' || value === '对子'
+)
 </script>
 
 <template>
   <div
     v-if="show"
     class="recent-dialog"
+    :class="`recent-dialog--${gameCategory}`"
     :style="recentDialogStyle"
   >
     <div class="recent-dialog-title" @mousedown="$emit('titleMouseDown', $event)">
@@ -85,10 +96,14 @@ const getTagColorClass = (label: '大' | '小' | '单' | '双') =>
                   </button>
                   <button
                     class="recent-switch-btn"
-                    :class="{ active: recentTab === 'misc' }"
+                    :class="{
+                      active: recentTab === 'misc',
+                      'recent-switch-btn--ssc-wide': gameCategory === 'ssc',
+                      'recent-switch-btn--racing-wide': gameCategory === 'racing',
+                    }"
                     @click="$emit('update:recentTab', 'misc')"
                   >
-                    杂项
+                    {{ gameCategory === 'ssc' ? '冠亚|龙虎|杂项|斗牛' : (gameCategory === 'racing' ? '冠亚|龙虎|宝斗' : '杂项') }}
                   </button>
                 </div>
               </th>
@@ -104,7 +119,7 @@ const getTagColorClass = (label: '大' | '小' | '单' | '双') =>
                     v-for="(ball, idx) in row.balls"
                     :key="`${row.issue}-${idx}-${ball}`"
                     class="recent-number-ball"
-                    :src="getBallSrc(ball)"
+                    :src="getRecentBallSrc(ball)"
                     :alt="String(ball)"
                   />
                 </div>
@@ -128,6 +143,35 @@ const getTagColorClass = (label: '大' | '小' | '单' | '双') =>
                     {{ label }}
                   </span>
                 </div>
+                <div v-else-if="gameCategory === 'ssc'" class="recent-ssc-misc-row">
+                  <div class="recent-ssc-misc-item">{{ row.sum }}</div>
+                  <div class="recent-ssc-misc-item" :class="{ 'recent-red': isSscHighlight(row.size) }">{{ row.size }}</div>
+                  <div class="recent-ssc-misc-item" :class="{ 'recent-red': isSscHighlight(row.parity) }">{{ row.parity }}</div>
+                  <div class="recent-ssc-misc-item" :class="{ 'recent-red': isSscHighlight(row.dragonTiger) }">{{ row.dragonTiger }}</div>
+                  <div class="recent-ssc-misc-item" :class="{ 'recent-red': isSscHighlight(row.frontPattern) }">{{ row.frontPattern }}</div>
+                  <div class="recent-ssc-misc-item" :class="{ 'recent-red': isSscHighlight(row.midPattern) }">{{ row.midPattern }}</div>
+                  <div class="recent-ssc-misc-item" :class="{ 'recent-red': isSscHighlight(row.backPattern) }">{{ row.backPattern }}</div>
+                  <div class="recent-ssc-misc-item recent-ssc-misc-item--bull">{{ row.bull }}</div>
+                </div>
+                <div v-else-if="gameCategory === 'racing'" class="recent-racing-misc-row">
+                  <div class="recent-racing-misc-item">{{ row.sum }}</div>
+                  <div class="recent-racing-misc-item" :class="{ 'recent-red': isSscHighlight(row.size) }">{{ row.size }}</div>
+                  <div class="recent-racing-misc-item" :class="{ 'recent-red': isSscHighlight(row.parity) }">{{ row.parity }}</div>
+                  <div
+                    v-for="(item, idx) in row.racingDragonTigerPairs"
+                    :key="`${row.issue}-dt-${idx}`"
+                    class="recent-racing-misc-item"
+                    :class="{ 'recent-red': item === '龙' }"
+                  >
+                    {{ item }}
+                  </div>
+                  <div
+                    class="recent-racing-misc-item recent-racing-misc-item--baodou"
+                    :class="{ 'recent-red': row.baoDou === '龙' }"
+                  >
+                    {{ row.baoDou }}
+                  </div>
+                </div>
                 <div v-else class="recent-misc-row">
                   <div class="recent-misc-item">{{ row.sum }}</div>
                   <div class="recent-misc-item" :style="{ color: row.size === '大' ? 'red' : '' }">{{ row.size }}</div>
@@ -149,11 +193,17 @@ const getTagColorClass = (label: '大' | '小' | '单' | '双') =>
   position: fixed;
   width: 520px;
   height: 338px;
+  font-family: Microsoft YaHei, Tahoma, HelveticaNeue-Light, Helvetica Neue Light, Helvetica Neue, Helvetica, Arial, sans-serif;
+  font-size: 13px;
   background: #fff;
   border: 1px solid var(--bw-border-color, #efba84);
   border-radius: 2px;
   box-shadow: 0 12px 32px 4px rgba(0, 0, 0, 0.04), 0 8px 20px rgba(0, 0, 0, 0.08);
   z-index: 2006;
+}
+
+.recent-dialog--racing {
+  width: 560px;
 }
 
 .recent-dialog-title {
@@ -165,7 +215,7 @@ const getTagColorClass = (label: '大' | '小' | '单' | '双') =>
   justify-content: space-between;
   padding: 0 5px;
   border-bottom: 1px solid var(--bw-border-color, #efba84);
-  background: var(--bw-table-header-bg-color, linear-gradient(to bottom, #fff 0%, #fff1e4 100%));
+  background: #fffaf5;
   cursor: move;
   user-select: none;
 }
@@ -176,16 +226,16 @@ const getTagColorClass = (label: '大' | '小' | '单' | '双') =>
   align-items: center;
   height: 30px;
   line-height: 30px;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 700;
   color: #000;
 }
 
 .recent-dialog-drag-tip {
   margin-left: 8px;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 400;
-  color: #ff0000;
+  color: #ff2d20;
 }
 
 .recent-dialog-close {
@@ -207,12 +257,16 @@ const getTagColorClass = (label: '大' | '小' | '单' | '双') =>
   overflow: auto;
 }
 
+.recent-dialog--racing .recent-dialog-scroll {
+  width: 546px;
+}
+
 .recent-dialog-table {
   width: 100%;
   border-collapse: collapse;
   table-layout: fixed;
-  font-size: 14px;
-  color: #333;
+  font-size: 13px;
+  color: #333333;
 }
 
 .recent-dialog-table th,
@@ -221,26 +275,32 @@ const getTagColorClass = (label: '大' | '小' | '单' | '双') =>
   text-align: center;
   box-sizing: border-box;
   border: 1px solid var(--bw-border-color, #efba84);
+  background: #ffffff;
 }
 
 .recent-dialog-table th {
   height: 26px;
   line-height: 26px;
-  font-size: 14px;
-  font-weight: 400;
-  color: #333;
+  font-size: 13px;
+  font-weight: 700;
+  color: #1f1f1f;
+  background: #fffaf5;
 }
 
 .recent-dialog-table td {
   height: 26px;
   line-height: 26px;
-  font-size: 14px;
-  font-weight: 400;
-  color: #333;
+  font-size: 13px;
+  font-weight: 600;
+  color: #333333;
 }
 
 .recent-col-issue {
   width: 128px;
+}
+
+.recent-dialog--racing .recent-col-issue {
+  width: 139px;
 }
 
 .recent-col-time {
@@ -249,6 +309,10 @@ const getTagColorClass = (label: '大' | '小' | '单' | '双') =>
 
 .recent-col-main {
   width: 318px;
+}
+
+.recent-dialog--racing .recent-col-main {
+  width: 347px;
 }
 
 .recent-col-main-wrap {
@@ -262,10 +326,10 @@ const getTagColorClass = (label: '大' | '小' | '单' | '双') =>
   line-height: 12px;
   padding: 5px 11px;
   border: 1px solid var(--bw-border-color, #efba84);
-  background: #fff;
-  color: #000;
+  background: #fffaf5;
+  color: #000000;
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 700;
   cursor: pointer;
 }
 
@@ -286,6 +350,14 @@ const getTagColorClass = (label: '大' | '小' | '单' | '双') =>
   background: var(--el-color-primary, #5c2e0d);
   border-color: var(--el-color-primary, #5c2e0d);
   color: #fff;
+}
+
+.recent-switch-btn--ssc-wide {
+  min-width: 160px;
+}
+
+.recent-switch-btn--racing-wide {
+  min-width: 130px;
 }
 
 .recent-number-cell {
@@ -345,6 +417,45 @@ const getTagColorClass = (label: '大' | '小' | '单' | '双') =>
 .recent-misc-item {
   width: 40px;
   text-align: center;
+}
+
+.recent-ssc-misc-row {
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.recent-ssc-misc-item {
+  width: 36px;
+  text-align: center;
+}
+
+.recent-ssc-misc-item--bull {
+  border-left: 2px solid var(--bw-border-color, #efba84);
+}
+
+.recent-red {
+  color: #ff2d20;
+}
+
+.recent-racing-misc-row {
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.recent-racing-misc-item {
+  width: 36px;
+  text-align: center;
+}
+
+.recent-racing-misc-item--baodou {
+  height: 26px;
+  line-height: 26px;
+  background: var(--bw-form-item-label-bg-color, #fff1e4);
+  border-left: 2px solid var(--bw-border-color, #efba84);
 }
 
 .cursor-pointer {

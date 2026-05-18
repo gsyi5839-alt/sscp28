@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { getBallSrc, getBlueBallSrc } from '../composables/useOddsStyles'
+import { getBallSrc, getBlueBallSrc, getRacingBallSrc } from '../composables/useOddsStyles'
 import type { GameCategory } from '@/utils/gameSubNav'
 // Loading animation for draw-in-progress state (original design: 55x11 gif)
 import loadingGif from '@/assets/游戏/loading.gif'
@@ -59,6 +59,16 @@ const onGameNameClick = () => {
             :key="idx"
             class="ball-img-blue"
             :src="getBlueBallSrc(ball)"
+            :alt="String(ball)"
+          />
+        </template>
+        <!-- Racing: 10 ranked color balls side by side -->
+        <template v-else-if="gameCategory === 'racing'">
+          <img
+            v-for="(ball, idx) in preDrawBalls"
+            :key="idx"
+            class="ball-img-racing"
+            :src="getRacingBallSrc(ball)"
             :alt="String(ball)"
           />
         </template>
@@ -181,6 +191,14 @@ const onGameNameClick = () => {
 .ball-img-blue {
   width: 26px;
   height: 26px;
+  margin-left: 2px;
+  display: inline-block;
+}
+
+/* Racing balls: 25x25, matching draw-results racing assets */
+.ball-img-racing {
+  width: 25px;
+  height: 25px;
   margin-left: 2px;
   display: inline-block;
 }

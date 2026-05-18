@@ -311,6 +311,7 @@ const onAmountInput = (key: string, event: Event) => {
 }
 
 .ssc-pos-cell:not(.ssc-pos-cell--disabled):hover .ssc-pos-label,
+.ssc-pos-cell:not(.ssc-pos-cell--disabled):hover .ssc-pos-odd,
 .ssc-pos-cell:not(.ssc-pos-cell--disabled):hover .ssc-pos-input-wrap {
   background: transparent;
 }
